@@ -52,7 +52,7 @@ error_log(print_r($_SESSION, true));
                 </div>
             </div>
             <div class="icon-btn" onclick="window.location.href='<?= APP_URL ?>/'">
-            <img src="<?= APP_URL ?>/assets/imagenes/general/volver.png" alt="Inicio" style="width:24px;">  
+                <img src="<?= APP_URL ?>/assets/imagenes/general/volver.png" alt="Inicio" style="width:24px;">  
             </div>
             <button class="logout-btn" onclick="window.location.href='<?= APP_URL ?>/auth/logout'">Salir</button>
         </div>
@@ -66,7 +66,6 @@ error_log(print_r($_SESSION, true));
             <ul class="admin-menu">
                 <li><a href="#dashboard" class="active" data-section="dashboard"><img src="<?= APP_URL ?>/assets/imagenes/general/panel.png" class="admin-menu-icon" alt="Dashboard"><span>Dashboard</span></a></li>
                 <li><a href="#products" data-section="products"><img src="<?= APP_URL ?>/assets/imagenes/general/producto.png" class="admin-menu-icon" alt="Productos"><span>Productos</span></a></li>
-                <li><a href="#inventory" data-section="inventory"><img src="<?= APP_URL ?>/assets/imagenes/general/inventarios.png" class="admin-menu-icon" alt="Inventario"><span>Inventario</span></a></li>
                 <li><a href="#categories" data-section="categories"><img src="<?= APP_URL ?>/assets/imagenes/general/categoria.png" class="admin-menu-icon" alt="Categorías"><span>Categorías</span></a></li>
                 <li><a href="#orders" data-section="orders"><img src="<?= APP_URL ?>/assets/imagenes/general/pedir.png" class="admin-menu-icon" alt="Pedidos"><span>Pedidos</span></a></li>
                 <li><a href="#customers" data-section="customers"><img src="<?= APP_URL ?>/assets/imagenes/general/cliente.png" class="admin-menu-icon" alt="Clientes"><span>Clientes</span></a></li>
@@ -79,7 +78,7 @@ error_log(print_r($_SESSION, true));
         <!-- Contenido Dinámico -->
         <main class="admin-content">
 
-            <!--  SECCIÓN DASHBOARD  -->
+            <!-- SECCIÓN DASHBOARD -->
             <section id="dashboard-section" class="admin-section active-section">
                 <h1 class="dashboard-title">Panel de Control</h1>
 
@@ -87,22 +86,22 @@ error_log(print_r($_SESSION, true));
                     <div class="metric-card">
                         <div class="metric-header">
                             <div>
-                                <div class="metric-value" id="totalOrders">12</div>
+                                <div class="metric-value" id="totalOrders">0</div>
                                 <div class="metric-label">Pedidos Totales</div>
                             </div>
                             <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/logistica.png" alt="Pedidos"></div>
                         </div>
-                        <span class="metric-change positive">+2 este mes</span>
+                        <span class="metric-change positive" id="totalOrdersChange">+0 este mes</span>
                     </div>
                     <div class="metric-card">
                         <div class="metric-header">
                             <div>
-                                <div class="metric-value" id="pendingOrders">3</div>
+                                <div class="metric-value" id="pendingOrders">0</div>
                                 <div class="metric-label">Pendientes</div>
                             </div>
                             <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/reloj.png" alt="Pendientes"></div>
                         </div>
-                        <span class="metric-change negative">-1 esta semana</span>
+                        <span class="metric-change negative" id="pendingOrdersChange">-0 esta semana</span>
                     </div>
                     <div class="metric-card">
                         <div class="metric-header">
@@ -112,17 +111,17 @@ error_log(print_r($_SESSION, true));
                             </div>
                             <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/favoritos.png" alt="Favoritos"></div>
                         </div>
-                        <span class="metric-change positive">+5 este mes</span>
+                        <span class="metric-change positive" id="favoritesChange">+0 este mes</span>
                     </div>
                     <div class="metric-card">
                         <div class="metric-header">
                             <div>
-                                <div class="metric-value" id="totalRevenue">$628</div>
+                                <div class="metric-value" id="totalRevenue">$0</div>
                                 <div class="metric-label">Ganancias</div>
                             </div>
                             <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/ganancia.png" alt="Ganancias"></div>
                         </div>
-                        <span class="metric-change positive">+12% este mes</span>
+                        <span class="metric-change positive" id="revenueChange">+0% este mes</span>
                     </div>
                 </div>
 
@@ -146,18 +145,18 @@ error_log(print_r($_SESSION, true));
                 <div class="progress-section">
                     <div class="progress-header">
                         <h3 class="chart-title">Progreso General</h3>
-                        <span style="font-weight: 700; color: var(--primary);" id="progressPercent">45%</span>
+                        <span style="font-weight: 700; color: var(--primary);" id="progressPercent">0%</span>
                     </div>
-                    <div class="progress-bar-container"><div class="progress-bar" id="progressBar" style="width: 45%;"></div></div>
+                    <div class="progress-bar-container"><div class="progress-bar" id="progressBar" style="width: 0%;"></div></div>
                     <div class="progress-info">
                         <span>Meta anual de ventas</span>
-                        <span id="progressText">$15,000 / $35,000</span>
+                        <span id="progressText">$0 / $0</span>
                     </div>
                     <button class="btn btn-primary" style="margin-top: 16px;">Ver Detalles</button>
                 </div>
             </section>
 
-            <!--  SECCIÓN PRODUCTOS  -->
+            <!-- SECCIÓN PRODUCTOS -->
             <section id="products-section" class="admin-section" style="display: none;">
                 <div class="section-header">
                     <h2 class="section-title">Gestión de Productos</h2>
@@ -187,25 +186,11 @@ error_log(print_r($_SESSION, true));
                             </div>
                         </div>
                     </div>
-                    <!-- Sara #44: La edición de productos solo es accesible para administradores (verificación al inicio del archivo).
-                         Los botones de edición (action-edit) en cada tarjeta de producto abren el modal con los datos actuales.El formulario valida campos obligatorios antes de guardar. -->
                     <div class="products-grid" id="adminProductsGrid"></div>
                 </div>
             </section>
 
-            <!--  SECCIÓN INVENTARIO  -->
-            <section id="inventory-section" class="admin-section" style="display: none;">
-                <div class="section-header"><h2 class="section-title">Inventario</h2></div>
-                <table class="admin-table" id="inventoryTable">
-                    <thead>
-                        <tr><th>ID</th><th>Producto</th><th>Stock Actual</th><th>Stock Mínimo</th><th>Estado</th><th>Acciones</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </section>
-
-            <!--  SECCIÓN CATEGORÍAS  -->
-            <!-- Sofia #9: Panel de gestión de categorías (principales y subcategorías) -->
+            <!-- SECCIÓN CATEGORÍAS -->
             <section id="categories-section" class="admin-section" style="display: none;">
                 <div class="categories-section">
                     <div class="categories-header">
@@ -232,13 +217,19 @@ error_log(print_r($_SESSION, true));
                 </div>
             </section>
 
-            <!--  SECCIÓN PEDIDOS  -->
+            <!-- SECCIÓN PEDIDOS (TIEMPO REAL) -->
             <section id="orders-section" class="admin-section" style="display: none;">
                 <div class="section-header">
                     <h2 class="section-title">Gestión de Pedidos</h2>
                     <div class="action-buttons" style="gap: 12px;">
                         <button id="exportOrdersBtn" class="btn btn-secondary">Exportar a PDF</button>
-                        <button id="filterOrdersBtn" class="btn btn-primary">Filtrar</button>
+                        <button id="refreshOrdersBtn" class="btn btn-primary" onclick="refreshOrdersRealTime()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                            </svg>
+                            Actualizar
+                        </button>
                     </div>
                 </div>
 
@@ -276,7 +267,7 @@ error_log(print_r($_SESSION, true));
                 </div>
             </section>
 
-            <!--  SECCIÓN CLIENTES  -->
+            <!-- SECCIÓN CLIENTES -->
             <section id="customers-section" class="admin-section" style="display: none;">
                 <div class="section-header">
                     <h2 class="section-title">Gestión de Clientes</h2>
@@ -288,7 +279,7 @@ error_log(print_r($_SESSION, true));
                 </table>
             </section>
 
-            <!--  SECCIÓN REPARTIDORES -->
+            <!-- SECCIÓN REPARTIDORES -->
             <section id="delivery-section" class="admin-section" style="display: none;">
                 <div class="section-header"><h2 class="section-title">Gestión de Repartidores</h2></div>
                 <div class="delivery-grid" id="deliveryGrid"></div>
@@ -299,7 +290,7 @@ error_log(print_r($_SESSION, true));
                 </table>
             </section>
 
-            <!--  SECCIÓN ANALÍTICA  -->
+            <!-- SECCIÓN ANALÍTICA -->
             <section id="analytics-section" class="admin-section" style="display: none;">
                 <div class="section-header">
                     <h2 class="section-title">Análisis de Datos</h2>
@@ -323,36 +314,36 @@ error_log(print_r($_SESSION, true));
                 <div class="metrics-grid" style="margin-top: 30px;">
                     <div class="metric-card">
                         <div class="metric-header">
-                            <div><div class="metric-value" id="visitorsCount">1,254</div><div class="metric-label">Visitantes</div></div>
+                            <div><div class="metric-value" id="visitorsCount">0</div><div class="metric-label">Visitantes</div></div>
                             <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/visitante.png" alt="Visitantes"></div>
                         </div>
-                        <span class="metric-change positive">+18% este mes</span>
+                        <span class="metric-change positive">+0% este mes</span>
                     </div>
                     <div class="metric-card">
                         <div class="metric-header">
-                            <div><div class="metric-value" id="conversionRate">3.2%</div><div class="metric-label">Tasa de Conversión</div></div>
+                            <div><div class="metric-value" id="conversionRate">0%</div><div class="metric-label">Tasa de Conversión</div></div>
                             <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/conversion.png" alt="Conversión"></div>
                         </div>
-                        <span class="metric-change positive">+0.4% este mes</span>
+                        <span class="metric-change positive">+0% este mes</span>
                     </div>
                     <div class="metric-card">
                         <div class="metric-header">
-                            <div><div class="metric-value" id="avgOrderValue">$124</div><div class="metric-label">Valor Promedio</div></div>
+                            <div><div class="metric-value" id="avgOrderValue">$0</div><div class="metric-label">Valor Promedio</div></div>
                             <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/promedio.png" alt="Promedio"></div>
                         </div>
-                        <span class="metric-change positive">+$12 este mes</span>
+                        <span class="metric-change positive">+$0 este mes</span>
                     </div>
                     <div class="metric-card">
                         <div class="metric-header">
-                            <div><div class="metric-value" id="bounceRate">42%</div><div class="metric-label">Tasa de Rebote</div></div>
+                            <div><div class="metric-value" id="bounceRate">0%</div><div class="metric-label">Tasa de Rebote</div></div>
                             <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/rebote.png" alt="Rebote"></div>
                         </div>
-                        <span class="metric-change negative">+3% este mes</span>
+                        <span class="metric-change negative">+0% este mes</span>
                     </div>
                 </div>
             </section>
 
-            <!--  SECCIÓN CONFIGURACIÓN  -->
+            <!-- SECCIÓN CONFIGURACIÓN -->
             <section id="settings-section" class="admin-section" style="display: none;">
                 <div class="section-header"><h2 class="section-title">Configuración del Sistema</h2></div>
                 <div style="display: grid; gap: 24px; max-width: 800px;">
@@ -402,10 +393,7 @@ error_log(print_r($_SESSION, true));
         </main>
     </div>
 
-    <!--  MODAL PARA AGREGAR/EDITAR PRODUCTO  -->
-      <!-- Sara #43: Formulario emergente modal- para creación de productos. Solo visible para administradores.
-     Campos obligatorios: nombre, categoría, precio, stock, tallas.
-     No guarda si algún campo obligatorio está vacío o contiene datos inválidos. -->
+    <!-- MODAL PARA AGREGAR/EDITAR PRODUCTO -->
     <div class="product-modal-overlay" id="productModal">
         <div class="product-modal-container">
             <div class="modal-progress-bar"></div>
@@ -415,10 +403,10 @@ error_log(print_r($_SESSION, true));
             </div>
             <div class="product-modal-body">
                 <div class="modal-section">
-                    <div class="modal-section-title"><i class="fas fa-image"></i> Imágenes del producto *</div>
+                    <div class="modal-section-title">📷 Imágenes del producto *</div>
                     <div class="product-image-upload-area" onclick="document.getElementById('productImages').click()">
                         <input type="file" id="productImages" multiple accept="image/*" style="display: none;">
-                        <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                        <div class="upload-icon">☁️</div>
                         <p>Seleccionar imágenes (máx. 6)</p>
                         <small>Arrastra y suelta o haz clic para seleccionar</small>
                     </div>
@@ -428,7 +416,7 @@ error_log(print_r($_SESSION, true));
                 </div>
 
                 <div class="modal-section">
-                    <div class="modal-section-title"><i class="fas fa-tag"></i> Información básica</div>
+                    <div class="modal-section-title">🏷️ Información básica</div>
                     <div class="product-form-group"><label class="required">Nombre del producto *</label><input type="text" id="productName" placeholder="Ej: Conjunto Deportivo Azul"></div>
                     <div class="product-form-row">
                         <div class="product-form-group"><label class="required">Categoría *</label><select id="productCategory"><option value="">Seleccionar categoría</option></select></div>
@@ -437,21 +425,20 @@ error_log(print_r($_SESSION, true));
                 </div>
 
                 <div class="modal-section">
-                    <div class="modal-section-title"><i class="fas fa-dollar-sign"></i> Precio y stock</div>
+                    <div class="modal-section-title">💰 Precio y stock</div>
                     <div class="product-form-row">
                         <div class="product-form-group"><label class="required">Precio en COP *</label><input type="number" id="productPrice" placeholder="Ej: 899900"></div>
-                        <!-- Sara #45: Gestión de niveles de stock. Solo administradores pueden modificar el stock desde el panel. -->
-                        <div class="product-form-group"><label class="required">Stock *</label><input type="number" id="productStock" placeholder="10" value="10"></div>
+                        <div class="product-form-group"><label class="required">Stock *</label><input type="number" id="productStock" placeholder="10" value="10" min="0"></div>
                     </div>
                 </div>
 
                 <div class="modal-section">
-                    <div class="modal-section-title"><i class="fas fa-ruler-combined"></i> Tallas disponibles *</div>
+                    <div class="modal-section-title">📏 Tallas disponibles *</div>
                     <div class="product-sizes-container" id="sizesContainer"></div>
                 </div>
 
                 <div class="modal-section">
-                    <div class="modal-section-title"><i class="fas fa-align-left"></i> Descripción y características</div>
+                    <div class="modal-section-title">📝 Descripción y características</div>
                     <div class="product-form-group"><label>Descripción del producto</label><textarea id="productDescription" rows="4" placeholder="Descripción detallada del producto..."></textarea></div>
                     <div class="product-form-group"><label>Características (una por línea)</label><textarea id="productFeatures" rows="4" placeholder="Material: 100% Algodón&#10;Lavable a máquina&#10;Ideal para uso diario"></textarea></div>
                 </div>
@@ -463,7 +450,7 @@ error_log(print_r($_SESSION, true));
         </div>
     </div>
 
-    <!--  MODAL PARA REPARTIDORES  -->
+    <!-- MODAL PARA REPARTIDORES -->
     <div class="delivery-modal-overlay" id="deliveryModal">
         <div class="delivery-modal-container">
             <div class="delivery-modal-header">
@@ -472,11 +459,11 @@ error_log(print_r($_SESSION, true));
             </div>
             <div class="delivery-modal-body">
                 <div class="delivery-avatar-upload">
-                    <div class="delivery-avatar-preview" id="deliveryAvatarPreview"><i class="fas fa-user"></i></div>
-                    <label class="delivery-avatar-upload-btn"><input type="file" id="deliveryAvatar" accept="image/*" style="display: none;"><i class="fas fa-camera"></i> Subir foto</label>
+                    <div class="delivery-avatar-preview" id="deliveryAvatarPreview">👤</div>
+                    <label class="delivery-avatar-upload-btn"><input type="file" id="deliveryAvatar" accept="image/*" style="display: none;">📷 Subir foto</label>
                 </div>
 
-                <h3 class="modal-section-title"><i class="fas fa-user-circle"></i> Información Personal</h3>
+                <h3 class="modal-section-title">👤 Información Personal</h3>
                 <div class="delivery-form-row">
                     <div class="delivery-form-group"><label class="required">Nombre Completo</label><input type="text" id="deliveryName" placeholder="Ej: Juan Pérez"></div>
                     <div class="delivery-form-group"><label class="required">Email</label><input type="email" id="deliveryEmail" placeholder="ejemplo@angelow.com"></div>
@@ -492,7 +479,7 @@ error_log(print_r($_SESSION, true));
                 <div class="delivery-form-group"><label>Dirección</label><input type="text" id="deliveryAddress" placeholder="Calle 123 #45-67, Ciudad"></div>
                 <div class="delivery-form-group"><label>Tipo de Sangre</label><select id="deliveryBloodType"><option value="">Seleccionar</option><option value="A+">A+</option><option value="A-">A-</option><option value="B+">B+</option><option value="B-">B-</option><option value="O+">O+</option><option value="O-">O-</option><option value="AB+">AB+</option><option value="AB-">AB-</option></select></div>
 
-                <h3 class="modal-section-title"><i class="fas fa-truck"></i> Información Laboral</h3>
+                <h3 class="modal-section-title">🚚 Información Laboral</h3>
                 <div class="delivery-form-row">
                     <div class="delivery-form-group"><label class="required">Vehículo</label><select id="deliveryVehicle"><option value="">Seleccionar</option><option value="Moto">Moto</option><option value="Carro">Carro</option><option value="Bicicleta">Bicicleta</option><option value="Camión">Camión</option></select></div>
                     <div class="delivery-form-group"><label>Placa</label><input type="text" id="deliveryLicensePlate" placeholder="ABC-123"></div>
@@ -502,18 +489,18 @@ error_log(print_r($_SESSION, true));
                     <div class="delivery-form-group"><label class="required">Estado</label><select id="deliveryStatus"><option value="active">Activo</option><option value="inactive">Inactivo</option><option value="on-route">En ruta</option></select></div>
                 </div>
 
-                <h3 class="modal-section-title"><i class="fas fa-phone-alt"></i> Contacto de Emergencia</h3>
+                <h3 class="modal-section-title">📞 Contacto de Emergencia</h3>
                 <div class="delivery-form-group"><label>Contacto de Emergencia</label><input type="text" id="deliveryEmergencyContact" placeholder="Nombre y teléfono"></div>
                 <div class="delivery-form-group"><label>Notas adicionales</label><textarea id="deliveryNotes" rows="3" placeholder="Información relevante..."></textarea></div>
             </div>
             <div class="delivery-modal-footer">
-                <button class="btn btn-secondary">Cancelar</button>
-                <button class="btn btn-primary" id="deliveryModalSaveBtn">Agregar Repartidor</button>
+                <button class="btn btn-secondary" onclick="closeDeliveryModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveDeliveryDriver()" id="deliveryModalSaveBtn">Agregar Repartidor</button>
             </div>
         </div>
     </div>
 
-    <!--  MODAL PARA CATEGORÍAS - Sofia #9 -->
+    <!-- MODAL PARA CATEGORÍAS -->
     <div class="category-modal-overlay" id="categoryModal">
         <div class="category-modal-container">
             <div class="category-modal-header">

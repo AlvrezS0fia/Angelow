@@ -5,6 +5,7 @@ if (!isset($_SESSION['user'])) {
     exit();
 }
 $user = $_SESSION['user'];
+$userKey = $user['email'] ?? $user['id'] ?? 'guest';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -18,6 +19,7 @@ $user = $_SESSION['user'];
     
     <script>const APP_URL = '<?= APP_URL ?>';</script>
     <script>const CURRENT_USER = <?= json_encode($user) ?>;</script>
+    <script>const USER_KEY = '<?= $userKey ?>';</script>
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/perfil.css">
 </head>
 <body>
@@ -77,14 +79,14 @@ $user = $_SESSION['user'];
         <div class="menu-item" data-section="metodosPago">
             <span>Tarjetas de crédito</span>
         </div>
-        <div class="menu-item" data-section="autenticacion">
-            <span>Autenticación</span>
+        <div class="menu-item" data-section="carrito">
+            <span>Mi Carrito</span>
         </div>
         <div class="menu-item" data-section="favoritos">
             <span>Mis Favoritos</span>
         </div>
-        <div class="menu-item" data-section="carrito">
-            <span>Mi Carrito</span>
+        <div class="menu-item" data-section="autenticacion">
+            <span>Autenticación</span>
         </div>
     </aside>
 
@@ -181,45 +183,29 @@ $user = $_SESSION['user'];
                             <div class="form-group">
                                 <label class="form-label">Departamento *</label>
                                 <select class="form-input" id="departamento">
-                                    <option value="Antioquia">Antioquia</option>
-                                    <option value="Cundinamarca">Cundinamarca</option>
-                                    <option value="Valle del Cauca">Valle del Cauca</option>
-                                    <option value="Atlántico">Atlántico</option>
-                                    <option value="Bolívar">Bolívar</option>
-                                    <option value="Santander">Santander</option>
-                                    <option value="Tolima">Tolima</option>
-                                    <option value="Nariño">Nariño</option>
-                                    <option value="Caldas">Caldas</option>
-                                    <option value="Risaralda">Risaralda</option>
-                                    <option value="Quindío">Quindío</option>
-                                    <option value="Córdoba">Córdoba</option>
-                                    <option value="Sucre">Sucre</option>
-                                    <option value="Magdalena">Magdalena</option>
-                                    <option value="Cesar">Cesar</option>
-                                    <option value="Huila">Huila</option>
-                                    <option value="Meta">Meta</option>
-                                    <option value="Boyacá">Boyacá</option>
-                                    <option value="Cauca">Cauca</option>
+                                    <option value="Antioquia" selected>Antioquia</option>
                                 </select>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Municipio *</label>
                                 <select class="form-input" id="municipio">
-                                    <optgroup label="Antioquia">
-                                        <option value="Medellín">Medellín</option>
-                                        <option value="Bello">Bello</option>
-                                        <option value="Itagüí">Itagüí</option>
-                                        <option value="Envigado">Envigado</option>
-                                        <option value="Rionegro">Rionegro</option>
-                                    </optgroup>
-                                    <optgroup label="Cundinamarca">
-                                        <option value="Bogotá">Bogotá</option>
-                                        <option value="Soacha">Soacha</option>
-                                    </optgroup>
-                                    <optgroup label="Valle del Cauca">
-                                        <option value="Cali">Cali</option>
-                                        <option value="Palmira">Palmira</option>
-                                    </optgroup>
+                                    <option value="">Seleccionar municipio</option>
+                                    <option value="Medellín">Medellín</option>
+                                    <option value="Bello">Bello</option>
+                                    <option value="Itagüí">Itagüí</option>
+                                    <option value="Envigado">Envigado</option>
+                                    <option value="Sabaneta">Sabaneta</option>
+                                    <option value="La Estrella">La Estrella</option>
+                                    <option value="Caldas">Caldas</option>
+                                    <option value="Copacabana">Copacabana</option>
+                                    <option value="Girardota">Girardota</option>
+                                    <option value="Barbosa">Barbosa</option>
+                                    <option value="Rionegro">Rionegro</option>
+                                    <option value="Marinilla">Marinilla</option>
+                                    <option value="El Carmen de Viboral">El Carmen de Viboral</option>
+                                    <option value="Guarne">Guarne</option>
+                                    <option value="La Ceja">La Ceja</option>
+                                    <option value="Santa Bárbara">Santa Bárbara</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -252,7 +238,6 @@ $user = $_SESSION['user'];
         <div class="profile-section" id="pedidos">
             <div class="profile-header">
                 <h1 class="profile-title">Mis Pedidos</h1>
-                <button class="secondary-btn" onclick="refreshOrders()">ACTUALIZAR</button>
             </div>
             <div class="profile-card">
                 <div class="orders-list" id="ordersList"></div>
@@ -267,39 +252,6 @@ $user = $_SESSION['user'];
                     <p class="empty-text">¡AÚN NO HAS REALIZADO NINGÚN PEDIDO!</p>
                     <p class="empty-subtext">Cuando realices un pedido, aparecerá aquí</p>
                     <button class="primary-btn" onclick="window.location.href='<?= APP_URL ?>/'">EXPLORAR PRODUCTOS</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- AUTENTICACIÓN -->
-        <div class="profile-section" id="autenticacion">
-            <div class="profile-header">
-                <h1 class="profile-title">Autenticación</h1>
-                <button class="secondary-btn" onclick="refreshSecurity()">ACTUALIZAR</button>
-            </div>
-            <div class="profile-card">
-                <div class="security-section">
-                    <h3 class="security-title">Contraseña</h3>
-                    <p class="security-description">Usted todavía no tiene una contraseña definida.</p>
-                    <div class="action-buttons">
-                        <button class="primary-btn" onclick="definePassword()">DEFINIR CONTRASEÑA</button>
-                        <button class="secondary-btn" onclick="recoverPassword()">RECUPERAR CONTRASEÑA</button>
-                    </div>
-                </div>
-                <div class="security-section">
-                    <h3 class="security-title">Gestión de sesiones</h3>
-                    <p class="security-description">Usted tiene <span id="sessionCount">1</span> sesiones activas</p>
-                    <button class="primary-btn" onclick="viewSessions()">VER SESIONES</button>
-                </div>
-                <div class="security-section">
-                    <h3 class="security-title">Autenticación de dos factores</h3>
-                    <p class="security-description">Protege tu cuenta con un código adicional</p>
-                    <button class="success-btn" onclick="enableTwoFactor()">VERIFICACIÓN EN DOS PASOS</button>
-                </div>
-                <div class="security-section" style="border-top:1px solid var(--border-light); padding-top:40px;">
-                    <h3 class="security-title" style="color:var(--error);">Cerrar sesión</h3>
-                    <p class="security-description">CIERRA SESIÓN ACTUAL EN ANGELOW</p>
-                    <button class="danger-btn" onclick="showLogoutConfirm()">CERRAR SESIÓN</button>
                 </div>
             </div>
         </div>
@@ -362,19 +314,29 @@ $user = $_SESSION['user'];
                                     <div class="form-group">
                                         <label class="form-label">Departamento *</label>
                                         <select class="form-input" id="billingState" style="background:white;">
-                                            <option value="">Seleccionar</option>
-                                            <option value="Antioquia">Antioquia</option>
-                                            <option value="Cundinamarca">Cundinamarca</option>
-                                            <option value="Valle del Cauca">Valle del Cauca</option>
+                                            <option value="Antioquia" selected>Antioquia</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Municipio *</label>
                                         <select class="form-input" id="billingCity" style="background:white;">
-                                            <option value="">Seleccionar</option>
+                                            <option value="">Seleccionar municipio</option>
                                             <option value="Medellín">Medellín</option>
-                                            <option value="Bogotá">Bogotá</option>
-                                            <option value="Cali">Cali</option>
+                                            <option value="Bello">Bello</option>
+                                            <option value="Itagüí">Itagüí</option>
+                                            <option value="Envigado">Envigado</option>
+                                            <option value="Sabaneta">Sabaneta</option>
+                                            <option value="La Estrella">La Estrella</option>
+                                            <option value="Caldas">Caldas</option>
+                                            <option value="Copacabana">Copacabana</option>
+                                            <option value="Girardota">Girardota</option>
+                                            <option value="Barbosa">Barbosa</option>
+                                            <option value="Rionegro">Rionegro</option>
+                                            <option value="Marinilla">Marinilla</option>
+                                            <option value="El Carmen de Viboral">El Carmen de Viboral</option>
+                                            <option value="Guarne">Guarne</option>
+                                            <option value="La Ceja">La Ceja</option>
+                                            <option value="Santa Bárbara">Santa Bárbara</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
@@ -433,14 +395,22 @@ $user = $_SESSION['user'];
             </div>
         </div>
 
+        <!-- CARRITO -->
+        <div class="profile-section" id="carrito">
+            <div class="profile-header">
+                <h1 class="profile-title">Mi Carrito</h1>
+            </div>
+            <div class="profile-card">
+                <div id="cartItemsProfile">
+                    <!-- Renderizado por JavaScript -->
+                </div>
+            </div>
+        </div>
+
         <!-- FAVORITOS -->
         <div class="profile-section" id="favoritos">
             <div class="profile-header">
                 <h1 class="profile-title">Mis Favoritos</h1>
-                <div class="action-buttons">
-                    <button class="secondary-btn" onclick="refreshFavorites()">ACTUALIZAR</button>
-                    <button class="danger-btn" onclick="clearAllFavorites()">LIMPIAR TODO</button>
-                </div>
             </div>
             <div class="profile-card">
                 <div class="favorites-grid" id="favoritesGrid"></div>
@@ -457,31 +427,35 @@ $user = $_SESSION['user'];
             </div>
         </div>
 
-        <!-- CARRITO -->
-        <div class="profile-section" id="carrito">
+        <!-- AUTENTICACIÓN -->
+        <div class="profile-section" id="autenticacion">
             <div class="profile-header">
-                <h1 class="profile-title">Mi Carrito</h1>
-                <div class="action-buttons" style="margin-top:0;">
-                    <button class="danger-btn" onclick="clearAllCart()" style="background:transparent; color:var(--error); border:2px solid var(--error); padding:10px 20px; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.3s ease; display:inline-flex; align-items:center; gap:8px;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                        LIMPIAR CARRITO
-                    </button>
-                    <button class="primary-btn" onclick="window.location.href='<?= APP_URL ?>/compra'" style="padding:10px 24px;">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                            <path d="M2 17l10 5 10-5"></path>
-                            <path d="M2 12l10 5 10-5"></path>
-                        </svg>
-                        COMPRAR
-                    </button>
-                </div>
+                <h1 class="profile-title">Autenticación</h1>
+                <button class="secondary-btn" onclick="refreshSecurity()">ACTUALIZAR</button>
             </div>
             <div class="profile-card">
-                <div id="cartItemsProfile">
-                    <!-- Renderizado por JavaScript -->
+                <div class="security-section">
+                    <h3 class="security-title">Contraseña</h3>
+                    <p class="security-description">Usted todavía no tiene una contraseña definida.</p>
+                    <div class="action-buttons">
+                        <button class="primary-btn" onclick="definePassword()">DEFINIR CONTRASEÑA</button>
+                        <button class="secondary-btn" onclick="recoverPassword()">RECUPERAR CONTRASEÑA</button>
+                    </div>
+                </div>
+                <div class="security-section">
+                    <h3 class="security-title">Gestión de sesiones</h3>
+                    <p class="security-description">Usted tiene <span id="sessionCount">1</span> sesiones activas</p>
+                    <button class="primary-btn" onclick="viewSessions()">VER SESIONES</button>
+                </div>
+                <div class="security-section">
+                    <h3 class="security-title">Autenticación de dos factores</h3>
+                    <p class="security-description">Protege tu cuenta con un código adicional</p>
+                    <button class="success-btn" onclick="enableTwoFactor()">VERIFICACIÓN EN DOS PASOS</button>
+                </div>
+                <div class="security-section" style="border-top:1px solid var(--border-light); padding-top:40px;">
+                    <h3 class="security-title" style="color:var(--error);">Cerrar sesión</h3>
+                    <p class="security-description">CIERRA SESIÓN ACTUAL EN ANGELOW</p>
+                    <button class="danger-btn" onclick="showLogoutConfirm()">CERRAR SESIÓN</button>
                 </div>
             </div>
         </div>

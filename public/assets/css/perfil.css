@@ -1037,13 +1037,6 @@ select.form-input {
   border-color: var(--favorite);
 }
 
-.favorite-image {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-  background: var(--bg-soft);
-}
-
 .favorite-info {
   padding: 20px;
 }

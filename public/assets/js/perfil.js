@@ -1,22 +1,67 @@
 // ======================== VARIABLES GLOBALES ========================
 let isEditing = false;
-let cart = JSON.parse(localStorage.getItem("angelow_cart")) || [];
-let addresses = JSON.parse(localStorage.getItem("angelow_addresses")) || [];
-let orders = JSON.parse(localStorage.getItem("angelow_orders")) || [];
-let cards = JSON.parse(localStorage.getItem("angelow_cards")) || [];
+let cart = [];
+let addresses = [];
+let orders = [];
+let cards = [];
 let favorites = [];
-let profileData = JSON.parse(localStorage.getItem("angelow_profile")) || {};
-const currentUser = window.CURRENT_USER || JSON.parse(localStorage.getItem("angelow_user")) || null;
+let profileData = {};
+let currentUser = window.CURRENT_USER || JSON.parse(localStorage.getItem("angelow_user")) || null;
 let pendingDeleteId = null;
 let pendingDeleteType = null;
 let editingAddressId = null;
+let userKey = window.USER_KEY || 'guest';
+
+// ======================== FUNCIONES DE ALMACENAMIENTO POR USUARIO ========================
+function getStorageKey(baseKey) {
+    return `angelow_${baseKey}_${userKey}`;
+}
+
+function loadUserData() {
+    try {
+        cart = JSON.parse(localStorage.getItem(getStorageKey('cart'))) || [];
+    } catch(e) { cart = []; }
+    
+    try {
+        addresses = JSON.parse(localStorage.getItem(getStorageKey('addresses'))) || [];
+    } catch(e) { addresses = []; }
+    
+    try {
+        orders = JSON.parse(localStorage.getItem(getStorageKey('orders'))) || [];
+    } catch(e) { orders = []; }
+    
+    try {
+        cards = JSON.parse(localStorage.getItem(getStorageKey('cards'))) || [];
+    } catch(e) { cards = []; }
+    
+    try {
+        profileData = JSON.parse(localStorage.getItem(getStorageKey('profile'))) || {};
+    } catch(e) { profileData = {}; }
+    
+    try {
+        favorites = JSON.parse(localStorage.getItem(getStorageKey('favorites'))) || [];
+    } catch(e) { favorites = []; }
+    
+    console.log('Datos cargados para usuario:', userKey);
+}
+
+function saveUserData() {
+    localStorage.setItem(getStorageKey('cart'), JSON.stringify(cart));
+    localStorage.setItem(getStorageKey('addresses'), JSON.stringify(addresses));
+    localStorage.setItem(getStorageKey('orders'), JSON.stringify(orders));
+    localStorage.setItem(getStorageKey('cards'), JSON.stringify(cards));
+    localStorage.setItem(getStorageKey('profile'), JSON.stringify(profileData));
+    localStorage.setItem(getStorageKey('favorites'), JSON.stringify(favorites));
+    console.log('Datos guardados para usuario:', userKey);
+}
 
 function getFavoritesStorageKey() {
     if (currentUser?.email) return `angelow_favorites_${currentUser.email}`;
     if (currentUser?.id) return `angelow_favorites_${currentUser.id}`;
-    return 'angelow_favorites';
+    return `angelow_favorites_${userKey}`;
 }
 
+// ======================== PRODUCTOS ========================
 const products = [
     { id: 1, name: "Conjunto Deportivo", category: "Niños", subcategory: "Edición Especial", price: 89990, imgs: [APP_URL + "/assets/imagenes/ninos/Frente Conjunto Deportivo.png"] },
     { id: 2, name: "Conjunto Size", category: "Niños", subcategory: "Popular", price: 79990, imgs: [APP_URL + "/assets/imagenes/ninos/Frente Conjunto Size.png"] },
@@ -204,7 +249,7 @@ function showLogoutConfirm() {
 function confirmLogout() {
     showToast({ title: "Cerrando sesión", message: "Por favor espera...", type: "info" });
     closeAlert();
-    localStorage.setItem(getFavoritesStorageKey(), JSON.stringify(favorites));
+    saveUserData();
     setTimeout(function() {
         window.location.href = APP_URL + '/auth/logout';
     }, 500);
@@ -276,31 +321,15 @@ function updateQtyProfile(index, delta) {
     const newQty = (cart[index].quantity || 1) + delta;
     if (newQty < 1) return;
     cart[index].quantity = newQty;
-    localStorage.setItem("angelow_cart", JSON.stringify(cart));
+    saveUserData();
     renderCartProfile();
 }
 
 function removeFromCartProfile(index) {
     cart.splice(index, 1);
-    localStorage.setItem("angelow_cart", JSON.stringify(cart));
+    saveUserData();
     renderCartProfile();
     showToast({message: "Producto eliminado del carrito", type: "info"});
-}
-
-function clearAllCart() {
-    if (cart.length === 0) {
-        showToast({message: "El carrito ya está vacío", type: "info"});
-        return;
-    }
-    showAlert("¿Limpiar carrito?", "¿Estás seguro de que deseas eliminar todos los productos de tu carrito?");
-    pendingDeleteType = 'clearCart';
-}
-
-function deleteCartConfirmed() {
-    cart = [];
-    localStorage.setItem("angelow_cart", JSON.stringify(cart));
-    renderCartProfile();
-    showToast({message: "Carrito vaciado correctamente", type: "success"});
 }
 
 // ======================== PERFIL ========================
@@ -360,7 +389,7 @@ function saveProfile() {
         return false;
     }
 
-    const profileData = {
+    profileData = {
         nombre: nombreValid.valor,
         apellido: apellidoValid.valor,
         cedula: cedulaValid.valor,
@@ -368,14 +397,13 @@ function saveProfile() {
         fechaNacimiento: fechaValid.valor,
         genero: generoValid.valor
     };
-    localStorage.setItem("angelow_profile", JSON.stringify(profileData));
+    saveUserData();
     
     showToast({ title: "¡Cambios guardados!", message: "Tu información ha sido actualizada correctamente", type: "success" });
     return true;
 }
 
 function loadProfile() {
-    const profileData = JSON.parse(localStorage.getItem("angelow_profile")) || {};
     if (profileData.nombre) document.getElementById('nombre').value = profileData.nombre;
     if (profileData.apellido) document.getElementById('apellido').value = profileData.apellido;
     if (profileData.cedula) document.getElementById('cedula').value = profileData.cedula;
@@ -494,7 +522,7 @@ function saveAddress() {
                 neighborhood: barrio
             };
             
-            localStorage.setItem("angelow_addresses", JSON.stringify(addresses));
+            saveUserData();
             loadAddresses();
             cancelAddressForm();
             showToast({title: "¡Dirección actualizada!", message: "Tu dirección ha sido actualizada correctamente", type: "success"});
@@ -518,7 +546,7 @@ function saveAddress() {
     };
     
     addresses.push(newAddress); 
-    localStorage.setItem("angelow_addresses", JSON.stringify(addresses)); 
+    saveUserData();
     loadAddresses(); 
     cancelAddressForm(); 
     showToast({title: "¡Dirección agregada!", message: "Tu dirección ha sido guardada correctamente", type: "success"});
@@ -543,7 +571,7 @@ function editAddress(id) {
 
 function setDefaultAddress(id) { 
     addresses.forEach(a => a.isDefault = a.id === id); 
-    localStorage.setItem("angelow_addresses", JSON.stringify(addresses)); 
+    saveUserData();
     loadAddresses(); 
     showToast({title: "Dirección predeterminada", message: "La dirección ha sido establecida como predeterminada", type: "success"}); 
 }
@@ -559,7 +587,7 @@ function deleteAddressConfirmed(id) {
     if (addresses.length > 0 && !addresses.some(a => a.isDefault)) {
         addresses[0].isDefault = true;
     }
-    localStorage.setItem("angelow_addresses", JSON.stringify(addresses)); 
+    saveUserData();
     loadAddresses(); 
     showToast({title: "Dirección eliminada", message: "La dirección ha sido eliminada correctamente", type: "success"}); 
 }
@@ -613,7 +641,6 @@ function renderOrders() {
     `).join(''); 
 }
 
-function refreshOrders() { loadOrders(); showToast({title: "Pedidos actualizados", message: "La lista de pedidos se ha actualizado", type: "success"}); }
 function viewOrderDetails(orderId) { showToast({title: "Detalles del pedido", message: `Mostrando detalles del pedido #${orderId}`, type: "info"}); }
 
 // ======================== TARJETAS ========================
@@ -745,7 +772,7 @@ function saveCard() {
     }; 
     
     cards.push(newCard); 
-    localStorage.setItem("angelow_cards", JSON.stringify(cards)); 
+    saveUserData();
     loadCards(); 
     cancelCardForm(); 
     showToast({title: "¡Tarjeta guardada!", message: "Tu método de pago ha sido registrado correctamente", type: "success"}); 
@@ -792,24 +819,20 @@ function deleteCardConfirmed(id) {
     if (cards.length > 0 && !cards.some(c => c.isDefault)) {
         cards[0].isDefault = true;
     }
-    localStorage.setItem("angelow_cards", JSON.stringify(cards)); 
+    saveUserData();
     loadCards(); 
     showToast({title: "Tarjeta eliminada", message: "La tarjeta ha sido eliminada correctamente", type: "success"}); 
 }
 
 function setDefaultCard(id) { 
     cards.forEach(c => c.isDefault = c.id === id); 
-    localStorage.setItem("angelow_cards", JSON.stringify(cards)); 
+    saveUserData();
     loadCards(); 
     showToast({title: "Tarjeta predeterminada", message: "La tarjeta ha sido establecida como predeterminada", type: "success"}); 
 }
 
 // ======================== FAVORITOS ========================
-function loadFavorites() { 
-    const savedIds = JSON.parse(localStorage.getItem(getFavoritesStorageKey()) || localStorage.getItem("angelow_favorites") || "[]"); 
-    favorites = products.filter(p => savedIds.includes(p.id)); 
-    renderFavorites(); 
-}
+function loadFavorites() { renderFavorites(); }
 
 function renderFavorites() { 
     const grid = document.getElementById('favoritesGrid'); 
@@ -824,7 +847,6 @@ function renderFavorites() {
     grid.innerHTML = favorites.map(fav => `
         <div class="favorite-item">
             <div class="favorite-badge">FAVORITO</div>
-            <img src="${fav.imgs[0]}" alt="${fav.name}" class="favorite-image">
             <div class="favorite-info">
                 <div class="favorite-title">${fav.name}</div>
                 <div class="favorite-price">COP $${fav.price.toLocaleString()}</div>
@@ -837,14 +859,6 @@ function renderFavorites() {
     `).join(''); 
 }
 
-function refreshFavorites() { loadFavorites(); showToast({title: "Favoritos actualizados", message: "La lista de favoritos se ha actualizado", type: "success"}); }
-
-function clearAllFavorites() { 
-    if (favorites.length === 0) return; 
-    pendingDeleteType = 'clearFavorites'; 
-    showAlert("¿Limpiar todos los favoritos?", "Esta acción eliminará todos los productos de tu lista de favoritos."); 
-}
-
 function showDeleteFavoriteAlert(id) { 
     pendingDeleteId = id; 
     pendingDeleteType = 'favorite'; 
@@ -852,8 +866,8 @@ function showDeleteFavoriteAlert(id) {
 }
 
 function deleteFavoriteConfirmed(id) { 
-    const favIds = favorites.filter(f => f.id !== id).map(f => f.id); 
-    localStorage.setItem(getFavoritesStorageKey(), JSON.stringify(favIds)); 
+    favorites = favorites.filter(f => f.id !== id);
+    saveUserData();
     loadFavorites(); 
     showToast({title: "Eliminado de favoritos", message: "El producto ha sido eliminado de tus favoritos", type: "success"}); 
 }
@@ -875,7 +889,7 @@ function addToCartFromFavorites(id) {
         cart.push(cartItem);
     }
     
-    localStorage.setItem("angelow_cart", JSON.stringify(cart)); 
+    saveUserData();
     renderCartProfile(); 
     showToast({title: "¡Añadido al carrito!", message: `${fav.name} ha sido añadido a tu carrito`, type: "success"}); 
 }
@@ -904,14 +918,6 @@ function confirmDelete() {
             case 'address': deleteAddressConfirmed(pendingDeleteId); break; 
             case 'card': deleteCardConfirmed(pendingDeleteId); break; 
             case 'favorite': deleteFavoriteConfirmed(pendingDeleteId); break; 
-            case 'clearFavorites': 
-                localStorage.setItem(getFavoritesStorageKey(), JSON.stringify([])); 
-                loadFavorites(); 
-                showToast({title: "Favoritos limpiados", message: "Todos los productos han sido eliminados de favoritos", type: "success"}); 
-                break; 
-            case 'clearCart':
-                deleteCartConfirmed();
-                break;
         } 
     } 
     closeAlert(); 
@@ -946,6 +952,7 @@ function initSidebar() {
 
 // ======================== INICIALIZACIÓN ========================
 document.addEventListener('DOMContentLoaded', function() { 
+    loadUserData();
     loadProfile();
     loadAddresses(); 
     loadOrders(); 
@@ -953,7 +960,5 @@ document.addEventListener('DOMContentLoaded', function() {
     loadFavorites(); 
     initSidebar(); 
     document.getElementById('currentYear').textContent = new Date().getFullYear();
-    
-    // Renderizar carrito en la sección
     renderCartProfile();
 });
