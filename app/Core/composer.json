@@ -1,0 +1,13 @@
+{
+    "name": "angelow/ecommerce",
+    "description": "Sistema de e-commerce ANGELOW",
+    "type": "project",
+    "require": {
+        "phpmailer/phpmailer": "^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Angelow\\": "src/"
+        }
+    }
+}

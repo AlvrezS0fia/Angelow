@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contraseña actualizada - Angelow</title>
+<link rel="shortcut icon" href="../emails/img/logos.png" type="image/x-icon">
+
+<style type="text/css">
+    /* RESET */
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: #f4f6f9;
+        font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    }
+    
+    /* TABLA PRINCIPAL */
+    .main-table {
+        width: 100%;
+        background-color: #f4f6f9;
+        padding: 40px 0;
+    }
+    
+    /* CONTENEDOR CENTRAL */
+    .container {
+        width: 580px;
+        background-color: #ffffff;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+    }
+    
+    /* HEADER */
+    .header {
+        background: #ffffff;
+        padding: 24px 32px;
+        border-bottom: 1px solid #eef2f6;
+    }
+    
+    .logo-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .logo-img {
+        display: block;
+        border-radius: 12px;
+        width: 44px;
+        height: 44px;
+    }
+    
+    .logo-text {
+        font-size: 22px;
+        font-weight: 700;
+        color: #1a1a2e;
+    }
+    
+    .badge-success {
+        background: #5e9de6;
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 6px 16px;
+        border-radius: 30px;
+    }
+    
+    /* HERO BANNER */
+    .hero {
+        background: linear-gradient(135deg, #5e9de6 0%, #5e9de6 100%);
+        padding: 48px 32px 40px;
+        text-align: center;
+    }
+    
+    /* Logo centrado correctamente */
+    .hero-logo {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+    
+    .hero-logo-img {
+        display: inline-block;
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: white;
+        padding: 10px;
+        object-fit: contain;
+    }
+    
+    .hero-title {
+        margin: 0 0 12px;
+        font-size: 28px;
+        font-weight: 700;
+        color: #ffffff;
+    }
+    
+    .hero-subtitle {
+        margin: 0;
+        font-size: 16px;
+        color: rgba(255,255,255,0.95);
+    }
+    
+    /* CONTENIDO */
+    .content {
+        padding: 32px 32px 0;
+    }
+    
+    .greeting {
+        margin: 0 0 8px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #5e9de6;
+        text-transform: uppercase;
+    }
+    
+    .message {
+        margin: 0 0 20px;
+        font-size: 16px;
+        color: #4a5568;
+        line-height: 1.6;
+    }
+    
+    .highlight {
+        color: #5e9de6;
+        font-weight: 700;
+    }
+    
+    /* CONFIRMACIÓN ÉXITO */
+    .success-box {
+        background: #5e9de6;
+        padding: 20px 24px;
+        border-radius: 18px;
+        margin: 20px 0;
+        text-align: center;
+        border: 1px solid #000000;
+    }
+    
+    .success-icon {
+        font-size: 32px;
+    }
+    
+    .success-text {
+        margin: 8px 0 0;
+        color: #000000;
+        font-size: 15px;
+        font-weight: 600;
+    }
+    
+    /* BOTÓN */
+    .button-container {
+        text-align: center;
+        margin: 32px 0 20px;
+    }
+    
+    .btn-primary {
+        display: inline-block;
+        background: linear-gradient(135deg, #5e9de6 0%, #5e9de6 100%);
+        color: #ffffff;
+        padding: 14px 40px;
+        border-radius: 50px;
+        text-decoration: none;
+        font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(94,157,230,0.3);
+    }
+    
+    /* ADVERTENCIA */
+    .warning-box {
+        padding: 0 32px 32px;
+    }
+    
+    .warning {
+        background: #fff9e6;
+        padding: 16px 20px;
+        border-radius: 16px;
+    }
+    
+    .warning p {
+        margin: 0;
+        color: #856404;
+        font-size: 13px;
+    }
+    
+    /* FOOTER */
+    .footer {
+        background: #fafbfc;
+        padding: 24px 32px;
+        text-align: center;
+        border-top: 1px solid #eef2f6;
+    }
+    
+    .footer-text {
+        margin: 0 0 12px;
+        font-size: 12px;
+        color: #94a3b8;
+    }
+    
+    .footer-links {
+        margin: 0;
+    }
+    
+    .footer-link {
+        color: #5e9de6;
+        text-decoration: none;
+        font-size: 12px;
+        margin: 0 12px;
+    }
+    
+    .copyright {
+        margin: 16px 0 0;
+        font-size: 11px;
+        color: #cbd5e1;
+    }
+    
+    /* ALINEACIÓN */
+    .text-right {
+        text-align: right;
+    }
+    .vertical-middle {
+        vertical-align: middle;
+    }
+</style>
+
+</head>
+<body>
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" class="main-table">
+    <tr>
+        <td align="center">
+            <table width="580" cellpadding="0" cellspacing="0" border="0" class="container">
+
+                <!-- HEADER CON LOGO -->
+                <tr>
+                    <td class="header">
+                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                                <td class="vertical-middle">
+                                    <div class="logo-container">
+                                        <img src="cid:logo_angelow" alt="Angelow" width="44" height="44" class="logo-img">
+                                        <span class="logo-text">Angelow</span>
+                                    </div>
+                                </td>
+                                <td align="right" class="vertical-middle">
+                                    <span class="badge-success">ÉXITO</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- HERO BANNER CON LOGO CENTRADO -->
+                <tr>
+                    <td class="hero">
+                        <div class="hero-logo">
+                            <img src="cid:logo_angelow" alt="Angelow" width="90" height="90" class="hero-logo-img">
+                        </div>
+                        <h1 class="hero-title">¡Contraseña actualizada!</h1>
+                        <p class="hero-subtitle">Tu cuenta está más segura que nunca</p>
+                    </td>
+                </tr>
+
+                <!-- CONTENIDO PRINCIPAL -->
+                <tr>
+                    <td class="content">
+                        <p class="greeting">Hola, {{nombre}}</p>
+                        <p class="message">
+                            Tu contraseña de acceso a <strong class="highlight">Angelow</strong> ha sido <strong class="highlight">cambiada exitosamente</strong>.
+                        </p>
+
+                        <div class="success-box">
+                            <div class="success-icon">☑️</div>
+                            <p class="success-text">Cambio realizado correctamente</p>
+                        </div>
+
+                        <div class="button-container">
+                            <a href="{{app_url}}" class="btn-primary">Ir a la tienda →</a>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- ADVERTENCIA -->
+                <tr>
+                    <td class="warning-box">
+                        <div class="warning">
+                            <p>⚠️¿No reconoces este cambio? Contacta inmediatamente a soporte@angelow.com</p>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- FOOTER -->
+                <tr>
+                    <td class="footer">
+                        <p class="footer-text">Angelow — Tu tienda favorita</p>
+                        <p class="footer-links">
+                            <a href="{{app_url}}" class="footer-link">🌐 Tienda</a>
+                            <a href="mailto:angelow.contacto@gmail.com" class="footer-link">📧 Soporte</a>
+                        </p>
+                        <p class="copyright">© {{year}} Angelow. Todos los derechos reservados.</p>
+                    </td>
+                </tr>
+
+            </table>
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>

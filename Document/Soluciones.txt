@@ -1,0 +1,76 @@
+# Angelow E-commerce - Security Fixes Applied
+
+Este documento resume los cambios realizados para mitigar los problemas de seguridad críticos identificados en el informe de análisis.
+
+## Problemas Críticos Solucionados
+
+### 1. Credenciales sensibles hardcodeadas
+- **Archivos afectados**: 
+  - `app/Libraries/EmailService.php` (credenciales SMTP de Gmail)
+  - `app/Controllers/Api/config.php` (credenciales de base de datos)
+  - `app/Controllers/Procesar/db.php` (credenciales de base de datos)
+  - `app/Views/auth/login.php` (Google Client ID)
+  - `config/app.php` (configuración de aplicación)
+- **Solución**: 
+  - Se movieron todas las credenciales y configuraciones sensibles a variables de entorno.
+  - Se creó un archivo `.env.example` con plantilla de configuración.
+  - Se creó un archivo `.env` (ignorado por Git) para almacenar las valores reales.
+  - Se modificó el código para leer estas variables usando `$_ENV` con valores por defecto seguros (o vacíos para credenciales).
+
+### 2. Cookie de "recordar sesión" sin flag Secure
+- **Archivo afectado**: `app/Controllers/Procesar/login.php` (línea 68)
+- **Problema**: La cookie se transmitía sobre HTTP no cifrado.
+- **Solución**: 
+  - Se modificó la llamada a `setcookie()` para usar el flag `$secure` dinámicamente basado en si la conexión es HTTPS.
+
+### 3. Ruta de debug expuesta
+- **Archivo afectado**: `config/routes.php` (línea 15)
+- **Problema**: Ruta `/debug-session` que podía exponer datos de sesión.
+- **Solución**: 
+  - Se comentó la ruta en el archivo de rutas para desactivarla.
+
+### 4. Carga de configuración de entorno no funcional
+- **Archivo afectado**: `config/database.php`
+- **Problema**: La variable `$env` nunca se definía, por lo que siempre se usaban valores hardcodeados.
+- **Solución**:
+  - Se creó un cargador de variables de entorno en `app/Core/Env.php` que se incluye en el front controller (`public/index.php`).
+  - Se cambió `config/database.php` para usar `$_ENV` en lugar de la variable `$env` no definida.
+  - Se actualizó `config/app.php` para usar `$_ENV` también.
+
+## Archivos Creados o Modificados
+
+### Nuevos archivos:
+- `app/Core/Env.php` - Cargador de variables de entorno desde `.env`
+- `.env.example` - Plantilla de variables de entorno (para versionar)
+- `.env` - Variables de entorno reales (ignorado por Git)
+
+### Archivos modificados:
+- `public/index.php` - Se añadió la carga del Env.php
+- `app/Libraries/EmailService.php` - Credenciales SMTP desde variables de entorno
+- `config/database.php` - Credenciales de BD desde variables de entorno
+- `app/Controllers/Api/config.php` - Credenciales de BD desde variables de entorno
+- `app/Controllers/Procesar/db.php` - Credenciales de BD desde variables de entorno
+- `app/Views/auth/login.php` - Google Client ID desde variables de entorno
+- `config/app.php` - Configuración de aplicación desde variables de entorno
+- `app/Controllers/Procesar/login.php` - Flag secure para cookie de remember me
+- `config/routes.php` - Ruta de debug-session comentada
+
+## Próximos pasos recomendados (no implementados en este parche)
+
+Aunque se han mitigado los problemas críticos de exposición de credenciales, quedan otros riesgos de seguridad y arquitectura que deben abordarse:
+
+1. **Autenticación de API REST** - Las rutas en `app/Controllers/Api/` aún no tienen autenticación.
+2. **Protección CSRF** - Los formularios no incluyen tokens CSRF.
+3. **Rate limiting** - No hay límite de intentos en login/registro.
+4. **Unificación de conexiones a BD** - Tres sistemas diferentes de conexión a BD.
+5. **Integración real de pagos** - Actualmente se retornan respuestas hardcodeadas.
+6. **Implementación de pruebas automatizadas**.
+
+Se recomienda abordar estos puntos en futuras iteraciones para asegurar la aplicación.
+
+## Nota de seguridad
+
+El archivo `.env` contiene credenciales sensibles y NUNCA debe ser versionado. Asegúrese de que esté incluido en `.gitignore`.
+
+---
+*Este parche se aplicó el 03/06/2026 para mitigar los riesgos críticos de exposición inmediata de credenciales.*

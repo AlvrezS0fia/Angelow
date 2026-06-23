@@ -1,0 +1,181 @@
+# Cambios generados
+
+Fecha de generación: 2026-06-15 15:05:41 -05:00
+Proyecto: C:\xampp\htdocs\Angelow
+
+## Resumen general
+
+Se generaron cambios en archivos rastreados de Git, cambios ya preparados en staging, cambios sin preparar y una carpeta nueva no rastreada.
+
+- Archivos con cambios en staging: 11
+- Archivos con cambios sin preparar: 15
+- Archivos no rastreados: 1 carpeta/repositorio anidado
+- Cambios rastreados acumulados: 2332 inserciones y 1773 eliminaciones
+
+## Estado completo de Git
+
+```text
+A  .env.example
+M  Readme.md
+A  Soluciones.txt
+ M angelow.sql
+ M app/Controllers/Api/FavoritoController.php
+M  app/Controllers/Api/config.php
+M  app/Controllers/Procesar/db.php
+M  app/Controllers/Procesar/login.php
+MM app/Libraries/EmailService.php
+ M app/Models/Favorito.php
+ M app/Views/admin/inventario.php
+M  app/Views/auth/login.php
+ M app/Views/home/bienvenida.php
+MM app/Views/paginas/perfil.php
+M  config/app.php
+MM config/routes.php
+ M public/assets/css/carrusel.css
+ M public/assets/css/inventario.css
+ M public/assets/js/bienvenida.js
+ M public/assets/js/carrusel.js
+ M public/assets/js/factura.js
+ M public/assets/js/inventario.js
+ M public/assets/js/perfil.js
+?? Angelow/
+```
+
+Leyenda:
+- `A`: archivo nuevo preparado en staging.
+- `M`: archivo modificado preparado en staging.
+- ` M`: archivo modificado sin preparar.
+- `MM`: archivo modificado en staging y sin preparar.
+- `??`: archivo o carpeta no rastreada.
+
+## Cambios en staging
+
+| Archivo | Inserciones | Eliminaciones |
+|---|---:|---:|
+| .env.example | 22 | 0 |
+| Readme.md | 11 | 11 |
+| Soluciones.txt | 76 | 0 |
+| app/Controllers/Api/config.php | 4 | 4 |
+| app/Controllers/Procesar/db.php | 4 | 4 |
+| app/Controllers/Procesar/login.php | 10 | 9 |
+| app/Libraries/EmailService.php | 4 | 4 |
+| app/Views/auth/login.php | 1 | 1 |
+| app/Views/paginas/perfil.php | 1 | 11 |
+| config/app.php | 3 | 3 |
+| config/routes.php | 1 | 1 |
+
+Total staging: 137 inserciones y 48 eliminaciones.
+
+## Cambios sin preparar
+
+| Archivo | Inserciones | Eliminaciones |
+|---|---:|---:|
+| angelow.sql | 4 | 4 |
+| app/Controllers/Api/FavoritoController.php | 29 | 15 |
+| app/Libraries/EmailService.php | 4 | 4 |
+| app/Models/Favorito.php | 8 | 10 |
+| app/Views/admin/inventario.php | 344 | 37 |
+| app/Views/home/bienvenida.php | 4 | 4 |
+| app/Views/paginas/perfil.php | 563 | 564 |
+| config/routes.php | 18 | 4 |
+| public/assets/css/carrusel.css | 344 | 41 |
+| public/assets/css/inventario.css | 98 | 55 |
+| public/assets/js/bienvenida.js | 19 | 13 |
+| public/assets/js/carrusel.js | 274 | 186 |
+| public/assets/js/factura.js | 5 | 5 |
+| public/assets/js/inventario.js | 276 | 270 |
+| public/assets/js/perfil.js | 205 | 513 |
+
+Total sin preparar: 2195 inserciones y 1725 eliminaciones.
+
+## Cambios acumulados por archivo
+
+| Archivo | Inserciones | Eliminaciones |
+|---|---:|---:|
+| .env.example | 22 | 0 |
+| Readme.md | 11 | 11 |
+| Soluciones.txt | 76 | 0 |
+| angelow.sql | 4 | 4 |
+| app/Controllers/Api/FavoritoController.php | 29 | 15 |
+| app/Controllers/Api/config.php | 4 | 4 |
+| app/Controllers/Procesar/db.php | 4 | 4 |
+| app/Controllers/Procesar/login.php | 10 | 9 |
+| app/Libraries/EmailService.php | 8 | 8 |
+| app/Models/Favorito.php | 8 | 10 |
+| app/Views/admin/inventario.php | 344 | 37 |
+| app/Views/auth/login.php | 1 | 1 |
+| app/Views/home/bienvenida.php | 4 | 4 |
+| app/Views/paginas/perfil.php | 564 | 575 |
+| config/app.php | 3 | 3 |
+| config/routes.php | 19 | 5 |
+| public/assets/css/carrusel.css | 344 | 41 |
+| public/assets/css/inventario.css | 98 | 55 |
+| public/assets/js/bienvenida.js | 19 | 13 |
+| public/assets/js/carrusel.js | 274 | 186 |
+| public/assets/js/factura.js | 5 | 5 |
+| public/assets/js/inventario.js | 276 | 270 |
+| public/assets/js/perfil.js | 205 | 513 |
+
+Total acumulado rastreado: 2332 inserciones y 1773 eliminaciones.
+
+## Archivos no rastreados
+
+| Ruta | Estado |
+|---|---|
+| Angelow/ | Carpeta nueva no rastreada. Contiene un repositorio Git anidado; se verificó que no tiene cambios internos pendientes. |
+
+## Descripción de los cambios generados
+
+### Seguridad, entorno y configuración
+
+- `.env.example`: se agregó una plantilla de variables de entorno.
+- `app/Controllers/Api/config.php`: se ajustó la configuración de base de datos para usar variables de entorno.
+- `app/Controllers/Procesar/db.php`: se ajustó la conexión de base de datos para usar variables de entorno.
+- `app/Libraries/EmailService.php`: se actualizaron credenciales SMTP para usar variables de entorno y se conservaron ajustes adicionales.
+- `app/Controllers/Procesar/login.php`: se actualizó la cookie de sesión para usar el flag `Secure` según el protocolo.
+- `app/Views/auth/login.php`: se ajustó la configuración de Google Client ID para usar variables de entorno.
+- `config/app.php`: se actualizaron configuraciones de aplicación para usar variables de entorno.
+- `config/routes.php`: se modificaron rutas y se desactivó la ruta de debug de sesión.
+
+### Documentación y reporte
+
+- `Readme.md`: se actualizaron secciones de documentación.
+- `Soluciones.txt`: se agregó un documento con el resumen de fixes de seguridad aplicados.
+
+### Base de datos
+
+- `angelow.sql`: se realizaron ajustes en la estructura o datos de la base de datos.
+
+### Favoritos
+
+- `app/Controllers/Api/FavoritoController.php`: se modificó la lógica del controlador de favoritos.
+- `app/Models/Favorito.php`: se modificó el modelo de favoritos.
+
+### Inventario
+
+- `app/Views/admin/inventario.php`: se renovó la vista del panel de inventario, incluyendo una modal compacta, controles de stock y exportación a PDF.
+- `public/assets/css/inventario.css`: se ajustaron estilos para la nueva modal compacta y controles de inventario.
+- `public/assets/js/inventario.js`: se reestructuró la lógica de inventario, filtros, búsqueda, edición de stock y exportación a PDF.
+
+### Perfil
+
+- `app/Views/paginas/perfil.php`: se reestructuró la página de perfil.
+- `public/assets/js/perfil.js`: se modificó la lógica de interacciones del perfil.
+
+### Carrusel
+
+- `public/assets/css/carrusel.css`: se actualizaron estilos del carrusel.
+- `public/assets/js/carrusel.js`: se reestructuró la lógica del carrusel.
+
+### Bienvenida
+
+- `app/Views/home/bienvenida.php`: se actualizaron secciones de la vista de bienvenida.
+- `public/assets/js/bienvenida.js`: se ajustó la lógica de la página de bienvenida.
+
+### Factura
+
+- `public/assets/js/factura.js`: se realizaron ajustes menores en la lógica de factura.
+
+### Repositorio anidado
+
+- `Angelow/`: carpeta nueva no rastreada en el repositorio principal. Dentro existe otro repositorio Git que actualmente aparece limpio.
