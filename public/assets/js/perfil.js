@@ -1,67 +1,34 @@
 // ======================== VARIABLES GLOBALES ========================
 let isEditing = false;
-let cart = [];
-let addresses = [];
-let orders = [];
-let cards = [];
+let cart = JSON.parse(localStorage.getItem("angelow_cart")) || [];
+let addresses = JSON.parse(localStorage.getItem("angelow_addresses")) || [];
+let orders = JSON.parse(localStorage.getItem("angelow_orders")) || [];
+let cards = JSON.parse(localStorage.getItem("angelow_cards")) || [];
 let favorites = [];
-let profileData = {};
-let currentUser = window.CURRENT_USER || JSON.parse(localStorage.getItem("angelow_user")) || null;
+let profileData = JSON.parse(localStorage.getItem("angelow_profile")) || {};
+const currentUser = window.CURRENT_USER || JSON.parse(localStorage.getItem("angelow_user")) || null;
 let pendingDeleteId = null;
 let pendingDeleteType = null;
 let editingAddressId = null;
-let userKey = window.USER_KEY || 'guest';
 
-// ======================== FUNCIONES DE ALMACENAMIENTO POR USUARIO ========================
-function getStorageKey(baseKey) {
-    return `angelow_${baseKey}_${userKey}`;
-}
-
-function loadUserData() {
-    try {
-        cart = JSON.parse(localStorage.getItem(getStorageKey('cart'))) || [];
-    } catch(e) { cart = []; }
-    
-    try {
-        addresses = JSON.parse(localStorage.getItem(getStorageKey('addresses'))) || [];
-    } catch(e) { addresses = []; }
-    
-    try {
-        orders = JSON.parse(localStorage.getItem(getStorageKey('orders'))) || [];
-    } catch(e) { orders = []; }
-    
-    try {
-        cards = JSON.parse(localStorage.getItem(getStorageKey('cards'))) || [];
-    } catch(e) { cards = []; }
-    
-    try {
-        profileData = JSON.parse(localStorage.getItem(getStorageKey('profile'))) || {};
-    } catch(e) { profileData = {}; }
-    
-    try {
-        favorites = JSON.parse(localStorage.getItem(getStorageKey('favorites'))) || [];
-    } catch(e) { favorites = []; }
-    
-    console.log('Datos cargados para usuario:', userKey);
-}
-
-function saveUserData() {
-    localStorage.setItem(getStorageKey('cart'), JSON.stringify(cart));
-    localStorage.setItem(getStorageKey('addresses'), JSON.stringify(addresses));
-    localStorage.setItem(getStorageKey('orders'), JSON.stringify(orders));
-    localStorage.setItem(getStorageKey('cards'), JSON.stringify(cards));
-    localStorage.setItem(getStorageKey('profile'), JSON.stringify(profileData));
-    localStorage.setItem(getStorageKey('favorites'), JSON.stringify(favorites));
-    console.log('Datos guardados para usuario:', userKey);
-}
+// STOCK POR PRODUCTO (máximo permitido)
+const STOCK_LIMITS = {
+    1: 10,  // Conjunto Deportivo
+    2: 8,   // Conjunto Size
+    3: 15,  // Body Niño
+    4: 12,  // Jogger Niño
+    5: 6,   // Set Bebé
+    6: 10,  // Conjunto Infantil
+    7: 20,  // Body Negro
+    8: 8    // Set Falda
+};
 
 function getFavoritesStorageKey() {
     if (currentUser?.email) return `angelow_favorites_${currentUser.email}`;
     if (currentUser?.id) return `angelow_favorites_${currentUser.id}`;
-    return `angelow_favorites_${userKey}`;
+    return 'angelow_favorites';
 }
 
-// ======================== PRODUCTOS ========================
 const products = [
     { id: 1, name: "Conjunto Deportivo", category: "Niños", subcategory: "Edición Especial", price: 89990, imgs: [APP_URL + "/assets/imagenes/ninos/Frente Conjunto Deportivo.png"] },
     { id: 2, name: "Conjunto Size", category: "Niños", subcategory: "Popular", price: 79990, imgs: [APP_URL + "/assets/imagenes/ninos/Frente Conjunto Size.png"] },
@@ -194,6 +161,28 @@ function validarNombreTitular(nombre) {
     return { valido: true, mensaje: "Nombre válido", valor: nombreLimpio };
 }
 
+// ======================== FUNCIÓN DE STOCK ========================
+function getStockLimit(productId) {
+    return STOCK_LIMITS[productId] || 99;
+}
+
+function getCurrentQuantityInCart(productId) {
+    const item = cart.find(item => item.id === productId);
+    return item ? (item.quantity || 1) : 0;
+}
+
+function canAddToCart(productId) {
+    const stockLimit = getStockLimit(productId);
+    const currentQty = getCurrentQuantityInCart(productId);
+    return currentQty < stockLimit;
+}
+
+function getRemainingStock(productId) {
+    const stockLimit = getStockLimit(productId);
+    const currentQty = getCurrentQuantityInCart(productId);
+    return Math.max(0, stockLimit - currentQty);
+}
+
 // ======================== ERRORES ========================
 function marcarCampoError(elemento, mensaje) {
     if (!elemento) return;
@@ -244,12 +233,15 @@ function showLogoutConfirm() {
     alertTitle.textContent = 'Cerrar sesión';
     alertMessage.textContent = '¿Estás seguro de que deseas cerrar sesión?';
     alertOverlay.classList.add('active');
+    // Guardar referencia para saber que es logout
+    pendingDeleteType = 'logout';
 }
 
 function confirmLogout() {
     showToast({ title: "Cerrando sesión", message: "Por favor espera...", type: "info" });
     closeAlert();
-    saveUserData();
+    // Guardar favoritos antes de salir
+    localStorage.setItem(getFavoritesStorageKey(), JSON.stringify(favorites));
     setTimeout(function() {
         window.location.href = APP_URL + '/auth/logout';
     }, 500);
@@ -285,6 +277,11 @@ function renderCartProfile() {
         <div class="cart-grid">
             ${cart.map((item, index) => {
                 const mainImg = item.imgs && item.imgs[0] ? item.imgs[0] : APP_URL + "/assets/imagenes/general/logos.png";
+                const stockLimit = getStockLimit(item.id);
+                const currentQty = item.quantity || 1;
+                const canIncrement = currentQty < stockLimit;
+                const remaining = stockLimit - currentQty;
+                
                 return `
                     <div class="cart-item-card">
                         <div class="cart-item-badge">EN CARRITO</div>
@@ -294,14 +291,18 @@ function renderCartProfile() {
                             <div class="cart-item-category">${item.category || item.subcategory || 'Producto'}</div>
                             <div class="cart-item-price">COP $${(item.price || 0).toLocaleString()}</div>
                             <div class="cart-item-size">Talla: ${item.selectedSize || 'N/A'}</div>
+                            <div class="cart-item-stock ${remaining <= 2 ? 'low-stock' : ''}">
+                                Stock disponible: ${remaining} unidad${remaining !== 1 ? 'es' : ''}
+                            </div>
                             <div class="cart-item-actions">
                                 <div class="qty">
-                                    <button onclick="updateQtyProfile(${index}, -1)" ${(item.quantity || 1) <= 1 ? 'disabled' : ''}>−</button>
-                                    <span>${item.quantity || 1}</span>
-                                    <button onclick="updateQtyProfile(${index}, 1)">+</button>
+                                    <button onclick="updateQtyProfile(${index}, -1)" ${currentQty <= 1 ? 'disabled' : ''}>−</button>
+                                    <span>${currentQty}</span>
+                                    <button onclick="updateQtyProfile(${index}, 1)" ${!canIncrement ? 'disabled' : ''}>+</button>
                                 </div>
                                 <button class="btn-remove-cart" onclick="removeFromCartProfile(${index})">ELIMINAR</button>
                             </div>
+                            ${!canIncrement ? '<div class="stock-warning">⚠️ Stock máximo alcanzado</div>' : ''}
                         </div>
                     </div>
                 `;
@@ -318,16 +319,30 @@ function renderCartProfile() {
 }
 
 function updateQtyProfile(index, delta) {
-    const newQty = (cart[index].quantity || 1) + delta;
+    const item = cart[index];
+    if (!item) return;
+    
+    const newQty = (item.quantity || 1) + delta;
+    const stockLimit = getStockLimit(item.id);
+    
     if (newQty < 1) return;
+    if (newQty > stockLimit) {
+        showToast({ 
+            title: "Stock insuficiente", 
+            message: `Solo hay ${stockLimit} unidades disponibles de este producto`, 
+            type: "error" 
+        });
+        return;
+    }
+    
     cart[index].quantity = newQty;
-    saveUserData();
+    localStorage.setItem("angelow_cart", JSON.stringify(cart));
     renderCartProfile();
 }
 
 function removeFromCartProfile(index) {
     cart.splice(index, 1);
-    saveUserData();
+    localStorage.setItem("angelow_cart", JSON.stringify(cart));
     renderCartProfile();
     showToast({message: "Producto eliminado del carrito", type: "info"});
 }
@@ -389,7 +404,7 @@ function saveProfile() {
         return false;
     }
 
-    profileData = {
+    const profileData = {
         nombre: nombreValid.valor,
         apellido: apellidoValid.valor,
         cedula: cedulaValid.valor,
@@ -397,13 +412,14 @@ function saveProfile() {
         fechaNacimiento: fechaValid.valor,
         genero: generoValid.valor
     };
-    saveUserData();
+    localStorage.setItem("angelow_profile", JSON.stringify(profileData));
     
     showToast({ title: "¡Cambios guardados!", message: "Tu información ha sido actualizada correctamente", type: "success" });
     return true;
 }
 
 function loadProfile() {
+    const profileData = JSON.parse(localStorage.getItem("angelow_profile")) || {};
     if (profileData.nombre) document.getElementById('nombre').value = profileData.nombre;
     if (profileData.apellido) document.getElementById('apellido').value = profileData.apellido;
     if (profileData.cedula) document.getElementById('cedula').value = profileData.cedula;
@@ -522,7 +538,7 @@ function saveAddress() {
                 neighborhood: barrio
             };
             
-            saveUserData();
+            localStorage.setItem("angelow_addresses", JSON.stringify(addresses));
             loadAddresses();
             cancelAddressForm();
             showToast({title: "¡Dirección actualizada!", message: "Tu dirección ha sido actualizada correctamente", type: "success"});
@@ -546,7 +562,7 @@ function saveAddress() {
     };
     
     addresses.push(newAddress); 
-    saveUserData();
+    localStorage.setItem("angelow_addresses", JSON.stringify(addresses)); 
     loadAddresses(); 
     cancelAddressForm(); 
     showToast({title: "¡Dirección agregada!", message: "Tu dirección ha sido guardada correctamente", type: "success"});
@@ -571,7 +587,7 @@ function editAddress(id) {
 
 function setDefaultAddress(id) { 
     addresses.forEach(a => a.isDefault = a.id === id); 
-    saveUserData();
+    localStorage.setItem("angelow_addresses", JSON.stringify(addresses)); 
     loadAddresses(); 
     showToast({title: "Dirección predeterminada", message: "La dirección ha sido establecida como predeterminada", type: "success"}); 
 }
@@ -587,7 +603,7 @@ function deleteAddressConfirmed(id) {
     if (addresses.length > 0 && !addresses.some(a => a.isDefault)) {
         addresses[0].isDefault = true;
     }
-    saveUserData();
+    localStorage.setItem("angelow_addresses", JSON.stringify(addresses)); 
     loadAddresses(); 
     showToast({title: "Dirección eliminada", message: "La dirección ha sido eliminada correctamente", type: "success"}); 
 }
@@ -598,6 +614,9 @@ function loadOrders() { renderOrders(); }
 function renderOrders() { 
     const ordersList = document.getElementById('ordersList'); 
     const emptyState = document.getElementById('emptyOrdersState'); 
+    
+    if (!ordersList) return;
+    
     if (orders.length === 0) { 
         if(emptyState) emptyState.style.display = 'block'; 
         if(ordersList) ordersList.style.display = 'none'; 
@@ -605,6 +624,7 @@ function renderOrders() {
     } 
     if(emptyState) emptyState.style.display = 'none'; 
     if(ordersList) ordersList.style.display = 'flex'; 
+    
     ordersList.innerHTML = orders.map(order => `
         <div class="order-card">
             <div class="order-header">
@@ -627,12 +647,13 @@ function renderOrders() {
                 </div>
             </div>
             <div class="order-products">
-                ${order.products && order.products.length > 0 ? order.products.map(p => `
+                ${order.products && order.products.length > 0 ? order.products.slice(0, 2).map(p => `
                     <div class="order-product-item">
                         <span>${p.nombre || p.name}</span>
                         <span>${p.cantidad || p.quantity || 1} x COP $${(p.precioUnitario || p.precio || 0).toLocaleString()}</span>
                     </div>
                 `).join('') : ''}
+                ${order.products && order.products.length > 2 ? `<div class="order-product-item" style="color:var(--primary); font-weight:600;">+ ${order.products.length - 2} producto(s) más</div>` : ''}
             </div>
             <div class="order-actions">
                 <button class="primary-btn" onclick="viewOrderDetails('${order.id || order.orderNumber}')">VER DETALLES</button>
@@ -641,7 +662,126 @@ function renderOrders() {
     `).join(''); 
 }
 
-function viewOrderDetails(orderId) { showToast({title: "Detalles del pedido", message: `Mostrando detalles del pedido #${orderId}`, type: "info"}); }
+function viewOrderDetails(orderId) { 
+    const order = orders.find(o => (o.id || o.orderNumber) == orderId);
+    if (!order) {
+        showToast({title: "Error", message: "Pedido no encontrado", type: "error"});
+        return;
+    }
+    
+    const existingModal = document.getElementById('orderModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const totalItems = order.products ? order.products.reduce((sum, p) => sum + (p.cantidad || p.quantity || 1), 0) : (order.items || 0);
+    
+    const modalHTML = `
+        <div class="order-modal-overlay" id="orderModal">
+            <div class="order-modal">
+                <button class="order-modal-close" onclick="closeOrderModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                
+                <div class="order-modal-header">
+                    <div class="order-modal-header-left">
+                        <div class="order-modal-badge">Detalle del pedido</div>
+                        <h2>Pedido #${order.id || order.orderNumber}</h2>
+                    </div>
+                    <div class="order-modal-status ${order.status === 'delivered' ? 'status-delivered' : 'status-processing'}">
+                        ${order.status === 'delivered' ? 'Entregado' : 'En proceso'}
+                    </div>
+                </div>
+                
+                <div class="order-modal-info-grid">
+                    <div class="order-modal-info-item">
+                        <span class="order-modal-info-label">Fecha del pedido</span>
+                        <span class="order-modal-info-value">${new Date(order.date).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    </div>
+                    <div class="order-modal-info-item">
+                        <span class="order-modal-info-label">Total</span>
+                        <span class="order-modal-info-value">COP $${order.total.toLocaleString()}</span>
+                    </div>
+                    <div class="order-modal-info-item">
+                        <span class="order-modal-info-label">Artículos</span>
+                        <span class="order-modal-info-value">${totalItems}</span>
+                    </div>
+                </div>
+                
+                <div class="order-modal-section">
+                    <h3 class="order-modal-section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        </svg>
+                        Productos
+                    </h3>
+                    <div class="order-modal-products">
+                        ${order.products && order.products.length > 0 ? order.products.map(p => `
+                            <div class="order-modal-product">
+                                <div class="order-modal-product-info">
+                                    <div class="order-modal-product-name">${p.nombre || p.name}</div>
+                                    <div class="order-modal-product-meta">
+                                        <span>Cantidad: ${p.cantidad || p.quantity || 1}</span>
+                                        <span>COP $${(p.precioUnitario || p.precio || 0).toLocaleString()}</span>
+                                        ${p.talla ? `<span>Talla: ${p.talla}</span>` : ''}
+                                        ${p.color ? `<span>Color: ${p.color}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="order-modal-product-total">
+                                    COP $${((p.precioUnitario || p.precio || 0) * (p.cantidad || p.quantity || 1)).toLocaleString()}
+                                </div>
+                            </div>
+                        `).join('') : '<p class="order-modal-empty">No hay productos disponibles</p>'}
+                    </div>
+                </div>
+                
+                ${order.address ? `
+                <div class="order-modal-section">
+                    <h3 class="order-modal-section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        Dirección de envío
+                    </h3>
+                    <div class="order-modal-address">
+                        <p class="order-modal-address-name">${order.address.recipient || order.address.destinatario || ''}</p>
+                        <p class="order-modal-address-line">${order.address.street || order.address.calle || ''}${order.address.additionalInfo ? ', ' + order.address.additionalInfo : ''}</p>
+                        <p class="order-modal-address-line">${order.address.neighborhood || order.address.barrio || ''}, ${order.address.municipality || order.address.municipio || ''}</p>
+                        <p class="order-modal-address-line">${order.address.department || ''}, ${order.address.country || 'Colombia'}</p>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div class="order-modal-footer">
+                    <button class="order-modal-btn-primary" onclick="closeOrderModal()">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => {
+        const modal = document.getElementById('orderModal');
+        if (modal) modal.classList.add('active');
+    }, 10);
+}
+
+function closeOrderModal() {
+    const modal = document.getElementById('orderModal');
+    if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => {
+            modal.remove();
+            document.body.style.overflow = '';
+        }, 300);
+    }
+}
 
 // ======================== TARJETAS ========================
 function loadCards() { renderCards(); }
@@ -772,7 +912,7 @@ function saveCard() {
     }; 
     
     cards.push(newCard); 
-    saveUserData();
+    localStorage.setItem("angelow_cards", JSON.stringify(cards)); 
     loadCards(); 
     cancelCardForm(); 
     showToast({title: "¡Tarjeta guardada!", message: "Tu método de pago ha sido registrado correctamente", type: "success"}); 
@@ -819,20 +959,24 @@ function deleteCardConfirmed(id) {
     if (cards.length > 0 && !cards.some(c => c.isDefault)) {
         cards[0].isDefault = true;
     }
-    saveUserData();
+    localStorage.setItem("angelow_cards", JSON.stringify(cards)); 
     loadCards(); 
     showToast({title: "Tarjeta eliminada", message: "La tarjeta ha sido eliminada correctamente", type: "success"}); 
 }
 
 function setDefaultCard(id) { 
     cards.forEach(c => c.isDefault = c.id === id); 
-    saveUserData();
+    localStorage.setItem("angelow_cards", JSON.stringify(cards)); 
     loadCards(); 
     showToast({title: "Tarjeta predeterminada", message: "La tarjeta ha sido establecida como predeterminada", type: "success"}); 
 }
 
 // ======================== FAVORITOS ========================
-function loadFavorites() { renderFavorites(); }
+function loadFavorites() { 
+    const savedIds = JSON.parse(localStorage.getItem(getFavoritesStorageKey()) || localStorage.getItem("angelow_favorites") || "[]"); 
+    favorites = products.filter(p => savedIds.includes(p.id)); 
+    renderFavorites(); 
+}
 
 function renderFavorites() { 
     const grid = document.getElementById('favoritesGrid'); 
@@ -847,6 +991,7 @@ function renderFavorites() {
     grid.innerHTML = favorites.map(fav => `
         <div class="favorite-item">
             <div class="favorite-badge">FAVORITO</div>
+            <img src="${fav.imgs[0]}" alt="${fav.name}" class="favorite-image">
             <div class="favorite-info">
                 <div class="favorite-title">${fav.name}</div>
                 <div class="favorite-price">COP $${fav.price.toLocaleString()}</div>
@@ -866,8 +1011,8 @@ function showDeleteFavoriteAlert(id) {
 }
 
 function deleteFavoriteConfirmed(id) { 
-    favorites = favorites.filter(f => f.id !== id);
-    saveUserData();
+    const favIds = favorites.filter(f => f.id !== id).map(f => f.id); 
+    localStorage.setItem(getFavoritesStorageKey(), JSON.stringify(favIds)); 
     loadFavorites(); 
     showToast({title: "Eliminado de favoritos", message: "El producto ha sido eliminado de tus favoritos", type: "success"}); 
 }
@@ -876,8 +1021,28 @@ function addToCartFromFavorites(id) {
     const fav = favorites.find(f => f.id === id); 
     if (!fav) return; 
     
+    const stockLimit = getStockLimit(id);
+    const currentQty = getCurrentQuantityInCart(id);
+    
+    if (currentQty >= stockLimit) {
+        showToast({ 
+            title: "Stock insuficiente", 
+            message: `Solo hay ${stockLimit} unidades disponibles de este producto`, 
+            type: "error" 
+        });
+        return;
+    }
+    
     const existing = cart.find(item => item.id === fav.id && item.selectedSize === (fav.sizes?.[0] || 'M'));
     if (existing) {
+        if (existing.quantity >= stockLimit) {
+            showToast({ 
+                title: "Stock insuficiente", 
+                message: `Solo hay ${stockLimit} unidades disponibles de este producto`, 
+                type: "error" 
+            });
+            return;
+        }
         existing.quantity = (existing.quantity || 1) + 1;
     } else {
         const cartItem = { 
@@ -889,7 +1054,7 @@ function addToCartFromFavorites(id) {
         cart.push(cartItem);
     }
     
-    saveUserData();
+    localStorage.setItem("angelow_cart", JSON.stringify(cart)); 
     renderCartProfile(); 
     showToast({title: "¡Añadido al carrito!", message: `${fav.name} ha sido añadido a tu carrito`, type: "success"}); 
 }
@@ -904,7 +1069,7 @@ function showAlert(title, message) {
 function closeAlert() { 
     document.getElementById('alertOverlay').classList.remove('active'); 
     pendingDeleteId = null; 
-    pendingDeleteType = null; 
+    // No resetear pendingDeleteType aquí para permitir logout
 }
 
 function confirmDelete() { 
@@ -924,12 +1089,21 @@ function confirmDelete() {
 }
 
 // ======================== AUTENTICACIÓN ========================
-function refreshSecurity() { showToast({title: "Actualizado", message: "La información de seguridad se ha actualizado", type: "success"}); }
-function definePassword() { showToast({title: "Definir contraseña", message: "Funcionalidad en desarrollo", type: "info"}); }
-function recoverPassword() { showToast({title: "Recuperar contraseña", message: "Funcionalidad en desarrollo", type: "info"}); }
-function viewSessions() { showToast({title: "Sesiones activas", message: "Actualmente tienes 1 sesión activa", type: "info"}); }
-function closeAllSessions() { showToast({title: "Sesiones cerradas", message: "Todas las sesiones han sido cerradas", type: "success"}); }
-function enableTwoFactor() { showToast({title: "Verificación en dos pasos", message: "Funcionalidad en desarrollo", type: "info"}); }
+function definePassword() { 
+    showToast({title: "Definir contraseña", message: "Funcionalidad en desarrollo", type: "info"}); 
+}
+
+function recoverPassword() { 
+    showToast({title: "Recuperar contraseña", message: "Funcionalidad en desarrollo", type: "info"}); 
+}
+
+function viewSessions() { 
+    showToast({title: "Sesiones activas", message: "Actualmente tienes 1 sesión activa", type: "info"}); 
+}
+
+function enableTwoFactor() { 
+    showToast({title: "Verificación en dos pasos", message: "Funcionalidad en desarrollo", type: "info"}); 
+}
 
 // ======================== MENÚ LATERAL ========================
 function initSidebar() { 
@@ -952,7 +1126,6 @@ function initSidebar() {
 
 // ======================== INICIALIZACIÓN ========================
 document.addEventListener('DOMContentLoaded', function() { 
-    loadUserData();
     loadProfile();
     loadAddresses(); 
     loadOrders(); 
@@ -960,5 +1133,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadFavorites(); 
     initSidebar(); 
     document.getElementById('currentYear').textContent = new Date().getFullYear();
+    
+    // Renderizar carrito en la sección
     renderCartProfile();
 });

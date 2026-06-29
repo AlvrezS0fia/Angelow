@@ -5,7 +5,6 @@ if (!isset($_SESSION['user'])) {
     exit();
 }
 $user = $_SESSION['user'];
-$userKey = $user['email'] ?? $user['id'] ?? 'guest';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -14,12 +13,11 @@ $userKey = $user['email'] ?? $user['id'] ?? 'guest';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ANGELOW - Mi Perfil</title>
     <link rel="shortcut icon" href="<?= APP_URL ?>/assets/imagenes/general/favico.ico" type="image/x-icon">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>const APP_URL = '<?= APP_URL ?>';</script>
     <script>const CURRENT_USER = <?= json_encode($user) ?>;</script>
-    <script>const USER_KEY = '<?= $userKey ?>';</script>
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/perfil.css">
 </head>
 <body>
@@ -79,11 +77,11 @@ $userKey = $user['email'] ?? $user['id'] ?? 'guest';
         <div class="menu-item" data-section="metodosPago">
             <span>Tarjetas de crédito</span>
         </div>
-        <div class="menu-item" data-section="carrito">
-            <span>Mi Carrito</span>
-        </div>
         <div class="menu-item" data-section="favoritos">
             <span>Mis Favoritos</span>
+        </div>
+        <div class="menu-item" data-section="carrito">
+            <span>Mi Carrito</span>
         </div>
         <div class="menu-item" data-section="autenticacion">
             <span>Autenticación</span>
@@ -197,15 +195,8 @@ $userKey = $user['email'] ?? $user['id'] ?? 'guest';
                                     <option value="Sabaneta">Sabaneta</option>
                                     <option value="La Estrella">La Estrella</option>
                                     <option value="Caldas">Caldas</option>
-                                    <option value="Copacabana">Copacabana</option>
-                                    <option value="Girardota">Girardota</option>
-                                    <option value="Barbosa">Barbosa</option>
                                     <option value="Rionegro">Rionegro</option>
-                                    <option value="Marinilla">Marinilla</option>
                                     <option value="El Carmen de Viboral">El Carmen de Viboral</option>
-                                    <option value="Guarne">Guarne</option>
-                                    <option value="La Ceja">La Ceja</option>
-                                    <option value="Santa Bárbara">Santa Bárbara</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -328,15 +319,8 @@ $userKey = $user['email'] ?? $user['id'] ?? 'guest';
                                             <option value="Sabaneta">Sabaneta</option>
                                             <option value="La Estrella">La Estrella</option>
                                             <option value="Caldas">Caldas</option>
-                                            <option value="Copacabana">Copacabana</option>
-                                            <option value="Girardota">Girardota</option>
-                                            <option value="Barbosa">Barbosa</option>
                                             <option value="Rionegro">Rionegro</option>
-                                            <option value="Marinilla">Marinilla</option>
                                             <option value="El Carmen de Viboral">El Carmen de Viboral</option>
-                                            <option value="Guarne">Guarne</option>
-                                            <option value="La Ceja">La Ceja</option>
-                                            <option value="Santa Bárbara">Santa Bárbara</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
@@ -395,18 +379,6 @@ $userKey = $user['email'] ?? $user['id'] ?? 'guest';
             </div>
         </div>
 
-        <!-- CARRITO -->
-        <div class="profile-section" id="carrito">
-            <div class="profile-header">
-                <h1 class="profile-title">Mi Carrito</h1>
-            </div>
-            <div class="profile-card">
-                <div id="cartItemsProfile">
-                    <!-- Renderizado por JavaScript -->
-                </div>
-            </div>
-        </div>
-
         <!-- FAVORITOS -->
         <div class="profile-section" id="favoritos">
             <div class="profile-header">
@@ -427,11 +399,22 @@ $userKey = $user['email'] ?? $user['id'] ?? 'guest';
             </div>
         </div>
 
-        <!-- AUTENTICACIÓN -->
+        <!-- CARRITO -->
+        <div class="profile-section" id="carrito">
+            <div class="profile-header">
+                <h1 class="profile-title">Mi Carrito</h1>
+            </div>
+            <div class="profile-card">
+                <div id="cartItemsProfile">
+                    <!-- Renderizado por JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- AUTENTICACIÓN (AL FINAL) -->
         <div class="profile-section" id="autenticacion">
             <div class="profile-header">
                 <h1 class="profile-title">Autenticación</h1>
-                <button class="secondary-btn" onclick="refreshSecurity()">ACTUALIZAR</button>
             </div>
             <div class="profile-card">
                 <div class="security-section">
