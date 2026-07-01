@@ -51,12 +51,17 @@ error_log(print_r($_SESSION, true));
                     <div style="font-size: 12px; color: var(--text-secondary);">Administrador</div>
                 </div>
             </div>
-            <div class="icon-btn" onclick="window.location.href='<?= APP_URL ?>/'">
-                <img src="<?= APP_URL ?>/assets/imagenes/general/volver.png" alt="Inicio" style="width:24px;">  
-            </div>
+            <!-- BOTÓN VOLVER -->
+            <a href="<?= APP_URL ?>/" class="btn-back-header">
+                <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Volver
+            </a>
             <button class="logout-btn" onclick="window.location.href='<?= APP_URL ?>/auth/logout'">Salir</button>
         </div>
     </header>
+
 
     <!-- Contenido Principal -->
     <div class="admin-container">
@@ -122,6 +127,16 @@ error_log(print_r($_SESSION, true));
                             <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/ganancia.png" alt="Ganancias"></div>
                         </div>
                         <span class="metric-change positive" id="revenueChange">+0% este mes</span>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div>
+                                <div class="metric-value" id="totalUsers">0</div>
+                                <div class="metric-label">Usuarios Registrados</div>
+                            </div>
+                            <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/cliente.png" alt="Usuarios"></div>
+                        </div>
+                        <span class="metric-change positive" id="usersChange">+0 este mes</span>
                     </div>
                 </div>
 
@@ -222,7 +237,7 @@ error_log(print_r($_SESSION, true));
                 <div class="section-header">
                     <h2 class="section-title">Gestión de Pedidos</h2>
                     <div class="action-buttons" style="gap: 12px;">
-                        <button id="exportOrdersBtn" class="btn btn-secondary">Exportar a PDF</button>
+                        <button id="exportOrdersBtn" class="btn btn-secondary" onclick="exportOrdersToPDF()">Exportar a PDF</button>
                         <button id="refreshOrdersBtn" class="btn btn-primary" onclick="refreshOrdersRealTime()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="23 4 23 10 17 10"></polyline>
@@ -271,10 +286,23 @@ error_log(print_r($_SESSION, true));
             <section id="customers-section" class="admin-section" style="display: none;">
                 <div class="section-header">
                     <h2 class="section-title">Gestión de Clientes</h2>
-                    <button id="addCustomerBtn" class="btn btn-primary">+ Nuevo Cliente</button>
+                    <div class="action-buttons" style="gap: 12px;">
+                        <button id="exportCustomersBtn" class="btn btn-secondary" onclick="exportarClientesPDF()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Exportar PDF
+                        </button>
+                        <button id="addCustomerBtn" class="btn btn-primary">+ Nuevo Cliente</button>
+                    </div>
+                </div>
+                <div style="margin-bottom: 16px; max-width: 300px;">
+                    <input type="text" id="customerSearch" class="search-input" placeholder="Buscar por nombre o email...">
                 </div>
                 <table class="admin-table">
-                    <thead><tr><th>Cliente</th><th>Email</th><th>Teléfono</th><th>Pedidos</th><th>Total Gastado</th><th>Acciones</th></tr></thead>
+                    <thead><tr><th>Cliente</th><th>Email</th><th>Teléfono</th><th>Fecha Registro</th><th>Rol</th><th>Acciones</th></tr></thead>
                     <tbody id="customersTable"></tbody>
                 </table>
             </section>

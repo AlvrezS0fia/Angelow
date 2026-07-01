@@ -16,6 +16,7 @@ $user = $_SESSION['user'];
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/compra.css">
   <script>const APP_URL = '<?= APP_URL ?>';</script>
+  <script>window.CURRENT_USER = <?= json_encode($user ?? null) ?>;</script>
   <script src="<?= APP_URL ?>/assets/js/compra.js" defer></script>
 </head>
 <body>

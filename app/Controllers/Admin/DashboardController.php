@@ -2,6 +2,7 @@
 namespace App\Controllers\Admin;
 
 use App\Core\Controller;
+use App\Core\Database;
 
 class DashboardController extends Controller
 {
@@ -12,11 +13,21 @@ class DashboardController extends Controller
             return;
         }
 
+        $db = Database::getInstance()->getConnection();
+
+        $totalPedidos = (int) $db->query("SELECT COUNT(*) as c FROM pedidos")->fetch()['c'];
+        $pendientes = (int) $db->query("SELECT COUNT(*) as c FROM pedidos WHERE estado IN ('pendiente','confirmado','procesando','listo')")->fetch()['c'];
+        $favoritos = (int) $db->query("SELECT COUNT(*) as c FROM favoritos")->fetch()['c'];
+        $ganancias = (float) $db->query("SELECT COALESCE(SUM(total), 0) as g FROM pedidos WHERE estado = 'entregado'")->fetch()['g'];
+
+        $totalUsuarios = (int) $db->query("SELECT COUNT(*) as c FROM usuarios")->fetch()['c'];
+
         $data = [
-            'totalPedidos' => 12,
-            'pendientes' => 3,
-            'favoritos' => 0,
-            'ganancias' => 628000,
+            'totalPedidos' => $totalPedidos,
+            'pendientes' => $pendientes,
+            'favoritos' => $favoritos,
+            'ganancias' => $ganancias,
+            'totalUsuarios' => $totalUsuarios,
             'nombreAdmin' => $_SESSION['user']['nombre'] ?? 'Administrador'
         ];
 

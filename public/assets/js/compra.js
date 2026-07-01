@@ -240,7 +240,7 @@ function renderizarResumen() {
             <div class="empty-cart" style="text-align: center; padding: 40px 20px; color: #6b7280;">
                 <p style="font-size: 18px; margin-bottom: 10px;">No hay productos en el carrito</p>
                 <p style="font-size: 14px;">Agrega productos desde la tienda</p>
-                <a href="${window.APP_URL || '/'}" style="display: inline-block; margin-top: 15px; padding: 10px 24px; background: #1e3a8a; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">Ir a la tienda</a>
+                <a href="${APP_URL || '/'}" style="display: inline-block; margin-top: 15px; padding: 10px 24px; background: #1e3a8a; color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">Ir a la tienda</a>
             </div>
         `;
         actualizarTotales();
@@ -259,8 +259,8 @@ function renderizarResumen() {
         if (imagen) {
             if (imagen.startsWith('http://') || imagen.startsWith('https://')) {
                 imgSrc = imagen;
-            } else if (window.APP_URL) {
-                imgSrc = window.APP_URL + '/' + imagen.replace(/^\.?\//, '');
+            } else if (APP_URL) {
+                imgSrc = APP_URL + '/' + imagen.replace(/^\.?\//, '');
             } else {
                 imgSrc = '/' + imagen.replace(/^\.?\//, '');
             }
@@ -418,7 +418,39 @@ function generarNumeroFactura() {
 }
 
 // ======================== GUARDAR PEDIDO ========================
-function guardarPedido(facturaData) {
+async function guardarPedido(facturaData) {
+    const usuarioId = window.CURRENT_USER?.id || window.APP_USER_ID || 0;
+
+    const pedidoData = {
+        usuario_id: usuarioId,
+        numero_pedido: facturaData.numero,
+        nombre_cliente: facturaData.cliente.nombre,
+        email_cliente: facturaData.cliente.email,
+        telefono_cliente: facturaData.cliente.telefono,
+        cedula_cliente: facturaData.cliente.cedula,
+        direccion_envio: facturaData.envio.direccion,
+        barrio: facturaData.envio.direccion.split(',')[1]?.trim() || '',
+        ciudad: facturaData.envio.direccion.split(',')[2]?.trim() || 'Bogotá',
+        departamento: facturaData.envio.direccion.split(',')[3]?.trim() || 'Cundinamarca',
+        destinatario: facturaData.envio.destinatario,
+        informacion_adicional: facturaData.infoAdicional,
+        metodo_pago: facturaData.pago.metodo === 'Mercado Pago' ? 'mercadopago' : 'pse',
+        metodo_envio: facturaData.envio.metodo.includes('Express') ? 'express' : 'normal',
+        costo_envio: facturaData.envio.costo,
+        subtotal: facturaData.subtotal,
+        descuento: facturaData.descuento,
+        total: facturaData.total,
+        productos: facturaData.productos.map(p => ({
+            producto_id: 0,
+            nombre: p.nombre,
+            cantidad: p.cantidad,
+            precioUnitario: p.precioUnitario,
+            talla: p.talla,
+            color: p.color || 'N/A',
+            imagen: p.imagen || ''
+        }))
+    };
+
     let orders = JSON.parse(localStorage.getItem('angelow_orders')) || [];
     
     const nuevoPedido = {
@@ -450,12 +482,32 @@ function guardarPedido(facturaData) {
     sessionStorage.setItem('ultimaFactura', JSON.stringify(facturaData));
     sessionStorage.setItem('nuevoPedido', JSON.stringify(nuevoPedido));
     ultimaFactura = facturaData;
+
+    try {
+        const res = await fetch(`${APP_URL}/procesar-compra`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(pedidoData)
+        });
+        const result = await res.json();
+        if (result.success) {
+            nuevoPedido.pedido_id = result.pedido_id;
+            nuevoPedido.numero_pedido = result.numero_pedido;
+            showToast('Pedido guardado en el sistema', 'success');
+        }
+    } catch (e) {
+        console.error('Error al guardar pedido en BD:', e);
+        showToast('Pedido guardado localmente (sin conexión)', 'warning');
+    }
     
     return nuevoPedido;
 }
 
 // ======================== COMPLETAR COMPRA ========================
-window.completePurchase = function() {
+window.completePurchase = async function() {
     if (!document.getElementById('acceptTerms')?.checked) {
         showToast('Debes aceptar los terminos y condiciones', 'error');
         document.getElementById('acceptTerms').classList.add('error');
@@ -534,9 +586,23 @@ window.completePurchase = function() {
         total: total,
         infoAdicional: infoAdicional
     };
-    
-    guardarPedido(facturaData);
-    sessionStorage.setItem('facturaData', JSON.stringify(facturaData));
+
+    const nuevoPedido = await guardarPedido(facturaData);
+    sessionStorage.setItem('ultimaFactura', JSON.stringify(facturaData));
+    sessionStorage.setItem('nuevoPedido', JSON.stringify(nuevoPedido));
+
+    if (nuevoPedido.pedido_id) {
+        facturaData.numero = nuevoPedido.numero_pedido || facturaData.numero;
+        facturaData.pedido_id = nuevoPedido.pedido_id;
+        let orders = JSON.parse(localStorage.getItem('angelow_orders')) || [];
+        const index = orders.findIndex(o => o.numero === nuevoPedido.id);
+        if (index !== -1) {
+            orders[index].pedido_id = nuevoPedido.pedido_id;
+            orders[index].numero_pedido = nuevoPedido.numero_pedido;
+            orders[index].id = nuevoPedido.numero_pedido || nuevoPedido.id;
+            localStorage.setItem('angelow_orders', JSON.stringify(orders));
+        }
+    }
 
     carrito = [];
     localStorage.removeItem('angelow_cart');
@@ -546,8 +612,10 @@ window.completePurchase = function() {
     descuentoAplicado = 0;
     codigoDescuento = "";
 
+    const numeroFinal = facturaData.numero;
+    sessionStorage.setItem('facturaData', JSON.stringify(facturaData));
     mostrarFactura(facturaData);
-    showToast(`Compra completada. Pedido #${numeroFactura}`, 'success');
+    showToast(`Compra completada. Pedido #${numeroFinal}`, 'success');
 };
 
 // ======================== MOSTRAR FACTURA ========================
@@ -559,7 +627,7 @@ function mostrarFactura(data) {
     const container = document.querySelector('.checkout-container');
     if (!container) return;
     
-    const logoUrl = window.APP_URL + '/assets/imagenes/general/logos.png';
+    const logoUrl = APP_URL + '/assets/imagenes/general/logos.png';
     
     const facturaHTML = `
         <div id="facturaContainer" style="max-width: 900px; margin: 0 auto; background: #ffffff; border-radius: 20px; box-shadow: 0 20px 60px rgba(30, 58, 138, 0.15); overflow: hidden; padding: 50px; border: 1px solid #e8edf5;">
@@ -670,10 +738,10 @@ function mostrarFactura(data) {
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
                     Descargar PDF
                 </button>
-                <button onclick="window.location.href='${window.APP_URL || '/'}/perfil'" style="background: #e8edf5; color: #1e3a8a; border: 2px solid #1e3a8a; padding: 15px 40px; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.3s ease;">
+                <button onclick="window.location.href='${APP_URL || '/'}/perfil'" style="background: #e8edf5; color: #1e3a8a; border: 2px solid #1e3a8a; padding: 15px 40px; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.3s ease;">
                     Ver Mis Pedidos
                 </button>
-                <button onclick="window.location.href='${window.APP_URL || '/'}'" style="background: #10b981; color: white; border: none; padding: 15px 40px; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35); transition: all 0.3s ease;">
+                <button onclick="window.location.href='${APP_URL || '/'}'" style="background: #10b981; color: white; border: none; padding: 15px 40px; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35); transition: all 0.3s ease;">
                     Volver a la Tienda
                 </button>
             </div>

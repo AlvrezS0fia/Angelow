@@ -75,6 +75,12 @@ class UsuarioModel {
         return $stmt->fetchAll();
     }
 
+    public function buscarPorNombre($nombre) {
+        $stmt = $this->db->prepare("SELECT id, nombre, email, telefono, rol, fecha_registro FROM usuarios WHERE nombre LIKE :nombre OR email LIKE :nombre ORDER BY id DESC");
+        $stmt->execute(['nombre' => '%' . $nombre . '%']);
+        return $stmt->fetchAll();
+    }
+
     public function updateRol($id, $rol) {
         $stmt = $this->db->prepare("UPDATE usuarios SET rol = :rol WHERE id = :id");
         return $stmt->execute(['rol' => $rol, 'id' => $id]);

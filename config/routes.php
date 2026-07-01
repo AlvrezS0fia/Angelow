@@ -65,4 +65,15 @@ return [
 
      ['method' => 'GET',    'path' => '/api/inventario',         'controller' => 'Api\\StockController', 'action' => 'index'],
      ['method' => 'POST',   'path' => '/api/inventario',         'controller' => 'Api\\StockController', 'action' => 'update'],
- ];
+     ['method' => 'GET',    'path' => '/api/clientes',           'controller' => 'Admin\\ClientesController', 'action' => 'index'],
+     ['method' => 'POST',   'path' => '/api/clientes/buscar',    'controller' => 'Admin\\ClientesController', 'action' => 'buscar'],
+     ['method' => 'POST',   'path' => '/api/clientes/rol',       'controller' => 'Admin\\ClientesController', 'action' => 'cambiarRol'],
+     ['method' => 'GET',    'path' => '/api/pedidos',             'controller' => 'Admin\\PedidosController', 'action' => 'obtenerPedidos'],
+     ['method' => 'POST',   'path' => '/api/pedidos/estado',     'controller' => 'Admin\\PedidosController', 'action' => 'updateStatus'],
+     ['method' => 'GET',    'path' => '/api/mis-pedidos',          'controller' => 'Cliente\\PedidosController', 'action' => 'index'],
+     ['method' => 'GET',    'path' => '/api/mis-pedidos/:id',      'controller' => 'Cliente\\PedidosController', 'action' => 'detalle'],
+     ['method' => 'POST',   'path' => '/api/mis-pedidos/:id/cancelar', 'controller' => 'Cliente\\PedidosController', 'action' => 'cancelar'],
+     ['method' => 'GET',    'path' => '/api/mis-pedidos/:id/factura', 'controller' => 'Cliente\\PedidosController', 'action' => 'factura'],
+     ['method' => 'POST',   'path' => '/api/inventario/update',    'controller' => 'Api\\StockController', 'action' => 'update'],
+     ['method' => 'POST',   'path' => '/api/inventario/ajustar',    'controller' => 'Api\\StockController', 'action' => 'ajustar'],
+];

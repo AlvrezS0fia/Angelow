@@ -1,5 +1,7 @@
+/* ======================== VARIABLES ======================== */
 :root {
     --primary: #5E9DE6;
+    --primary-dark: #4A7FC4;
     --accent: #7FBBF2;
     --bg-light: #F8FBFE;
     --bg-soft: #EDF4FC;
@@ -8,18 +10,14 @@
     --white: #ffffff;
     --shadow: rgba(94, 157, 230, 0.12);
     --shadow-hover: rgba(94, 157, 230, 0.25);
-    --badge: #F472B6;
     --border-light: #E0E7F5;
     --success: #10b981;
     --warning: #f59e0b;
     --error: #ef4444;
-    --info: #3b82f6;
-    --stock-ok: #10b981;
-    --stock-low: #f59e0b;
-    --stock-out: #ef4444;
     --danger: #ef4444;
 }
 
+/* ======================== ESTILOS GENERALES ======================== */
 * {
     margin: 0;
     padding: 0;
@@ -32,6 +30,218 @@ body {
     color: var(--text-dark);
     min-height: 100vh;
     line-height: 1.6;
+}
+
+/* ======================== HEADER ADMIN ======================== */
+.admin-header {
+    background: rgba(255, 255, 255, 0.95);
+    border-bottom: 1px solid var(--border-light);
+    padding: 12px 24px;
+    box-shadow: 0 4px 20px var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(18px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.admin-logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-decoration: none;
+}
+
+.admin-logo-img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    border-radius: 16px;
+    background: var(--bg-soft);
+    box-shadow: 0 4px 12px var(--shadow);
+}
+
+.admin-logo-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+}
+
+.admin-logo-text span:first-child {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    color: var(--primary);
+    line-height: 1.2;
+}
+
+.admin-logo-text span:last-child {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.admin-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.admin-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    background: var(--bg-soft);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.admin-user:hover {
+    background: var(--border-light);
+}
+
+.admin-user-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+/* ======================== BOTÓN VOLVER ======================== */
+.btn-back-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--white);
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 14px;
+    padding: 8px 18px;
+    border: 2px solid var(--border-light);
+    border-radius: 40px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px var(--shadow);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-back-header:hover {
+    border-color: var(--primary);
+    background: var(--bg-soft);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px var(--shadow-hover);
+}
+
+.btn-back-header svg {
+    stroke: var(--primary);
+    fill: none;
+    stroke-width: 2.5;
+}
+
+.logout-btn {
+    padding: 10px 24px;
+    background: var(--error);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+/* ======================== RESPONSIVE HEADER ======================== */
+@media (max-width: 768px) {
+    .admin-header {
+        padding: 10px 16px;
+    }
+
+    .admin-logo-img {
+        width: 40px;
+        height: 40px;
+    }
+
+    .admin-logo-text span:first-child {
+        font-size: 18px;
+    }
+
+    .admin-logo-text span:last-child {
+        font-size: 9px;
+    }
+
+    .admin-user {
+        padding: 6px 12px;
+    }
+
+    .admin-user-img {
+        width: 32px;
+        height: 32px;
+        font-size: 13px;
+    }
+
+    .btn-back-header {
+        font-size: 12px;
+        padding: 6px 12px;
+        gap: 5px;
+    }
+
+    .btn-back-header svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .logout-btn {
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-logo-text span:first-child {
+        font-size: 15px;
+    }
+
+    .admin-logo-text span:last-child {
+        font-size: 8px;
+        letter-spacing: 1px;
+    }
+
+    .admin-user div {
+        display: none;
+    }
+
+    .btn-back-header {
+        font-size: 11px;
+        padding: 5px 10px;
+    }
+
+    .logout-btn {
+        padding: 6px 12px;
+        font-size: 11px;
+    }
 }
 
 .icon-btn {
@@ -2472,4 +2682,87 @@ input:checked+.slider:before {
         height: 45px;
         font-size: 16px;
     }
+}
+
+.badge-rol {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.badge-rol.role-admin {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.badge-rol.role-delivery {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-rol.role-client {
+    background: rgba(94, 157, 230, 0.1);
+    color: var(--primary);
+    border: 1px solid rgba(94, 157, 230, 0.3);
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.rol-select {
+    padding: 6px 10px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: inherit;
+    background: var(--white);
+    color: var(--text-dark);
+    cursor: pointer;
+    min-width: 130px;
+    transition: all 0.3s;
+}
+
+.rol-select:hover {
+    border-color: var(--primary);
+}
+
+.rol-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(94, 157, 230, 0.15);
+}
+
+.estado-select {
+    padding: 6px 10px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: inherit;
+    background: var(--white);
+    color: var(--text-dark);
+    cursor: pointer;
+    min-width: 120px;
+    transition: all 0.3s;
+}
+
+.estado-select:hover {
+    border-color: var(--primary);
+}
+
+.estado-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(94, 157, 230, 0.15);
 }

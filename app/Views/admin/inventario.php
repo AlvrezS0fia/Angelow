@@ -264,17 +264,70 @@ let currentSearch = '';
 let editingProductId = null;
 let currentMaxLimit = 9999;
 
-function loadInitialProducts() {
-    return [
-        { id: 1, name: "Conjunto Deportivo", category: "Niños", price: 49900, stock: 15, image: APP_URL + "/assets/imagenes/ninos/Frente Conjunto Deportivo.png" },
-        { id: 2, name: "Conjunto Size", category: "Niños", price: 45900, stock: 10, image: APP_URL + "/assets/imagenes/ninos/Frente Conjunto Size.png" },
-        { id: 3, name: "Body Niño", category: "Niños", price: 34900, stock: 20, image: APP_URL + "/assets/imagenes/ninos/Frente Body Niño.png" },
-        { id: 4, name: "Jogger Niño", category: "Niños", price: 49900, stock: 8, image: APP_URL + "/assets/imagenes/ninos/Frente Jogger.png" },
-        { id: 5, name: "Set Bebé Premium", category: "Bebés", price: 39900, stock: 10, image: APP_URL + "/assets/imagenes/bebe/Frente Set Bebe.png" },
-        { id: 6, name: "Conjunto Infantil", category: "Niñas", price: 45900, stock: 12, image: APP_URL + "/assets/imagenes/ninas/Frente Conjunto Infantil.png" },
-        { id: 7, name: "Body Negro", category: "Niños", price: 32900, stock: 6, image: APP_URL + "/assets/imagenes/ninas/Frente Body Negro.png" },
-        { id: 8, name: "Set Falda", category: "Niñas", price: 39900, stock: 10, image: APP_URL + "/assets/imagenes/ninas/Frente Set Falda.png" }
-    ];
+async function loadInitialProducts() {
+    try {
+        const res = await fetch(`${APP_URL}/api/inventario`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        const data = await res.json();
+        if (Array.isArray(data)) {
+            inventoryProducts = data.map(p => ({
+                ...p,
+                image: p.imagen || (p.imagenes ? (Array.isArray(p.imagenes) ? p.imagenes[0] : p.imagenes) : ''),
+                stock: p.stock || p.stock_total || 0
+            }));
+        }
+    } catch (e) {
+        console.error('Error al cargar inventario:', e);
+        showToast({ title: "Error", message: "No se pudo cargar el inventario desde la base de datos", type: "error" });
+    }
+    updateCategoryFilter();
+    renderInventoryTable();
+    updateSummary();
+}
+
+async function updateStock() {
+    const product = inventoryProducts.find(p => p.id === editingProductId);
+    if (!product) return;
+    const changeType = document.getElementById('stockChangeType').value;
+    let amount = parseInt(document.getElementById('stockChangeAmount').value);
+    if (isNaN(amount) || amount < 0) {
+        showToast({ title: "Error", message: "Ingresa una cantidad valida", type: "error" });
+        return;
+    }
+
+    try {
+        const res = await fetch(`${APP_URL}/api/inventario/ajustar`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id: editingProductId,
+                cantidad: amount,
+                tipo: changeType
+            })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            product.stock = data.nuevo_stock;
+            renderInventoryTable();
+            updateSummary();
+            closeStockEditModal();
+            const tipoTexto = changeType === 'add' ? 'agregado' : changeType === 'subtract' ? 'quitado' : 'establecido';
+            showToast({ 
+                title: "Stock actualizado", 
+                message: `${product.nombre} ahora tiene ${data.nuevo_stock} unidades. (${tipoTexto} ${amount})`, 
+                type: "success" 
+            });
+        } else {
+            showToast({ title: "Error", message: data.error || "No se pudo actualizar el stock", type: "error" });
+        }
+    } catch (e) {
+        showToast({ title: "Error", message: "Error al conectar con el servidor", type: "error" });
+    }
 }
 
 function updateCategoryFilter() {
@@ -496,8 +549,8 @@ function initQuantityButtons() {
 }
 
 // Initialize everything when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    inventoryProducts = loadInitialProducts();
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadInitialProducts();
     updateCategoryFilter();
     renderInventoryTable();
     updateSummary();

@@ -12,24 +12,46 @@ class ClientesController extends Controller
         $this->usuarioModel = new UsuarioModel();
     }
 
-    // Listar todos los usuarios con rol 'cliente' (o todos si se desea)
     public function index() {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
             $this->json(['error' => 'No autorizado'], 403);
             return;
         }
-        // Obtener todos los usuarios que no son administradores (opcional)
-        $clientes = $this->usuarioModel->getAll(); // Debes implementar getAll en UsuarioModel
-        $this->json($clientes);
+        $usuarios = $this->usuarioModel->getAll();
+        $this->json($usuarios);
     }
 
-    // Actualizar rol de un usuario
-    public function updateRole() {
+    public function buscar() {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
             $this->json(['error' => 'No autorizado'], 403);
             return;
         }
         $data = json_decode(file_get_contents('php://input'), true);
+        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+            $this->json(['error' => 'JSON inválido'], 400);
+            return;
+        }
+        $nombre = trim($data['nombre'] ?? '');
+
+        if ($nombre === '') {
+            $this->json($this->usuarioModel->getAll());
+            return;
+        }
+
+        $usuarios = $this->usuarioModel->buscarPorNombre($nombre);
+        $this->json($usuarios);
+    }
+
+    public function cambiarRol() {
+        if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
+            $this->json(['error' => 'No autorizado'], 403);
+            return;
+        }
+        $data = json_decode(file_get_contents('php://input'), true);
+        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+            $this->json(['error' => 'JSON inválido'], 400);
+            return;
+        }
         $userId = $data['id'] ?? 0;
         $newRole = $data['rol'] ?? '';
 
@@ -40,7 +62,7 @@ class ClientesController extends Controller
 
         $result = $this->usuarioModel->updateRol($userId, $newRole);
         if ($result) {
-            $this->json(['success' => true, 'message' => 'Rol actualizado']);
+            $this->json(['success' => true, 'message' => 'Rol actualizado correctamente']);
         } else {
             $this->json(['error' => 'Error al actualizar'], 500);
         }

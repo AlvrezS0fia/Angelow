@@ -71,7 +71,7 @@ class CarritoController {
         $usuario_id = $_SESSION['user_id'] ?? null;
         $session_id = $usuario_id ? null : ($_COOKIE['cart_session'] ?? null);
 
-        // Obtener producto
+        // Obtener producto (stock actualizado)
         $producto = Database::query("SELECT * FROM productos WHERE id = ?", [$producto_id])->fetch();
         if (!$producto) {
             echo json_encode(['success' => false, 'message' => 'Producto no encontrado']);
@@ -79,7 +79,7 @@ class CarritoController {
         }
 
         if ((int) $producto['stock_total'] <= 0) {
-            echo json_encode(['success' => false, 'message' => 'Producto no disponible']);
+            echo json_encode(['success' => false, 'message' => 'Producto agotado']);
             return;
         }
 

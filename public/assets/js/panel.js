@@ -29,28 +29,90 @@ let products = JSON.parse(localStorage.getItem('angelow_products')) || [
 ];
 
 // ======================== PEDIDOS EN TIEMPO REAL ========================
-let orders = JSON.parse(localStorage.getItem('angelow_orders')) || [];
+let orders = [];
 
-// Si no hay pedidos guardados, usar datos de ejemplo
-if (orders.length === 0) {
-    orders = [
-        { id: "ORD-001", orderNumber: "001", customer: "Juan Pérez", date: "2025-03-15", total: 1799800, status: "delivered", address: "Calle 50 #45-32, Medellín, Antioquia", city: "Medellín", lat: 6.2442, lng: -75.5812, phone: "3001234567", products: ["Conjunto Deportivo", "Body Negro"] },
-        { id: "ORD-002", orderNumber: "002", customer: "María Gómez", date: "2025-03-14", total: 899900, status: "processing", address: "Carrera 15 #88-12, Bogotá, Cundinamarca", city: "Bogotá", lat: 4.7110, lng: -74.0721, phone: "3007654321", products: ["Set Falda"] },
-        { id: "ORD-003", orderNumber: "003", customer: "Carlos López", date: "2025-03-13", total: 2699700, status: "shipped", address: "Avenida 6N #15-32, Cali, Valle del Cauca", city: "Cali", lat: 3.4516, lng: -76.5320, phone: "3009876543", products: ["Conjunto Size", "Body Niño", "Jogger Niño"] },
-        { id: "ORD-004", orderNumber: "004", customer: "Ana Rodríguez", date: "2025-03-12", total: 899900, status: "pending", address: "Calle 45 #12-34, Barranquilla, Atlántico", city: "Barranquilla", lat: 11.0041, lng: -74.8070, phone: "3004567890", products: ["Conjunto Infantil"] },
-        { id: "ORD-005", orderNumber: "005", customer: "Pedro Martínez", date: "2025-03-11", total: 899900, status: "cancelled", address: "Carrera 2 #5-67, Cartagena, Bolívar", city: "Cartagena", lat: 10.3910, lng: -75.4794, phone: "3006789012", products: ["Body Negro"] },
-        { id: "ORD-006", orderNumber: "006", customer: "Laura Sánchez", date: "2025-03-10", total: 1799800, status: "delivered", address: "Calle 30 #20-15, Medellín, Antioquia", city: "Medellín", lat: 6.2518, lng: -75.5636, phone: "3002345678", products: ["Conjunto Deportivo", "Set Falda"] }
-    ];
-    localStorage.setItem('angelow_orders', JSON.stringify(orders));
+async function cargarPedidos() {
+    try {
+        const res = await fetch(`${APP_URL}/api/pedidos`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        const data = await res.json();
+        if (Array.isArray(data)) {
+            orders = data.map(p => ({
+                id: p.id,
+                numero_pedido: p.numero_pedido,
+                orderNumber: String(p.id).padStart(3, '0'),
+                customer: p.nombre_cliente || p.nombre_usuario || 'Cliente',
+                date: p.fecha_pedido ? new Date(p.fecha_pedido).toISOString() : new Date().toISOString(),
+                total: parseFloat(p.total) || 0,
+                status: p.estado || 'pendiente',
+                address: p.direccion_envio || '',
+                city: p.ciudad || '',
+                phone: p.telefono_cliente || '',
+                products: [],
+                productos: [],
+                cliente: {
+                    nombre: p.nombre_cliente || '',
+                    email: p.email_cliente || '',
+                    telefono: p.telefono_cliente || '',
+                    cedula: p.cedula_cliente || ''
+                },
+                envio: {
+                    direccion: p.direccion_envio || '',
+                    destinatario: p.destinatario || '',
+                    metodo: p.metodo_envio === 'express' ? 'Envío Express' : 'Envío Normal',
+                    costo: parseFloat(p.costo_envio) || 0
+                },
+                pago: {
+                    metodo: p.metodo_pago === 'mercadopago' ? 'Mercado Pago' : 'PSE'
+                },
+                subtotal: parseFloat(p.subtotal) || 0,
+                descuento: parseFloat(p.descuento) || 0,
+                total: parseFloat(p.total) || 0,
+                estado: p.estado || 'pendiente',
+                usuario_id: p.usuario_id,
+                id: p.id,
+                total_productos: p.total_productos || 0
+            }));
+            localStorage.setItem('angelow_orders', JSON.stringify(orders));
+            renderOrdersList();
+            renderOrdersTable();
+            updateMapMarkers();
+            updateMetrics();
+        }
+    } catch (e) {
+        console.error('Error al cargar pedidos desde BD:', e);
+        const localOrders = JSON.parse(localStorage.getItem('angelow_orders')) || [];
+        if (localOrders.length > 0) {
+            orders = localOrders;
+            renderOrdersList();
+            renderOrdersTable();
+        }
+    }
 }
 
-let customers = [
-    { name: "Juan Pérez", email: "juan@example.com", phone: "3001234567", orders: 5, total: 8999000 },
-    { name: "María Gómez", email: "maria@example.com", phone: "3007654321", orders: 3, total: 2699700 },
-    { name: "Carlos López", email: "carlos@example.com", phone: "3009876543", orders: 2, total: 1799800 },
-    { name: "Ana Rodríguez", email: "ana@example.com", phone: "3004567890", orders: 1, total: 899900 },
-    { name: "Pedro Martínez", email: "pedro@example.com", phone: "3006789012", orders: 4, total: 3599600 }
-];
+async function cambiarEstadoPedido(pedidoId, nuevoEstado) {
+    try {
+        const res = await fetch(`${APP_URL}/api/pedidos/estado`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: pedidoId, estado: nuevoEstado })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast({ title: "Éxito", message: `Estado del pedido actualizado a ${nuevoEstado}`, type: "success" });
+            cargarPedidos();
+        } else {
+            showToast({ title: "Error", message: data.error || 'No se pudo actualizar', type: "error" });
+        }
+    } catch (e) {
+        console.error('Error:', e);
+        showToast({ title: "Error", message: 'Error al actualizar estado', type: "error" });
+    }
+}
 
 let deliveryDrivers = JSON.parse(localStorage.getItem('angelow_delivery_drivers')) || [
     { id: 1, name: "Carlos Martínez", email: "carlos.martinez@angelow.com", phone: "3001112233", idNumber: "1234567890", idType: "CC", address: "Calle 45 #23-12, Medellín", vehicle: "Moto", licensePlate: "ABC-123", licenseNumber: "LIC-2025-001", emergencyContact: "María Martínez - 3001112244", status: "active", currentRoute: "ORD-001", completedDeliveries: 156, rating: 4.8, hireDate: "2024-01-15", birthDate: "1990-05-20", bloodType: "O+", avatar: null, notes: "Repartidor destacado del mes" },
@@ -951,103 +1013,220 @@ function renderOrdersList(ordersToRender = orders) {
         return;
     }
 
-    container.innerHTML = ordersToRender.map(order => `
-        <div class="order-item ${order.id === selectedOrderId ? 'selected' : ''}" data-id="${order.id}" onclick="selectOrder('${order.id}')">
-            <div class="order-item-header">
-                <span class="order-item-id">${order.id}</span>
-                <span class="order-item-status ${getStatusClass(order.status)}">${getStatusText(order.status)}</span>
-            </div>
-            <div class="order-item-customer">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                ${order.customer}
-            </div>
-            <div class="order-item-address">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                </svg>
-                ${order.address}
-            </div>
-            <div class="order-item-details">
-                <span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
+    container.innerHTML = ordersToRender.map(order => {
+        const orderId = order.id || order.numero_pedido || 'N/A';
+        const orderNumber = order.orderNumber || order.numero_pedido || String(order.id || '');
+        
+        return `
+            <div class="order-item ${orderId === selectedOrderId ? 'selected' : ''}" data-id="${orderId}" onclick="selectOrder('${orderId}')">
+                <div class="order-item-header">
+                    <span class="order-item-id">#${orderNumber}</span>
+                    <span class="order-item-status ${getStatusClass(order.status)}">${getStatusText(order.status)}</span>
+                </div>
+                <div class="order-item-customer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
                     </svg>
-                    ${order.date}
-                </span>
-                <span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="1" x2="12" y2="23"></line>
-                        <path d="M17 5H9.5M17 5v14M9.5 5H7M9.5 5v14"></path>
+                    ${order.customer || order.cliente?.nombre || 'Cliente'}
+                </div>
+                <div class="order-item-address">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
                     </svg>
-                    $${order.total.toLocaleString()}
-                </span>
-                <span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="2" y="2" width="20" height="20" rx="2.18"></rect>
-                        <line x1="8" y1="2" x2="8" y2="22"></line>
-                        <line x1="16" y1="2" x2="16" y2="22"></line>
-                        <line x1="2" y1="8" x2="22" y2="8"></line>
-                        <line x1="2" y1="16" x2="22" y2="16"></line>
-                    </svg>
-                    ${order.products.length} productos
-                </span>
+                    ${order.address || order.envio?.direccion || 'Sin dirección'}
+                </div>
+                <div class="order-item-details">
+                    <span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        ${order.date ? new Date(order.date).toLocaleDateString('es-CO') : '-'}
+                    </span>
+                    <span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5M17 5v14M9.5 5H7M9.5 5v14"></path>
+                        </svg>
+                        COP $${(order.total || 0).toLocaleString()}
+                    </span>
+                    <span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="20" rx="2.18"></rect>
+                            <line x1="8" y1="2" x2="8" y2="22"></line>
+                            <line x1="16" y1="2" x2="16" y2="22"></line>
+                            <line x1="2" y1="8" x2="22" y2="8"></line>
+                            <line x1="2" y1="16" x2="22" y2="16"></line>
+                        </svg>
+                        ${order.products?.length || order.total_productos || 0} items
+                    </span>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function renderOrdersTable(ordersToRender = orders) {
     const tbody = document.getElementById('ordersTable');
     if (!tbody) return;
 
-    tbody.innerHTML = ordersToRender.map(order => `
-        <tr>
-            <td style="font-weight: 600; color: var(--primary);">${order.id}</td>
-            <td>${order.customer}</td>
-            <td>${order.date}</td>
-            <td>$${order.total.toLocaleString()}</td>
-            <td><span class="status-badge ${getStatusClass(order.status)}">${getStatusText(order.status)}</span></td>
-            <td>${order.address}</td>
-            <td>
-                <div class="action-buttons">
-                    <button class="action-btn action-map" title="Ver en mapa" onclick="selectOrder('${order.id}')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                            <circle cx="12" cy="10" r="3"></circle>
-                        </svg>
-                    </button>
-                    <button class="action-btn action-edit" title="Cambiar estado" onclick="editOrder('${order.id}')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"/>
-                            <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"/>
-                        </svg>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
+    if (ordersToRender.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    No hay pedidos registrados
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = ordersToRender.map(order => {
+        const orderId = order.id || order.numero_pedido || 'N/A';
+        const orderNumber = order.orderNumber || order.numero_pedido || String(order.id || '');
+        const estadoSelect = `
+            <select class="estado-select" data-order-id="${order.id}" onchange="cambiarEstadoPedido(${order.id}, this.value)">
+                <option value="pendiente" ${order.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                <option value="confirmado" ${order.estado === 'confirmado' ? 'selected' : ''}>Confirmado</option>
+                <option value="procesando" ${order.estado === 'procesando' ? 'selected' : ''}>En proceso</option>
+                <option value="listo" ${order.estado === 'listo' ? 'selected' : ''}>Listo</option>
+                <option value="en_camino" ${order.estado === 'en_camino' ? 'selected' : ''}>En camino</option>
+                <option value="entregado" ${order.estado === 'entregado' ? 'selected' : ''}>Entregado</option>
+                <option value="cancelado" ${order.estado === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+            </select>
+        `;
+
+        return `
+            <tr>
+                <td style="font-weight: 600; color: var(--primary);">#${orderNumber}</td>
+                <td>${order.customer || order.cliente?.nombre || 'Cliente'}</td>
+                <td>${order.date ? new Date(order.date).toLocaleDateString('es-CO') : '-'}</td>
+                <td>COP $${(order.total || 0).toLocaleString()}</td>
+                <td>${estadoSelect}</td>
+                <td>${order.address || order.envio?.direccion || 'Sin dirección'}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="action-btn action-view" title="Ver detalles" onclick="verDetallesPedido(${order.id})">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M22 12c-2.667 4.667-6 7-10 7s-7.333-2.333-10-7c2.667-4.667 6-7 10-7s7.333 2.333 10 7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 window.editOrder = function(id) {
-    const order = orders.find(o => o.id === id);
-    if (order) {
-        const statuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
-        const currentIndex = statuses.indexOf(order.status);
-        const nextStatus = statuses[(currentIndex + 1) % statuses.length];
+    const order = orders.find(o => o.id == id);
+    if (!order) return;
+    
+    const statuses = ['pendiente', 'confirmado', 'procesando', 'listo', 'en_camino', 'entregado', 'cancelado'];
+    const currentIndex = statuses.indexOf(order.estado || order.status);
+    const nextStatus = statuses[(currentIndex + 1) % statuses.length];
+    
+    cambiarEstadoPedido(id, nextStatus);
+};
 
-        order.status = nextStatus;
-        localStorage.setItem('angelow_orders', JSON.stringify(orders));
-        renderOrdersList();
-        renderOrdersTable();
-        updateMapMarkers();
-
-        showToast({ title: "Estado actualizado", message: `Pedido ${id} ahora está ${getStatusText(nextStatus)}`, type: "success" });
+window.verDetallesPedido = function(pedidoId) {
+    const order = orders.find(o => o.id == pedidoId || o.numero_pedido == pedidoId);
+    if (!order) {
+        showToast({ title: "Error", message: "Pedido no encontrado", type: "error" });
+        return;
     }
+
+    const productos = order.products || order.productos || [];
+    const productosHtml = productos.length > 0 
+        ? productos.map(p => `
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${p.nombre || p.name || 'Producto'}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${p.talla || 'Única'}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${p.cantidad || p.quantity || 1}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">COP $${(p.precioUnitario || p.price || 0).toLocaleString()}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">COP $${((p.precioUnitario || p.price || 0) * (p.cantidad || p.quantity || 1)).toLocaleString()}</td>
+            </tr>
+        `).join('')
+        : '<tr><td colspan="5" style="padding: 20px; text-align: center; color: var(--text-secondary);">Sin productos registrados</td></tr>';
+
+    const detalleHtml = `
+        <div style="max-width: 900px; margin: 0 auto; background: #ffffff; border-radius: 16px; box-shadow: 0 20px 60px rgba(30, 58, 138, 0.15); overflow: hidden; padding: 30px; border: 1px solid #e8edf5;">
+            <div style="border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 24px;">
+                <h2 style="color: #1e3a8a; font-size: 24px; margin: 0 0 8px 0; font-weight: 800;">Pedido #${order.orderNumber || order.numero_pedido || order.id}</h2>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; color: #4b5563; font-size: 14px;">
+                    <span><strong>Fecha:</strong> ${order.date ? new Date(order.date).toLocaleDateString('es-CO') : '-'}</span>
+                    <span><strong>Estado:</strong> <span class="status-badge ${getStatusClass(order.estado || order.status)}">${getStatusText(order.estado || order.status)}</span></span>
+                    <span><strong>Total:</strong> <strong style="color: #1e3a8a;">COP $${(order.total || 0).toLocaleString()}</strong></span>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e8edf5;">
+                <div>
+                    <h3 style="color: #1e3a8a; font-size: 12px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Datos del Cliente</h3>
+                    <p style="margin: 4px 0; color: #1f2937; font-weight: 600;">${order.cliente?.nombre || order.customer || 'Cliente'}</p>
+                    <p style="margin: 4px 0; color: #4b5563; font-size: 13px;">${order.cliente?.email || order.email_cliente || ''}</p>
+                    <p style="margin: 4px 0; color: #4b5563; font-size: 13px;">${order.cliente?.telefono || order.phone || ''}</p>
+                </div>
+                <div>
+                    <h3 style="color: #1e3a8a; font-size: 12px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Datos de Envío</h3>
+                    <p style="margin: 4px 0; color: #1f2937; font-weight: 600;">${order.envio?.destinatario || order.cliente?.nombre || 'Cliente'}</p>
+                    <p style="margin: 4px 0; color: #4b5563; font-size: 13px;">${order.envio?.direccion || order.address || 'Sin dirección'}</p>
+                    <p style="margin: 4px 0; color: #4b5563; font-size: 13px;">${order.envio?.metodo || 'Envío Normal'}</p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px; border-radius: 12px; border: 1px solid #e8edf5; overflow: hidden;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead>
+                        <tr style="background: linear-gradient(135deg, #1e3a8a 0%, #2a4f9e 100%);">
+                            <th style="padding: 12px 16px; text-align: left; color: #ffffff; font-weight: 700; font-size: 12px; text-transform: uppercase;">Producto</th>
+                            <th style="padding: 12px 16px; text-align: center; color: #ffffff; font-weight: 700; font-size: 12px; text-transform: uppercase;">Talla</th>
+                            <th style="padding: 12px 16px; text-align: center; color: #ffffff; font-weight: 700; font-size: 12px; text-transform: uppercase;">Cant.</th>
+                            <th style="padding: 12px 16px; text-align: right; color: #ffffff; font-weight: 700; font-size: 12px; text-transform: uppercase;">Precio Unit.</th>
+                            <th style="padding: 12px 16px; text-align: right; color: #ffffff; font-weight: 700; font-size: 12px; text-transform: uppercase;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${productosHtml}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #e8edf5;">
+                <div style="width: 280px;">
+                    <div style="display: flex; justify-content: space-between; padding: 6px 0;">
+                        <span style="color: #4b5563;">Subtotal</span>
+                        <span style="font-weight: 600;">COP $${(order.subtotal || order.total || 0).toLocaleString()}</span>
+                    </div>
+                    ${(order.descuento || 0) > 0 ? `
+                        <div style="display: flex; justify-content: space-between; padding: 6px 0; color: #10b981;">
+                            <span>Descuento</span>
+                            <span style="font-weight: 600;">- COP $${(order.descuento || 0).toLocaleString()}</span>
+                        </div>
+                    ` : ''}
+                    <div style="display: flex; justify-content: space-between; padding: 6px 0; border-top: 2px solid #1e3a8a; margin-top: 8px;">
+                        <span style="color: #1e3a8a; font-weight: 800; font-size: 16px;">TOTAL</span>
+                        <span style="color: #1e3a8a; font-weight: 900; font-size: 18px;">COP $${(order.total || 0).toLocaleString()}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; text-align: center;">
+                <button onclick="this.closest('.modal-overlay').remove()" style="background: #e8edf5; color: #1e3a8a; border: none; padding: 12px 30px; border-radius: 50px; font-size: 14px; font-weight: 700; cursor: pointer;">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    `;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;';
+    overlay.innerHTML = detalleHtml;
+    document.body.appendChild(overlay);
 };
 
 function setupOrderFilters() {
@@ -1101,47 +1280,161 @@ function refreshOrdersRealTime() {
 }
 
 // ======================== SECCIÓN CLIENTES ========================
+let usuarios = [];
+
+function cargarUsuarios() {
+    fetch(`${APP_URL}/api/clientes`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (Array.isArray(data)) {
+            usuarios = data;
+            renderCustomersTable();
+            const totalUsersEl = document.getElementById('totalUsers');
+            if (totalUsersEl) {
+                totalUsersEl.textContent = usuarios.length;
+            }
+            const usersChangeEl = document.getElementById('usersChange');
+            if (usersChangeEl) {
+                usersChangeEl.textContent = `+${usuarios.length} registrados`;
+            }
+        }
+    })
+    .catch(err => console.error('Error al cargar usuarios:', err));
+}
+
+function buscarUsuarios(termino) {
+    fetch(`${APP_URL}/api/clientes/buscar`, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ nombre: termino })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (Array.isArray(data)) {
+            usuarios = data;
+            renderCustomersTable();
+        }
+    })
+    .catch(err => console.error('Error al buscar usuarios:', err));
+}
+
 function renderCustomersTable() {
     const tbody = document.getElementById('customersTable');
     if (!tbody) return;
 
-    tbody.innerHTML = customers.map(customer => `
-        <tr>
-            <td style="font-weight: 600;">${customer.name}</td>
-            <td>${customer.email}</td>
-            <td>${customer.phone}</td>
-            <td>${customer.orders}</td>
-            <td>$${customer.total.toLocaleString()}</td>
-            <td>
-                <div class="action-buttons">
-                    <button class="action-btn action-view" title="Ver perfil" onclick="viewCustomer('${customer.email}')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M22 12c-2.667 4.667-6 7-10 7s-7.333-2.333-10-7c2.667-4.667 6-7 10-7s7.333 2.333 10 7z"/>
-                        </svg>
-                    </button>
-                    <button class="action-btn action-edit" title="Editar" onclick="editCustomer('${customer.email}')">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"/>
-                            <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"/>
-                        </svg>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
+    if (usuarios.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    No se encontraron usuarios registrados
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = usuarios.map(usuario => {
+        const rolClass = usuario.rol === 'administrador' ? 'role-admin' : usuario.rol === 'repartidor' ? 'role-delivery' : 'role-client';
+        const iniciales = (usuario.nombre || 'U').split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
+        const avatarColor = usuario.rol === 'administrador' ? '#EF4444' : usuario.rol === 'repartidor' ? '#F59E0B' : '#5E9DE6';
+
+        return `
+            <tr>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: ${avatarColor}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; flex-shrink: 0;">
+                            ${iniciales}
+                        </div>
+                        <span style="font-weight: 600;">${usuario.nombre}</span>
+                    </div>
+                </td>
+                <td>${usuario.email}</td>
+                <td>${usuario.telefono || '-'}</td>
+                <td>${usuario.fecha_registro ? new Date(usuario.fecha_registro).toLocaleDateString('es-CO') : '-'}</td>
+                <td><span class="badge-rol ${rolClass}">${usuario.rol}</span></td>
+                <td>
+                    <div class="action-buttons">
+                        <select class="rol-select" data-user-id="${usuario.id}" data-user-name="${usuario.nombre.replace(/'/g, "\\'")}">
+                            <option value="cliente" ${usuario.rol === 'cliente' ? 'selected' : ''}>Cliente</option>
+                            <option value="repartidor" ${usuario.rol === 'repartidor' ? 'selected' : ''}>Repartidor</option>
+                            <option value="administrador" ${usuario.rol === 'administrador' ? 'selected' : ''}>Administrador</option>
+                        </select>
+                        <button class="btn btn-primary btn-sm btn-rol" onclick="cambiarRol(${usuario.id}, '${usuario.nombre.replace(/'/g, "\\'")}')" title="Actualizar rol">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"/>
+                                <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
-window.viewCustomer = function(email) {
-    const customer = customers.find(c => c.email === email);
-    if (customer) {
-        showToast({ title: "Cliente", message: `${customer.name} - ${customer.email}`, type: "info" });
+window.cambiarRol = function(id, nombre) {
+    const select = document.querySelector(`.rol-select[data-user-id="${id}"]`);
+    if (!select) return;
+
+    const nuevoRol = select.value;
+    if (!confirm(`¿Estás seguro de que deseas cambiar el rol de "${nombre}" a ${nuevoRol}?`)) {
+        return;
     }
+
+    fetch(`${APP_URL}/api/clientes/rol`, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id: id, rol: nuevoRol })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const rolLabel = nuevoRol === 'administrador' ? 'Administrador' : nuevoRol === 'repartidor' ? 'Repartidor' : 'Cliente';
+            const rolIcon = nuevoRol === 'administrador' ? '🔐' : nuevoRol === 'repartidor' ? '🚚' : '👤';
+            showToast({ 
+                title: "Rol actualizado correctamente", 
+                message: `${rolIcon} ${nombre} ahora tiene el rol de ${rolLabel}`, 
+                type: "success",
+                duration: 5000
+            });
+            cargarUsuarios();
+        } else {
+            showToast({ title: "Error", message: data.error || 'No se pudo actualizar el rol', type: "error" });
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showToast({ title: "Error", message: 'Error al actualizar el rol', type: "error" });
+    });
 };
 
-window.editCustomer = function(email) {
-    showToast({ title: "Información", message: `Editando cliente: ${email}`, type: "info" });
-};
+function setupCustomerSearch() {
+    const searchInput = document.getElementById('customerSearch');
+    if (!searchInput) return;
+
+    let debounceTimer = null;
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const termino = this.value.trim();
+            if (termino === '') {
+                cargarUsuarios();
+            } else {
+                buscarUsuarios(termino);
+            }
+        }, 400);
+    });
+}
 
 // ======================== SECCIÓN REPARTIDORES ========================
 function renderDeliveryGrid() {
@@ -1841,6 +2134,8 @@ function setupButtons() {
 
     document.getElementById('exportOrdersBtn')?.addEventListener('click', exportOrdersToPDF);
 
+    document.getElementById('exportCustomersBtn')?.addEventListener('click', exportarClientesPDF);
+
     document.getElementById('addCustomerBtn')?.addEventListener('click', function() {
         showToast({ title: "Información", message: "Funcionalidad para agregar cliente próximamente", type: "info" });
     });
@@ -1937,16 +2232,17 @@ function exportOrdersToPDF() {
     doc.setLineWidth(0.5);
     doc.line(14, 38, 196, 38);
 
-    const tableColumn = ["ID", "Cliente", "Fecha", "Total", "Estado"];
+    const tableColumn = ["N° Pedido", "Cliente", "Fecha", "Total", "Estado", "Dirección"];
     const tableRows = [];
 
     orders.forEach(order => {
         const row = [
-            order.id,
-            order.customer,
-            order.date,
-            "$" + order.total.toLocaleString('es-CO'),
-            getStatusText(order.status)
+            order.orderNumber || order.numero_pedido || String(order.id),
+            order.customer || order.cliente?.nombre || 'Cliente',
+            order.date ? new Date(order.date).toLocaleDateString('es-CO') : '-',
+            "COP $" + (order.total || 0).toLocaleString('es-CO'),
+            getStatusText(order.status || order.estado || 'pendiente'),
+            order.address || order.envio?.direccion || 'Sin dirección'
         ];
         tableRows.push(row);
     });
@@ -1954,9 +2250,9 @@ function exportOrdersToPDF() {
     doc.autoTable({
         head: [tableColumn],
         body: tableRows,
-        startY: 45,
+        startY: 42,
         styles: {
-            fontSize: 9,
+            fontSize: 8,
             cellPadding: 3,
             textColor: [40, 40, 40],
             lineColor: [200, 200, 200],
@@ -1971,7 +2267,10 @@ function exportOrdersToPDF() {
         alternateRowStyles: {
             fillColor: [245, 247, 255]
         },
-        margin: { top: 45, left: 14, right: 14 }
+        margin: { top: 42, left: 14, right: 14 },
+        columnStyles: {
+            5: { cellWidth: 50 }
+        }
     });
 
     const finalY = doc.lastAutoTable.finalY + 15;
@@ -1984,6 +2283,74 @@ function exportOrdersToPDF() {
     doc.save(fileName);
 
     showToast({ title: "Éxito", message: "Pedidos exportados a PDF correctamente", type: "success" });
+}
+
+function exportarClientesPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("ANGELOW - Lista de Clientes", 14, 20);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-CO')}`, 14, 28);
+    doc.text("Administración ANGELOW", 14, 34);
+    doc.text("Total de clientes: " + (usuarios ? usuarios.length : 0), 14, 40);
+
+    doc.setLineWidth(0.5);
+    doc.line(14, 45, 196, 45);
+
+    const tableColumn = ["Nombre", "Email", "Teléfono", "Fecha Registro", "Rol"];
+    const tableRows = [];
+
+    if (usuarios && usuarios.length > 0) {
+        usuarios.forEach(usuario => {
+            const row = [
+                usuario.nombre || '-',
+                usuario.email || '-',
+                usuario.telefono || '-',
+                usuario.fecha_registro ? new Date(usuario.fecha_registro).toLocaleDateString('es-CO') : '-',
+                usuario.rol || 'cliente'
+            ];
+            tableRows.push(row);
+        });
+    }
+
+    doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 52,
+        styles: {
+            fontSize: 8,
+            cellPadding: 3,
+            textColor: [40, 40, 40],
+            lineColor: [200, 200, 200],
+            lineWidth: 0.1,
+        },
+        headStyles: {
+            fillColor: [94, 157, 230],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            halign: 'center'
+        },
+        alternateRowStyles: {
+            fillColor: [245, 247, 255]
+        },
+        margin: { top: 52, left: 14, right: 14 }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 15;
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text("Gracias por usar el sistema de administración ANGELOW", 14, finalY);
+    doc.text("Sistema confidencial - Uso exclusivo de la tienda", 14, finalY + 6);
+
+    const fileName = `Clientes_ANGELOW_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fileName);
+
+    showToast({ title: "Éxito", message: "Clientes exportados a PDF correctamente", type: "success" });
 }
 
 // ======================== MÉTRICAS ========================
@@ -2004,6 +2371,15 @@ function updateMetrics() {
     document.getElementById('pendingOrdersChange').textContent = `-${pendingOrders} esta semana`;
     document.getElementById('favoritesChange').textContent = `+${totalFavorites} este mes`;
     document.getElementById('revenueChange').textContent = `+${((totalRevenue / 1000000)).toFixed(1)}% este mes`;
+
+    const totalUsersEl = document.getElementById('totalUsers');
+    const usersChangeEl = document.getElementById('usersChange');
+    if (totalUsersEl && usuarios.length > 0) {
+        totalUsersEl.textContent = usuarios.length;
+        if (usersChangeEl) {
+            usersChangeEl.textContent = `+${usuarios.length} registrados`;
+        }
+    }
 
     const progress = totalRevenue > 0 ? Math.min((totalRevenue / 35000000) * 100, 100) : 0;
     document.getElementById('progressBar').style.width = `${progress}%`;
@@ -2048,7 +2424,6 @@ document.addEventListener('DOMContentLoaded', function() {
     mainCategories = JSON.parse(localStorage.getItem('angelow_main_categories')) || mainCategories;
     subCategories = JSON.parse(localStorage.getItem('angelow_sub_categories')) || subCategories;
     products = JSON.parse(localStorage.getItem('angelow_products')) || products;
-    orders = JSON.parse(localStorage.getItem('angelow_orders')) || orders;
     deliveryDrivers = JSON.parse(localStorage.getItem('angelow_delivery_drivers')) || deliveryDrivers;
     cart = JSON.parse(localStorage.getItem("angelow_cart")) || [];
     favorites = JSON.parse(localStorage.getItem("angelow_favorites")) || [];
@@ -2057,9 +2432,8 @@ document.addEventListener('DOMContentLoaded', function() {
     renderMainCategories();
     renderSubCategories();
     updateCategorySelects();
-    renderOrdersList();
-    renderOrdersTable();
-    renderCustomersTable();
+    cargarPedidos();
+    cargarUsuarios();
     renderDeliveryGrid();
     renderDeliveryTable();
 
@@ -2073,6 +2447,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupCategoryModal();
     setupDeliveryAvatarUpload();
     setupImageUpload();
+    setupCustomerSearch();
 
     updateMetrics();
     updateClientCategories();
@@ -2081,17 +2456,9 @@ document.addEventListener('DOMContentLoaded', function() {
         initMap();
     }, 500);
 
-    // Actualizar pedidos en tiempo real cada 30 segundos
-    setInterval(function() {
-        const updatedOrders = JSON.parse(localStorage.getItem('angelow_orders')) || orders;
-        if (JSON.stringify(updatedOrders) !== JSON.stringify(orders)) {
-            orders = updatedOrders;
-            renderOrdersList();
-            renderOrdersTable();
-            updateMapMarkers();
-            updateMetrics();
-            showToast({ title: "Nuevos pedidos", message: `${orders.length} pedidos totales`, type: "info" });
-        }
+    setInterval(async function() {
+        await cargarPedidos();
+        updateMetrics();
     }, 30000);
 });
 
@@ -2103,8 +2470,7 @@ window.editProduct = editProduct;
 window.deleteProduct = deleteProduct;
 window.editOrder = editOrder;
 window.selectOrder = selectOrder;
-window.viewCustomer = viewCustomer;
-window.editCustomer = editCustomer;
+window.cambiarRol = window.cambiarRol;
 window.closeProductModal = closeProductModal;
 window.saveProduct = saveProduct;
 window.removeImage = removeImage;
@@ -2123,4 +2489,7 @@ window.editDeliveryDriver = editDeliveryDriver;
 window.deleteDeliveryDriver = deleteDeliveryDriver;
 window.viewDeliveryDetails = viewDeliveryDetails;
 window.exportOrdersToPDF = exportOrdersToPDF;
+window.exportarClientesPDF = exportarClientesPDF;
 window.refreshOrdersRealTime = refreshOrdersRealTime;
+window.cambiarEstadoPedido = cambiarEstadoPedido;
+window.verDetallesPedido = verDetallesPedido;
