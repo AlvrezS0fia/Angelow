@@ -74,7 +74,7 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
                     <div class="metric-value" id="totalProductsInventory">0</div>
                     <div class="metric-label">Total Productos</div>
                 </div>
-                <div class="metric-icon"><i class="fas fa-box"></i></div>
+                <div class="metric-icon inv-icon-products"><i class="fas fa-boxes-stacked"></i></div>
             </div>
         </div>
         <div class="metric-card">
@@ -83,7 +83,7 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
                     <div class="metric-value" id="totalStockInventory">0</div>
                     <div class="metric-label">Unidades Totales</div>
                 </div>
-                <div class="metric-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="metric-icon inv-icon-stock"><i class="fas fa-chart-line"></i></div>
             </div>
         </div>
         <div class="metric-card">
@@ -92,7 +92,7 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
                     <div class="metric-value" id="outOfStockInventory">0</div>
                     <div class="metric-label">Productos Agotados</div>
                 </div>
-                <div class="metric-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="metric-icon inv-icon-out"><i class="fas fa-triangle-exclamation"></i></div>
             </div>
         </div>
         <div class="metric-card">
@@ -101,10 +101,10 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
                     <div class="metric-value" id="lowStockInventory">0</div>
                     <div class="metric-label">Stock Bajo</div>
                 </div>
-                <div class="metric-icon"><i class="fas fa-bell"></i></div>
+                <div class="metric-icon inv-icon-low"><i class="fas fa-bell"></i></div>
             </div>
         </div>
-    </div>
+        </div>
 
     <div class="inventory-table-container">
         <table class="admin-table">

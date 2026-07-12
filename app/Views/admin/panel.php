@@ -14,6 +14,7 @@ error_log(print_r($_SESSION, true));
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ANGELOW - Panel de Administración</title>
     <link rel="shortcut icon" href="<?= APP_URL ?>/assets/imagenes/general/favico.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/panel.css">
 
     <!-- Librerías externas -->
@@ -69,14 +70,14 @@ error_log(print_r($_SESSION, true));
         <!-- Sidebar -->
         <nav class="admin-sidebar">
             <ul class="admin-menu">
-                <li><a href="#dashboard" class="active" data-section="dashboard"><img src="<?= APP_URL ?>/assets/imagenes/general/panel.png" class="admin-menu-icon" alt="Dashboard"><span>Dashboard</span></a></li>
-                <li><a href="#products" data-section="products"><img src="<?= APP_URL ?>/assets/imagenes/general/producto.png" class="admin-menu-icon" alt="Productos"><span>Productos</span></a></li>
-                <li><a href="#categories" data-section="categories"><img src="<?= APP_URL ?>/assets/imagenes/general/categoria.png" class="admin-menu-icon" alt="Categorías"><span>Categorías</span></a></li>
-                <li><a href="#orders" data-section="orders"><img src="<?= APP_URL ?>/assets/imagenes/general/pedir.png" class="admin-menu-icon" alt="Pedidos"><span>Pedidos</span></a></li>
-                <li><a href="#customers" data-section="customers"><img src="<?= APP_URL ?>/assets/imagenes/general/cliente.png" class="admin-menu-icon" alt="Clientes"><span>Clientes</span></a></li>
-                <li><a href="#delivery" data-section="delivery"><img src="<?= APP_URL ?>/assets/imagenes/general/reparto.png" class="admin-menu-icon" alt="Repartidores"><span>Repartidores</span></a></li>
-                <li><a href="#analytics" data-section="analytics"><img src="<?= APP_URL ?>/assets/imagenes/general/analitica.png" class="admin-menu-icon" alt="Analítica"><span>Analítica</span></a></li>
-                <li><a href="#settings" data-section="settings"><img src="<?= APP_URL ?>/assets/imagenes/general/ajuste.png" class="admin-menu-icon" alt="Configuración"><span>Configuración</span></a></li>
+                <li><a href="#dashboard" class="active" data-section="dashboard"><i class="fas fa-gauge-high admin-menu-icon icon-dashboard"></i><span>Dashboard</span></a></li>
+                <li><a href="#products" data-section="products"><i class="fas fa-box admin-menu-icon icon-products"></i><span>Productos</span></a></li>
+                <li><a href="#categories" data-section="categories"><i class="fas fa-tags admin-menu-icon icon-categories"></i><span>Categorías</span></a></li>
+                <li><a href="#orders" data-section="orders"><i class="fas fa-clipboard-list admin-menu-icon icon-orders"></i><span>Pedidos</span></a></li>
+                <li><a href="#customers" data-section="customers"><i class="fas fa-users admin-menu-icon icon-customers"></i><span>Clientes</span></a></li>
+                <li><a href="#delivery" data-section="delivery"><i class="fas fa-truck-fast admin-menu-icon icon-delivery"></i><span>Repartidores</span></a></li>
+                <li><a href="#analytics" data-section="analytics"><i class="fas fa-chart-line admin-menu-icon icon-analytics"></i><span>Analítica</span></a></li>
+                <li><a href="#settings" data-section="settings"><i class="fas fa-gear admin-menu-icon icon-settings"></i><span>Configuración</span></a></li>
             </ul>
         </nav>
 
@@ -94,7 +95,7 @@ error_log(print_r($_SESSION, true));
                                 <div class="metric-value" id="totalOrders">0</div>
                                 <div class="metric-label">Pedidos Totales</div>
                             </div>
-                            <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/logistica.png" alt="Pedidos"></div>
+                            <div class="metric-icon metric-icon-orders"><i class="fas fa-cart-shopping"></i></div>
                         </div>
                         <span class="metric-change positive" id="totalOrdersChange">+0 este mes</span>
                     </div>
@@ -104,7 +105,7 @@ error_log(print_r($_SESSION, true));
                                 <div class="metric-value" id="pendingOrders">0</div>
                                 <div class="metric-label">Pendientes</div>
                             </div>
-                            <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/reloj.png" alt="Pendientes"></div>
+                            <div class="metric-icon metric-icon-pending"><i class="fas fa-clock"></i></div>
                         </div>
                         <span class="metric-change negative" id="pendingOrdersChange">-0 esta semana</span>
                     </div>
@@ -114,7 +115,7 @@ error_log(print_r($_SESSION, true));
                                 <div class="metric-value" id="totalFavorites">0</div>
                                 <div class="metric-label">Favoritos</div>
                             </div>
-                            <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/favoritos.png" alt="Favoritos"></div>
+                            <div class="metric-icon metric-icon-favorites"><i class="fas fa-heart"></i></div>
                         </div>
                         <span class="metric-change positive" id="favoritesChange">+0 este mes</span>
                     </div>
@@ -124,7 +125,7 @@ error_log(print_r($_SESSION, true));
                                 <div class="metric-value" id="totalRevenue">$0</div>
                                 <div class="metric-label">Ganancias</div>
                             </div>
-                            <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/ganancia.png" alt="Ganancias"></div>
+                            <div class="metric-icon metric-icon-revenue"><i class="fas fa-dollar-sign"></i></div>
                         </div>
                         <span class="metric-change positive" id="revenueChange">+0% este mes</span>
                     </div>
@@ -134,7 +135,7 @@ error_log(print_r($_SESSION, true));
                                 <div class="metric-value" id="totalUsers">0</div>
                                 <div class="metric-label">Usuarios Registrados</div>
                             </div>
-                            <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/cliente.png" alt="Usuarios"></div>
+                            <div class="metric-icon metric-icon-users"><i class="fas fa-user-group"></i></div>
                         </div>
                         <span class="metric-change positive" id="usersChange">+0 este mes</span>
                     </div>
@@ -343,28 +344,28 @@ error_log(print_r($_SESSION, true));
                     <div class="metric-card">
                         <div class="metric-header">
                             <div><div class="metric-value" id="visitorsCount">0</div><div class="metric-label">Visitantes</div></div>
-                            <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/visitante.png" alt="Visitantes"></div>
+                            <div class="metric-icon metric-icon-visitors"><i class="fas fa-eye"></i></div>
                         </div>
                         <span class="metric-change positive">+0% este mes</span>
                     </div>
                     <div class="metric-card">
                         <div class="metric-header">
                             <div><div class="metric-value" id="conversionRate">0%</div><div class="metric-label">Tasa de Conversión</div></div>
-                            <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/conversion.png" alt="Conversión"></div>
+                            <div class="metric-icon metric-icon-conversion"><i class="fas fa-bullseye"></i></div>
                         </div>
                         <span class="metric-change positive">+0% este mes</span>
                     </div>
                     <div class="metric-card">
                         <div class="metric-header">
                             <div><div class="metric-value" id="avgOrderValue">$0</div><div class="metric-label">Valor Promedio</div></div>
-                            <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/promedio.png" alt="Promedio"></div>
+                            <div class="metric-icon metric-icon-avg"><i class="fas fa-receipt"></i></div>
                         </div>
                         <span class="metric-change positive">+$0 este mes</span>
                     </div>
                     <div class="metric-card">
                         <div class="metric-header">
                             <div><div class="metric-value" id="bounceRate">0%</div><div class="metric-label">Tasa de Rebote</div></div>
-                            <div class="metric-icon"><img src="<?= APP_URL ?>/assets/imagenes/general/rebote.png" alt="Rebote"></div>
+                            <div class="metric-icon metric-icon-bounce"><i class="fas fa-arrow-right-from-bracket"></i></div>
                         </div>
                         <span class="metric-change negative">+0% este mes</span>
                     </div>

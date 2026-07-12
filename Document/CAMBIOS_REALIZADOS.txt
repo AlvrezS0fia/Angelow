@@ -1,0 +1,106 @@
+CAMBIOS REALIZADOS EN EL PROYECTO ANGELOW
+==========================================
+Resumen de modificaciones organizadas por archivo y funcionalidad.
+
+----------------------------------------------------------------
+1. bienvenida.js (front tienda)
+----------------------------------------------------------------
+- Se reemplazó el flujo del carrito para usar la base de datos como fuente principal.
+- Antes tenia ramas separadas para usuario logueado e invitado; ahora el flujo esta unificado.
+- Agregar al carrito guarda en la API (/api/carrito/agregar) y recarga desde /api/carrito.
+- Eliminar del carrito usa la API, pero si falla cae a localStorage.
+- Actualizar cantidad usa la API y sincroniza el stock localmente.
+- Se agrego el texto "Agotado" cuando el stock es 0 en productos y dentro del carrito.
+- El boton de compra se deshabilita cuando no hay stock.
+- Se limpia el carrito en BD al finalizar la compra (/api/carrito/vaciar).
+- Se mantiene localStorage como respaldo si la API falla.
+- Se normaliza la comparacion de cartId con String(...) para aceptar IDs numericos o strings.
+- No se borraron funcionalidades previas: favoritos, filtros, detalle de producto, rasca y gana, checkout, etc.
+
+----------------------------------------------------------------
+2. compra.js (checkout / finalizar compra)
+----------------------------------------------------------------
+- Se agrego captura de geolocalizacion del cliente al crear el pedido.
+- Esas coordenadas se envian como latitud_destino y longitud_destino en el payload.
+- Si el usuario denega la ubicacion, el pedido se guarda igual pero sin coordenadas.
+- Al completar la compra se limpia el carrito local y se llama a /api/carrito/vaciar.
+- No se rompio el flujo existente de generacion de factura, descuentos, envio ni pago.
+
+----------------------------------------------------------------
+3. CarritoController.php (API carrito)
+----------------------------------------------------------------
+- agregar() devuelve el cartId real de la base de datos.
+- Se valida stock antes de agregar y devuelve mensaje "Producto agotado" si corresponde.
+- Se agrego el metodo vaciar() para limpiar el carrito por usuario o por session de invitado.
+- Se agrego la ruta POST /api/carrito/vaciar.
+- index() ahora tambien devuelve stock_total para mostrar Agotado en el carrito.
+
+----------------------------------------------------------------
+4. PedidoModel.php (modelo de pedidos)
+----------------------------------------------------------------
+- Se agregaron las columnas latitud_destino y longitud_destino en el INSERT de pedidos.
+- Esto permite que el admin vea la ubicacion del pedido en el mapa.
+
+----------------------------------------------------------------
+5. panel.js (panel administracion)
+----------------------------------------------------------------
+- cargarPedidos() ahora extrae latitud_destino y longitud_destino de la API y las asigna a order.lat y order.lng.
+- refreshOrdersRealTime() consulta la API en vez de leer solo localStorage.
+- selectOrder() centra el mapa en el marcador del pedido seleccionado y abre el popup cuando hay coordenadas.
+- Se mantuvieron filtros, badges, tabla de pedidos y cierre automatico de sessiones.
+
+----------------------------------------------------------------
+6. panel.php (vista panel admin)
+----------------------------------------------------------------
+- Se agrego Font Awesome 6 por CDN.
+- Sidebar: se reemplazaron iconos PNG por iconos FA representativos por seccion.
+- Dashboard: se reemplazaron imagenes PNG por iconos FA en metricas.
+- Analítica: se reemplazaron imagenes PNG por iconos FA en metricas.
+- Inventario: se actualizo el include a inventario.php (sin perder la vista general).
+
+----------------------------------------------------------------
+7. inventario.php (vista inventario admin)
+----------------------------------------------------------------
+- Metricas de inventario ahora usan iconos FA en lugar de imagenes PNG.
+
+----------------------------------------------------------------
+8. panel.css (estilos admin)
+----------------------------------------------------------------
+- Se reemplazaron estilos de imagenes por estilos para iconos FA.
+- Todas las secciones del admin usan iconos azules unificados.
+- Se agregaron gradientes, sombras y animaciones hover para metricas.
+- El sidebar ahora renderiza iconos <i> con color primary.
+- Se mantuvo la compatibilidad con la estructura HTML existente.
+
+----------------------------------------------------------------
+9. perfil.php (perfil cliente)
+----------------------------------------------------------------
+- Sidebar con iconos FA por seccion: perfil, direcciones, pedidos, tarjetas, favoritos, carrito, autenticacion.
+- Titulos de seccion con iconos FA.
+- Botones con iconos FA en lugar de SVG inline.
+- Empty states con iconos FA.
+
+----------------------------------------------------------------
+10. perfil.css (estilos perfil)
+----------------------------------------------------------------
+- Se agregaron estilos para iconos en el sidebar, titulos de seccion y botones.
+- Estados activos y hover con color primary.
+- Ajuste responsivo para sidebar horizontal con iconos arriba y texto debajo.
+
+----------------------------------------------------------------
+11. Seguimiento de cambios adicionales
+----------------------------------------------------------------
+- Se agrego la CDN de Font Awesome 6 unicamente donde se requeria.
+- No se eliminaron imagenes existentes del proyecto; solo se dejaron de usar en los iconos del admin y perfil.
+- No se cambio la base de datos existente; solo se aprovecharon columnas ya disponibles.
+
+----------------------------------------------------------------
+ESTADO FINAL ESPERADO
+----------------------------------------------------------------
+- El carrito guarda en la base de datos tanto para usuarios como para invitados.
+- Si un producto tiene stock 0 se muestra Agotado y no se permite agregarlo.
+- El admin ve los pedidos con coordenadas en el mapa.
+- Los iconos del admin son uniformes en tonos azules.
+- El perfil del cliente tiene iconografia clara por seccion.
+- Las funcionalidades existentes (favoritos, filtros, detalle, checkout, rasca y gana) se mantienen intactas.
+----------------------------------------------------------------

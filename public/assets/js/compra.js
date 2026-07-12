@@ -79,6 +79,20 @@ function validarCedula(cedula) {
     return regex.test(cedula);
 }
 
+function obtenerUbicacionUsuario() {
+    return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+            resolve(null);
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            () => resolve(null),
+            { timeout: 10000, enableHighAccuracy: false, maximumAge: 300000 }
+        );
+    });
+}
+
 function validarPaso1() {
     let valido = true;
     const nombre = document.getElementById('nombre');
@@ -421,6 +435,13 @@ function generarNumeroFactura() {
 async function guardarPedido(facturaData) {
     const usuarioId = window.CURRENT_USER?.id || window.APP_USER_ID || 0;
 
+    let ubicacion = null;
+    try {
+        ubicacion = await obtenerUbicacionUsuario();
+    } catch (e) {
+        ubicacion = null;
+    }
+
     const pedidoData = {
         usuario_id: usuarioId,
         numero_pedido: facturaData.numero,
@@ -440,6 +461,8 @@ async function guardarPedido(facturaData) {
         subtotal: facturaData.subtotal,
         descuento: facturaData.descuento,
         total: facturaData.total,
+        latitud_destino: ubicacion?.lat || null,
+        longitud_destino: ubicacion?.lng || null,
         productos: facturaData.productos.map(p => ({
             producto_id: 0,
             nombre: p.nombre,
@@ -611,6 +634,15 @@ window.completePurchase = async function() {
     localStorage.removeItem('promoCode');
     descuentoAplicado = 0;
     codigoDescuento = "";
+
+    try {
+      await fetch(`${APP_URL}/api/carrito/vaciar`, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+      });
+    } catch (e) {
+      console.error('Error al vaciar carrito en BD:', e);
+    }
 
     const numeroFinal = facturaData.numero;
     sessionStorage.setItem('facturaData', JSON.stringify(facturaData));

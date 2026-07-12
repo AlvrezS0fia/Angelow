@@ -17,9 +17,8 @@ class CarritoController {
             return;
         }
 
-        // Obtener el nombre de la subcategoría desde la tabla categorias
         if ($usuario_id) {
-            $sql = "SELECT c.*, p.nombre, p.precio, p.imagenes, subcat.nombre as subcategoria, cat.nombre as categoria
+            $sql = "SELECT c.*, p.nombre, p.precio, p.imagenes, p.stock_total, subcat.nombre as subcategoria, cat.nombre as categoria
                     FROM carrito c 
                     JOIN productos p ON c.producto_id = p.id 
                     LEFT JOIN categorias subcat ON p.subcategoria_id = subcat.id
@@ -27,7 +26,7 @@ class CarritoController {
                     WHERE c.usuario_id = ?";
             $items = Database::query($sql, [$usuario_id])->fetchAll();
         } else {
-            $sql = "SELECT c.*, p.nombre, p.precio, p.imagenes, subcat.nombre as subcategoria, cat.nombre as categoria
+            $sql = "SELECT c.*, p.nombre, p.precio, p.imagenes, p.stock_total, subcat.nombre as subcategoria, cat.nombre as categoria
                     FROM carrito c 
                     JOIN productos p ON c.producto_id = p.id 
                     LEFT JOIN categorias subcat ON p.subcategoria_id = subcat.id
@@ -47,7 +46,8 @@ class CarritoController {
                 'selectedSize'=> $item['talla_seleccionada'],
                 'subcategory' => $item['subcategoria'] ?? '',
                 'category'    => $item['categoria'] ?? '',
-                'imgs'        => $imagenes ?: ['assets/imagenes/general/producto.png']
+                'imgs'        => $imagenes ?: ['assets/imagenes/general/producto.png'],
+                'stock'       => (int)($item['stock_total'] ?? 0)
             ];
         }, $items);
 
@@ -106,6 +106,9 @@ class CarritoController {
                 "UPDATE carrito SET cantidad = cantidad + ?, actualizado_en = NOW() WHERE id = ?",
                 [$cantidad, $existing['id']]
             );
+
+            echo json_encode(['success' => true, 'cartId' => (int)$existing['id']]);
+            return;
         } else {
             if ((int) $cantidad > (int) $producto['stock_total']) {
                 echo json_encode(['success' => false, 'message' => 'Stock insuficiente']);
@@ -117,9 +120,11 @@ class CarritoController {
                  VALUES (?, ?, ?, ?, ?, ?)",
                 [$usuario_id, $session_id, $producto_id, $cantidad, $producto['precio'], $talla]
             );
-        }
+            $newId = (int) Database::getInstance()->getConnection()->lastInsertId();
 
-        echo json_encode(['success' => true]);
+            echo json_encode(['success' => true, 'cartId' => $newId]);
+            return;
+        }
     }
 
     public function actualizar() {
@@ -199,6 +204,22 @@ class CarritoController {
             Database::query("DELETE FROM carrito WHERE session_id = ?", [$session_id]);
             setcookie('cart_session', '', time() - 3600, '/');
         }
+        echo json_encode(['success' => true]);
+    }
+
+    public function vaciar() {
+        if (ob_get_length()) ob_clean();
+        header('Content-Type: application/json');
+
+        $usuario_id = $_SESSION['user_id'] ?? null;
+        $session_id = $_COOKIE['cart_session'] ?? null;
+
+        if ($usuario_id) {
+            Database::query("DELETE FROM carrito WHERE usuario_id = ?", [$usuario_id]);
+        } elseif ($session_id) {
+            Database::query("DELETE FROM carrito WHERE session_id = ?", [$session_id]);
+        }
+
         echo json_encode(['success' => true]);
     }
 }

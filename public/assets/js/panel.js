@@ -72,7 +72,9 @@ async function cargarPedidos() {
                 estado: p.estado || 'pendiente',
                 usuario_id: p.usuario_id,
                 id: p.id,
-                total_productos: p.total_productos || 0
+                total_productos: p.total_productos || 0,
+                lat: p.latitud_destino,
+                lng: p.longitud_destino
             }));
             localStorage.setItem('angelow_orders', JSON.stringify(orders));
             renderOrdersList();
@@ -965,11 +967,11 @@ window.selectOrder = function(orderId) {
         if (item.dataset.id === orderId) {
             item.classList.add('selected');
 
-            const order = orders.find(o => o.id === orderId);
-            if (order && map) {
+            const order = orders.find(o => o.id == orderId || o.numero_pedido == orderId);
+            if (order && map && order.lat && order.lng) {
                 map.setView([order.lat, order.lng], 13);
                 map.eachLayer(layer => {
-                    if (layer instanceof L.Marker && layer.orderId === orderId) {
+                    if (layer instanceof L.Marker && layer.orderId == orderId) {
                         layer.openPopup();
                     }
                 });
@@ -1263,20 +1265,8 @@ function setupOrderFilters() {
 }
 
 // ======================== REFRESCAR PEDIDOS EN TIEMPO REAL ========================
-function refreshOrdersRealTime() {
-    // Recargar pedidos desde localStorage
-    const updatedOrders = JSON.parse(localStorage.getItem('angelow_orders')) || orders;
-    
-    if (JSON.stringify(updatedOrders) !== JSON.stringify(orders)) {
-        orders = updatedOrders;
-        renderOrdersList();
-        renderOrdersTable();
-        updateMapMarkers();
-        updateMetrics();
-        showToast({ title: "Actualizado", message: "Pedidos actualizados en tiempo real", type: "success" });
-    } else {
-        showToast({ title: "Sin cambios", message: "No hay nuevos pedidos", type: "info" });
-    }
+async function refreshOrdersRealTime() {
+    await cargarPedidos();
 }
 
 // ======================== SECCIÓN CLIENTES ========================

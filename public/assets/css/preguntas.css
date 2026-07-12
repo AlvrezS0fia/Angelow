@@ -200,7 +200,6 @@
             font-weight: 600;
             color: var(--text-dark);
             font-size: 17px;
-            user-select: none;
         }
 
         .faq-question:hover {

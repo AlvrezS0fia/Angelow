@@ -41,7 +41,6 @@ body {
     position: sticky;
     top: 0;
     z-index: 100;
-    backdrop-filter: blur(18px);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -524,15 +523,45 @@ body {
 }
 
 .admin-menu-icon {
+    font-size: 18px;
     width: 20px;
-    height: 20px;
-    opacity: 0.7;
+    text-align: center;
+    flex-shrink: 0;
+    color: var(--primary);
+    opacity: 0.85;
 }
+
+.admin-menu-icon.icon-dashboard { color: var(--primary); }
+.admin-menu-icon.icon-products { color: var(--primary); }
+.admin-menu-icon.icon-categories { color: var(--primary); }
+.admin-menu-icon.icon-orders { color: var(--primary); }
+.admin-menu-icon.icon-customers { color: var(--primary); }
+.admin-menu-icon.icon-delivery { color: var(--primary); }
+.admin-menu-icon.icon-analytics { color: var(--primary); }
+.admin-menu-icon.icon-settings { color: var(--primary); }
 
 .admin-menu a.active .admin-menu-icon,
 .admin-menu a:hover .admin-menu-icon {
     opacity: 1;
 }
+
+/* Iconos activos/hover todos en primary */
+.admin-menu a.active .icon-dashboard,
+.admin-menu a:hover .icon-dashboard { color: var(--primary); }
+.admin-menu a.active .icon-products,
+.admin-menu a:hover .icon-products { color: var(--primary); }
+.admin-menu a.active .icon-categories,
+.admin-menu a:hover .icon-categories { color: var(--primary); }
+.admin-menu a.active .icon-orders,
+.admin-menu a:hover .icon-orders { color: var(--primary); }
+.admin-menu a.active .icon-customers,
+.admin-menu a:hover .icon-customers { color: var(--primary); }
+.admin-menu a.active .icon-delivery,
+.admin-menu a:hover .icon-delivery { color: var(--primary); }
+.admin-menu a.active .icon-analytics,
+.admin-menu a:hover .icon-analytics { color: var(--primary); }
+.admin-menu a.active .icon-settings,
+.admin-menu a:hover .icon-settings { color: var(--primary); }
 
 /* BOTONES GENERALES */
 .btn {
@@ -607,16 +636,62 @@ body {
 .metric-icon {
     width: 48px;
     height: 48px;
-    border-radius: 12px;
-    background: var(--bg-soft);
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
 }
 
-.metric-icon img {
-    width: 24px;
-    filter: brightness(0) saturate(100%) hue-rotate(210deg);
+.metric-icon i {
+    color: white;
+    filter: none;
+}
+
+/* Colores por métrica dashboard - todos azules */
+.metric-icon-orders {
+    background: linear-gradient(135deg, #5E9DE6 0%, #3B82F6 100%);
+    box-shadow: 0 4px 12px rgba(94, 157, 230, 0.35);
+}
+.metric-icon-pending {
+    background: linear-gradient(135deg, #5E9DE6 0%, #2563EB 100%);
+    box-shadow: 0 4px 12px rgba(94, 157, 230, 0.35);
+}
+.metric-icon-favorites {
+    background: linear-gradient(135deg, #5E9DE6 0%, #3B82F6 100%);
+    box-shadow: 0 4px 12px rgba(94, 157, 230, 0.35);
+}
+.metric-icon-revenue {
+    background: linear-gradient(135deg, #5E9DE6 0%, #2563EB 100%);
+    box-shadow: 0 4px 12px rgba(94, 157, 230, 0.35);
+}
+.metric-icon-users {
+    background: linear-gradient(135deg, #5E9DE6 0%, #3B82F6 100%);
+    box-shadow: 0 4px 12px rgba(94, 157, 230, 0.35);
+}
+
+/* Colores por métrica analítica - todos azules */
+.metric-icon-visitors {
+    background: linear-gradient(135deg, #5E9DE6 0%, #3B82F6 100%);
+    box-shadow: 0 4px 12px rgba(94, 157, 230, 0.35);
+}
+.metric-icon-conversion {
+    background: linear-gradient(135deg, #5E9DE6 0%, #2563EB 100%);
+    box-shadow: 0 4px 12px rgba(94, 157, 230, 0.35);
+}
+.metric-icon-avg {
+    background: linear-gradient(135deg, #5E9DE6 0%, #3B82F6 100%);
+    box-shadow: 0 4px 12px rgba(94, 157, 230, 0.35);
+}
+.metric-icon-bounce {
+    background: linear-gradient(135deg, #5E9DE6 0%, #2563EB 100%);
+    box-shadow: 0 4px 12px rgba(94, 157, 230, 0.35);
+}
+
+.metric-card:hover .metric-icon {
+    transform: scale(1.08) rotate(-5deg);
 }
 
 .metric-value {
@@ -1053,7 +1128,6 @@ body {
     position: absolute;
     inset: 0;
     background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(10px);
     border-radius: 20px;
     border: 2px solid var(--accent);
     padding: 15px 12px;
@@ -1493,7 +1567,6 @@ input:checked+.slider:before {
     justify-content: center;
     align-items: center;
     z-index: 2000;
-    backdrop-filter: blur(4px);
     animation: fadeIn 0.3s;
 }
 
@@ -1956,7 +2029,6 @@ input:checked+.slider:before {
     justify-content: center;
     align-items: center;
     z-index: 2100;
-    backdrop-filter: blur(4px);
     animation: fadeIn 0.3s;
 }
 
@@ -2281,7 +2353,6 @@ input:checked+.slider:before {
     justify-content: center;
     align-items: center;
     z-index: 2200;
-    backdrop-filter: blur(4px);
     animation: fadeIn 0.3s;
 }
 
@@ -2403,7 +2474,6 @@ input:checked+.slider:before {
 
 .checkbox-wrapper input[type="checkbox"] {
     appearance: none;
-    -webkit-appearance: none;
     width: 26px;
     height: 26px;
     background: var(--white);
@@ -2441,7 +2511,6 @@ input:checked+.slider:before {
     font-size: 15px;
     color: var(--text-dark);
     cursor: pointer;
-    user-select: none;
 }
 
 .checkbox-hint {

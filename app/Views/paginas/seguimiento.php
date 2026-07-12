@@ -13,11 +13,15 @@ $user = $_SESSION['user'];
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Angelow - Mapa y Seguimiento de Entregas</title>
   <link rel="shortcut icon" href="<?= APP_URL ?>/assets/imagenes/general/favico.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" sizes="180x180" href="<?= APP_URL ?>/assets/imagenes/general/logos.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="<?= APP_URL ?>/assets/imagenes/general/logos.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="<?= APP_URL ?>/assets/imagenes/general/favico.ico">
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script>const APP_URL = '<?= APP_URL ?>';</script>
@@ -48,8 +52,13 @@ $user = $_SESSION['user'];
         <img src="<?= APP_URL ?>/assets/imagenes/general/favoritos.png" alt="Favoritos" style="width:24px;">
         <span id="favHeaderBadge" class="badge" style="display:none">0</span>
       </div>
-      <div class="icon-btn" onclick="window.location.href='<?= APP_URL ?>/'">
-        <img src="<?= APP_URL ?>/assets/imagenes/general/volver.png" alt="Inicio" style="width:24px;">
+      <div class="header-right">
+       <a href="<?= APP_URL ?>/" class="btn-back-header">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Volver
+       </a>
       </div>
     </div>
   </header>
@@ -64,6 +73,13 @@ $user = $_SESSION['user'];
       <!-- MAP CONTAINER -->
       <div class="map-container">
         <div id="map"></div>
+        <div id="mapSkeleton" class="map-skeleton">
+          <div class="skeleton-shimmer"></div>
+          <div class="skeleton-content">
+            <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="skeleton-logo">
+            <div class="skeleton-text">Cargando mapa...</div>
+          </div>
+        </div>
         
         <!-- VENTANA FLOTANTE: Planificador de Ruta -->
         <div class="controls-panel collapsed" id="controlsPanel">
@@ -109,9 +125,10 @@ $user = $_SESSION['user'];
                 </label>
                 <span class="input-hint">*Requerido</span>
               </div>
-              <div class="input-wrapper">
+              <div class="input-wrapper" style="position:relative;">
                 <i class="input-icon fas fa-map-pin"></i>
                 <input type="text" id="end-address" class="address-input" placeholder="Ingresa dirección de entrega">
+                <div id="addressSuggestions" class="autocomplete-dropdown" style="display:none;"></div>
               </div>
               <div class="address-suggestions">
                 <div class="suggestion" data-address="Carrera 15 #88-64, Medellín">
@@ -187,6 +204,31 @@ $user = $_SESSION['user'];
           <div class="gps-icon"><i class="fas fa-satellite"></i></div>
           <div class="gps-text"><span class="gps-status">GPS Activo</span><span class="gps-accuracy">Precisión: 15m</span></div>
         </div>
+
+        <!-- Layer Switcher -->
+        <div class="layer-switcher" id="layerSwitcher">
+          <button class="layer-btn active" data-layer="street" title="Mapa callejero">
+            <i class="fas fa-map"></i>
+          </button>
+          <button class="layer-btn" data-layer="satellite" title="Vista satélite">
+            <i class="fas fa-globe"></i>
+          </button>
+          <button class="layer-btn" data-layer="dark" title="Modo oscuro">
+            <i class="fas fa-moon"></i>
+          </button>
+        </div>
+
+        <!-- Notificación de entrega completada -->
+        <div id="liveNotification" class="notification" style="display:none">
+          <div class="notification-content">
+            <i class="fas fa-check-circle" style="font-size:1.5rem;"></i>
+            <div>
+              <strong>¡Pedido Entregado!</strong>
+              <div style="font-size:0.85rem;opacity:0.9;">Tu pedido ha sido entregado exitosamente</div>
+            </div>
+            <button class="notification-close" onclick="this.parentElement.parentElement.style.display='none'">×</button>
+          </div>
+        </div>
       </div>
 
       <!-- TRACKING PANEL (derecha) -->
@@ -242,8 +284,9 @@ $user = $_SESSION['user'];
   </footer>
 
   <!-- SCRIPTS -->
-  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.js"></script>
   <script src="<?= APP_URL ?>/assets/js/seguimiento.js"></script>
 </body>
 </html>

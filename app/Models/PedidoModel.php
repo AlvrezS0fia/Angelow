@@ -34,13 +34,15 @@ class PedidoModel {
                 nombre_cliente, email_cliente, telefono_cliente, cedula_cliente,
                 direccion_envio, barrio, ciudad, departamento, destinatario, informacion_adicional,
                 metodo_pago, metodo_envio, costo_envio, subtotal, descuento, total,
-                estado_pago, zona, prioridad
+                estado_pago, zona, prioridad,
+                latitud_destino, longitud_destino
             ) VALUES (
                 :usuario_id, :numero_pedido,
                 :nombre_cliente, :email_cliente, :telefono_cliente, :cedula_cliente,
                 :direccion_envio, :barrio, :ciudad, :departamento, :destinatario, :informacion_adicional,
                 :metodo_pago, :metodo_envio, :costo_envio, :subtotal, :descuento, :total,
-                :estado_pago, :zona, :prioridad
+                :estado_pago, :zona, :prioridad,
+                :latitud_destino, :longitud_destino
             )";
 
             $stmt = $this->db->prepare($sql);
@@ -65,7 +67,9 @@ class PedidoModel {
                 'total' => $data['total'],
                 'estado_pago' => 'procesando',
                 'zona' => 'centro',
-                'prioridad' => 'normal'
+                'prioridad' => 'normal',
+                'latitud_destino' => $data['latitud_destino'] ?? null,
+                'longitud_destino' => $data['longitud_destino'] ?? null
             ]);
 
             $pedidoId = (int) $this->db->lastInsertId();

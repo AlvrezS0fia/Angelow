@@ -66,24 +66,31 @@ $user = $_SESSION['user'];
 <div class="main-container">
     <aside class="sidebar-menu">
         <div class="menu-item active" data-section="datosPersonales">
+            <i class="fas fa-user"></i>
             <span>Perfil</span>
         </div>
         <div class="menu-item" data-section="direcciones">
+            <i class="fas fa-map-marker-alt"></i>
             <span>Direcciones</span>
         </div>
         <div class="menu-item" data-section="pedidos">
+            <i class="fas fa-box-open"></i>
             <span>Pedidos</span>
         </div>
         <div class="menu-item" data-section="metodosPago">
+            <i class="fas fa-credit-card"></i>
             <span>Tarjetas de crédito</span>
         </div>
         <div class="menu-item" data-section="favoritos">
+            <i class="fas fa-heart"></i>
             <span>Mis Favoritos</span>
         </div>
         <div class="menu-item" data-section="carrito">
+            <i class="fas fa-shopping-cart"></i>
             <span>Mi Carrito</span>
         </div>
         <div class="menu-item" data-section="autenticacion">
+            <i class="fas fa-shield-halved"></i>
             <span>Autenticación</span>
         </div>
     </aside>
@@ -93,12 +100,9 @@ $user = $_SESSION['user'];
         <!-- DATOS PERSONALES -->
         <div class="profile-section active" id="datosPersonales">
             <div class="profile-header">
-                <h1 class="profile-title">Datos personales</h1>
+                <h1 class="profile-title"><i class="fas fa-user-circle profile-title-icon"></i> Datos personales</h1>
                 <button class="edit-btn" id="editBtn" onclick="toggleEdit()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
+                    <i class="fas fa-pen"></i>
                     EDITAR
                 </button>
             </div>
@@ -149,11 +153,9 @@ $user = $_SESSION['user'];
         <!-- DIRECCIONES -->
         <div class="profile-section" id="direcciones">
             <div class="profile-header">
-                <h1 class="profile-title">Direcciones</h1>
+                <h1 class="profile-title"><i class="fas fa-map-marker-alt profile-title-icon"></i> Direcciones</h1>
                 <button class="primary-btn" onclick="showAddressForm()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 5v14M5 12h14"/>
-                    </svg>
+                    <i class="fas fa-plus"></i>
                     AGREGAR DIRECCIÓN
                 </button>
             </div>
@@ -161,14 +163,11 @@ $user = $_SESSION['user'];
                 <div class="address-list" id="addressList"></div>
                 <div class="empty-state" id="emptyAddressState" style="display: none;">
                     <div class="empty-icon">
-                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                            <circle cx="12" cy="10" r="3"></circle>
-                        </svg>
+                        <i class="fas fa-map-marker-alt"></i>
                     </div>
                     <p class="empty-text">¡AÚN NO TIENES NINGUNA DIRECCIÓN!</p>
                     <p class="empty-subtext">Agrega una dirección para recibir tus pedidos</p>
-                    <button class="primary-btn" onclick="showAddressForm()">AGREGAR DIRECCIÓN</button>
+                    <button class="primary-btn" onclick="showAddressForm()"><i class="fas fa-plus"></i> AGREGAR DIRECCIÓN</button>
                 </div>
                 <div class="address-form-container" id="addressFormContainer" style="display: none; margin-top: 30px;">
                     <h2>NUEVA DIRECCIÓN</h2>
@@ -228,21 +227,17 @@ $user = $_SESSION['user'];
         <!-- PEDIDOS -->
         <div class="profile-section" id="pedidos">
             <div class="profile-header">
-                <h1 class="profile-title">Mis Pedidos</h1>
+                <h1 class="profile-title"><i class="fas fa-box-open profile-title-icon"></i> Mis Pedidos</h1>
             </div>
             <div class="profile-card">
                 <div class="orders-list" id="ordersList"></div>
                 <div class="empty-state" id="emptyOrdersState">
                     <div class="empty-icon">
-                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                            <line x1="3" y1="6" x2="21" y2="6"></line>
-                            <path d="M16 10a4 4 0 0 1-8 0"></path>
-                        </svg>
+                        <i class="fas fa-box-open"></i>
                     </div>
                     <p class="empty-text">¡AÚN NO HAS REALIZADO NINGÚN PEDIDO!</p>
                     <p class="empty-subtext">Cuando realices un pedido, aparecerá aquí</p>
-                    <button class="primary-btn" onclick="window.location.href='<?= APP_URL ?>/'">EXPLORAR PRODUCTOS</button>
+                    <button class="primary-btn" onclick="window.location.href='<?= APP_URL ?>/'"><i class="fas fa-compass"></i> EXPLORAR PRODUCTOS</button>
                 </div>
             </div>
         </div>
@@ -250,21 +245,18 @@ $user = $_SESSION['user'];
         <!-- TARJETAS DE CRÉDITO -->
         <div class="profile-section" id="metodosPago">
             <div class="profile-header">
-                <h1 class="profile-title">Tarjetas de crédito</h1>
-                <button class="primary-btn" onclick="showCardForm()">AÑADIR TARJETA</button>
+                <h1 class="profile-title"><i class="fas fa-credit-card profile-title-icon"></i> Tarjetas de crédito</h1>
+                <button class="primary-btn" onclick="showCardForm()"><i class="fas fa-plus"></i> AÑADIR TARJETA</button>
             </div>
             <div class="profile-card">
                 <div class="card-list" id="cardList"></div>
                 <div class="empty-state" id="emptyCardState">
                     <div class="empty-icon">
-                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                            <line x1="1" y1="10" x2="23" y2="10"></line>
-                        </svg>
+                        <i class="fas fa-credit-card"></i>
                     </div>
                     <p class="empty-text">¡AÚN NO TIENES NINGÚN MÉTODO DE PAGO!</p>
                     <p class="empty-subtext">Agrega una tarjeta para pagar tus compras más rápido</p>
-                    <button class="primary-btn" onclick="showCardForm()">AÑADIR TARJETA</button>
+                    <button class="primary-btn" onclick="showCardForm()"><i class="fas fa-plus"></i> AÑADIR TARJETA</button>
                 </div>
                 <div class="card-form-container" id="cardFormContainer" style="display:none; margin-top: 30px;">
                     <h2>NUEVA TARJETA</h2>
@@ -382,19 +374,17 @@ $user = $_SESSION['user'];
         <!-- FAVORITOS -->
         <div class="profile-section" id="favoritos">
             <div class="profile-header">
-                <h1 class="profile-title">Mis Favoritos</h1>
+                <h1 class="profile-title"><i class="fas fa-heart profile-title-icon"></i> Mis Favoritos</h1>
             </div>
             <div class="profile-card">
                 <div class="favorites-grid" id="favoritesGrid"></div>
                 <div class="empty-state" id="emptyFavoritesState">
                     <div class="empty-icon">
-                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                        </svg>
+                        <i class="fas fa-heart"></i>
                     </div>
                     <p class="empty-text">¡AÚN NO TIENES PRODUCTOS FAVORITOS!</p>
                     <p class="empty-subtext">Guarda tus productos favoritos para comprarlos más tarde</p>
-                    <button class="primary-btn" onclick="window.location.href='<?= APP_URL ?>/'">EXPLORAR PRODUCTOS</button>
+                    <button class="primary-btn" onclick="window.location.href='<?= APP_URL ?>/'"><i class="fas fa-compass"></i> EXPLORAR PRODUCTOS</button>
                 </div>
             </div>
         </div>
@@ -402,7 +392,7 @@ $user = $_SESSION['user'];
         <!-- CARRITO -->
         <div class="profile-section" id="carrito">
             <div class="profile-header">
-                <h1 class="profile-title">Mi Carrito</h1>
+                <h1 class="profile-title"><i class="fas fa-shopping-cart profile-title-icon"></i> Mi Carrito</h1>
             </div>
             <div class="profile-card">
                 <div id="cartItemsProfile">
@@ -414,31 +404,31 @@ $user = $_SESSION['user'];
         <!-- AUTENTICACIÓN (AL FINAL) -->
         <div class="profile-section" id="autenticacion">
             <div class="profile-header">
-                <h1 class="profile-title">Autenticación</h1>
+                <h1 class="profile-title"><i class="fas fa-shield-halved profile-title-icon"></i> Autenticación</h1>
             </div>
             <div class="profile-card">
                 <div class="security-section">
-                    <h3 class="security-title">Contraseña</h3>
+                    <h3 class="security-title"><i class="fas fa-lock security-title-icon"></i> Contraseña</h3>
                     <p class="security-description">Usted todavía no tiene una contraseña definida.</p>
                     <div class="action-buttons">
-                        <button class="primary-btn" onclick="definePassword()">DEFINIR CONTRASEÑA</button>
-                        <button class="secondary-btn" onclick="recoverPassword()">RECUPERAR CONTRASEÑA</button>
+                        <button class="primary-btn" onclick="definePassword()"><i class="fas fa-key"></i> DEFINIR CONTRASEÑA</button>
+                        <button class="secondary-btn" onclick="recoverPassword()"><i class="fas fa-rotate-right"></i> RECUPERAR CONTRASEÑA</button>
                     </div>
                 </div>
                 <div class="security-section">
-                    <h3 class="security-title">Gestión de sesiones</h3>
+                    <h3 class="security-title"><i class="fas fa-desktop security-title-icon"></i> Gestión de sesiones</h3>
                     <p class="security-description">Usted tiene <span id="sessionCount">1</span> sesiones activas</p>
-                    <button class="primary-btn" onclick="viewSessions()">VER SESIONES</button>
+                    <button class="primary-btn" onclick="viewSessions()"><i class="fas fa-list"></i> VER SESIONES</button>
                 </div>
                 <div class="security-section">
-                    <h3 class="security-title">Autenticación de dos factores</h3>
+                    <h3 class="security-title"><i class="fas fa-fingerprint security-title-icon"></i> Autenticación de dos factores</h3>
                     <p class="security-description">Protege tu cuenta con un código adicional</p>
-                    <button class="success-btn" onclick="enableTwoFactor()">VERIFICACIÓN EN DOS PASOS</button>
+                    <button class="success-btn" onclick="enableTwoFactor()"><i class="fas fa-check-double"></i> VERIFICACIÓN EN DOS PASOS</button>
                 </div>
                 <div class="security-section" style="border-top:1px solid var(--border-light); padding-top:40px;">
-                    <h3 class="security-title" style="color:var(--error);">Cerrar sesión</h3>
+                    <h3 class="security-title" style="color:var(--error);"><i class="fas fa-right-from-bracket security-title-icon"></i> Cerrar sesión</h3>
                     <p class="security-description">CIERRA SESIÓN ACTUAL EN ANGELOW</p>
-                    <button class="danger-btn" onclick="showLogoutConfirm()">CERRAR SESIÓN</button>
+                    <button class="danger-btn" onclick="showLogoutConfirm()"><i class="fas fa-arrow-right-from-bracket"></i> CERRAR SESIÓN</button>
                 </div>
             </div>
         </div>

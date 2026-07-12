@@ -163,7 +163,6 @@
   box-shadow: 0 12px 20px rgba(0, 0, 0, 0.08);
   transition: var(--transition-smooth);
   cursor: pointer;
-  backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.6);
   transform-style: preserve-3d;
   background: rgba(255, 255, 255, 0.95);
@@ -193,7 +192,6 @@
 .promo-badge {
   display: inline-block;
   background: rgba(94, 157, 230, 0.2);
-  backdrop-filter: blur(8px);
   padding: 0.5rem 1.4rem;
   border-radius: 60px;
   font-size: 0.8rem;
@@ -264,7 +262,6 @@
 /* ======================== TEMPORIZADOR ======================== */
 .flash-timer {
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(8px);
   border-radius: 80px;
   padding: 10px 24px;
   display: inline-flex;
@@ -301,7 +298,6 @@
   top: 50%;
   transform: translateY(-50%);
   background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
   border: 1px solid #FBBF24;
   border-radius: 60px;
   width: 54px;
@@ -343,7 +339,6 @@
   background: rgba(255, 255, 255, 0.7);
   padding: 8px 20px;
   border-radius: 50px;
-  backdrop-filter: blur(4px);
 }
 
 .dot {
@@ -439,7 +434,6 @@
 
 .offer-card {
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
   border-radius: 32px;
   padding: 1.5rem;
   transition: var(--transition-smooth);
@@ -562,7 +556,6 @@
   font-family: 'Inter', sans-serif;
   background: linear-gradient(135deg, #3A7BC8, #5E9DE6);
   background-clip: text;
-  -webkit-background-clip: text;
   color: transparent;
   font-weight: 800;
 }
@@ -618,7 +611,6 @@
   padding: 1rem;
   cursor: pointer;
   transition: 0.3s;
-  user-select: none;
   box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.05), 0 4px 8px rgba(0, 0, 0, 0.05);
 }
 

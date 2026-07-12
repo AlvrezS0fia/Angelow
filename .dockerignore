@@ -1,0 +1,12 @@
+.git
+.gitignore
+.vscode
+node_modules
+.DS_Store
+*.log
+.env
+vendor
+docker
+docker-compose.yml
+Dockerfile
+Readme.md

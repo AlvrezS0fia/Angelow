@@ -53,7 +53,6 @@ header {
   position: sticky;
   top: 0;
   z-index: 100;
-  backdrop-filter: blur(18px);
 }
 
 header .logo {
@@ -619,7 +618,6 @@ header .logo {
   top: 100px;
   max-height: calc(100vh - 120px);
   overflow-y: auto;
-  backdrop-filter: blur(16px);
 }
 
 .summary-card h3 {

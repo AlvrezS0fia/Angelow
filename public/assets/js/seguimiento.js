@@ -41,6 +41,8 @@ function showToast({title, message, type = "info", duration = 4000}) {
     border-left:5px solid ${iconColor};
   `;
  
+  toast.style.position = 'relative';
+
   toast.innerHTML = `
     <div style="width:36px;height:36px;border-radius:50%;background:${iconColor};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
       <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:white;fill:none;stroke-width:3;">
@@ -55,10 +57,23 @@ function showToast({title, message, type = "info", duration = 4000}) {
       <div style="font-size:14px;color:#4B6A9B;">${message}</div>
     </div>
     <button style="background:none;border:none;font-size:24px;cursor:pointer;color:#4B6A9B;opacity:0.6;">×</button>
+    <div class="toast-progress" style="background:${iconColor};"></div>
   `;
  
   container.appendChild(toast);
-  setTimeout(() => toast.style.cssText += 'opacity:1;transform:translateX(0);', 100);
+  const progressBar = toast.querySelector('.toast-progress');
+  setTimeout(() => {
+    toast.style.cssText += 'opacity:1;transform:translateX(0);position:relative;';
+    progressBar.style.width = '100%';
+    let startTime = Date.now();
+    const animateBar = () => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 1 - elapsed / duration);
+      progressBar.style.width = (remaining * 100) + '%';
+      if (remaining > 0) requestAnimationFrame(animateBar);
+    };
+    requestAnimationFrame(animateBar);
+  }, 100);
  
   toast.querySelector('button').onclick = () => {
     toast.style.opacity = '0';
@@ -244,15 +259,47 @@ function closeFavorites() {
 let appState = { routeCalculated: false, journeyStarted: false, journeyCompleted: false, calculating: false };
 
 let map = L.map('map').setView([6.2442, -75.5812], 14);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap'
-}).addTo(map);
+
+const tileLayers = {
+  street: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }),
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '© Esri'
+  }),
+  dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© CARTO'
+  })
+};
+
+let currentLayer = 'street';
+
+// Ocultar skeleton cuando cargue el primer tile (ANTES de agregar la capa)
+map.on('tileload', function() {
+  const sk = document.getElementById('mapSkeleton');
+  if (sk && !sk.classList.contains('hidden')) {
+    sk.classList.add('hidden');
+    setTimeout(() => sk.remove(), 600);
+  }
+}, { once: true });
+
+// Fallback: ocultar skeleton tras 5s por si el tile no carga (adblock, etc.)
+setTimeout(function() {
+  const sk = document.getElementById('mapSkeleton');
+  if (sk && !sk.classList.contains('hidden')) {
+    sk.classList.add('hidden');
+    setTimeout(() => sk.remove(), 600);
+  }
+}, 5000);
+
+tileLayers.street.addTo(map);
 
 let startPoint = null;
 let endPoint = null;
 let startMarker = null;
 let endMarker = null;
 let driverMarker = null;
+let pulseMarker = null;
 let userMarker = null;
 let routingControl = null;
 let routeCoordinates = [];
@@ -261,26 +308,96 @@ let trackingInterval = null;
 let currentStep = 0;
 const totalSteps = 4;
 
-const startIcon = L.icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-});
-const endIcon = L.icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-});
-const driverIcon = L.icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-});
-const userIcon = L.icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-  iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-});
+let routeGlowLine = null;
+let routeDecorator = null;
+let dashAnimationInterval = null;
+let driverHeading = 0;
+
+const geocodeCache = new Map();
+
+function getCachedGeocode(address) {
+  const key = address.toLowerCase().trim();
+  return geocodeCache.get(key);
+}
+
+function setCachedGeocode(address, result) {
+  const key = address.toLowerCase().trim();
+  geocodeCache.set(key, result);
+}
+
+function bearing(fromLat, fromLng, toLat, toLng) {
+  const dLng = (toLng - fromLng) * Math.PI / 180;
+  const y = Math.sin(dLng) * Math.cos(toLat * Math.PI / 180);
+  const x = Math.cos(fromLat * Math.PI / 180) * Math.sin(toLat * Math.PI / 180)
+          - Math.sin(fromLat * Math.PI / 180) * Math.cos(toLat * Math.PI / 180) * Math.cos(dLng);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+function easeInOut(t) {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+}
+
+function teardropSvg(color) {
+  const id = color.replace('#', '');
+  return `<svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="g${id}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${adjustColor(color, 30)}"/>
+        <stop offset="100%" stop-color="${color}"/>
+      </linearGradient>
+      <filter id="s${id}">
+        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+      </filter>
+    </defs>
+    <path d="M12.5 0C5.6 0 0 5.6 0 12.5C0 21.9 12.5 41 12.5 41C12.5 41 25 21.9 25 12.5C25 5.6 19.4 0 12.5 0Z"
+      fill="url(#g${id})" filter="url(#s${id})" stroke="white" stroke-width="1.2"/>
+    <circle cx="12.5" cy="11" r="3.5" fill="rgba(255,255,255,0.25)"/>
+  </svg>`;
+}
+
+function circleSvg(color, arrow = false, rotation = 0) {
+  const id = color.replace('#', '');
+  const arrowSvg = arrow
+    ? `<g transform="rotate(${rotation}, 18, 18)"><path d="M16 6 L22 16 L16 13 L10 16 Z" fill="white" opacity="0.9"/></g>`
+    : '';
+  return `<svg width="36" height="36" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="c${id}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${adjustColor(color, 25)}"/>
+        <stop offset="100%" stop-color="${color}"/>
+      </linearGradient>
+      <filter id="f${id}">
+        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.35"/>
+      </filter>
+    </defs>
+    <circle cx="18" cy="18" r="16" fill="url(#c${id})" filter="url(#f${id})" stroke="white" stroke-width="2"/>
+    <circle cx="18" cy="18" r="12" fill="rgba(255,255,255,0.15)"/>
+    ${arrowSvg}
+  </svg>`;
+}
+
+function adjustColor(hex, amount) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, (num >> 16) + amount);
+  const g = Math.min(255, ((num >> 8) & 0x00FF) + amount);
+  const b = Math.min(255, (num & 0x0000FF) + amount);
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+
+function svgMarker(svg, size, anchor, popupAnchor) {
+  return L.divIcon({
+    className: 'custom-marker',
+    html: svg,
+    iconSize: size,
+    iconAnchor: anchor,
+    popupAnchor: popupAnchor
+  });
+}
+
+const startIcon = svgMarker(teardropSvg('#22c55e'), [25, 41], [12, 41], [0, -34]);
+const endIcon = svgMarker(teardropSvg('#ef4444'), [25, 41], [12, 41], [0, -34]);
+const driverIcon = svgMarker(circleSvg('#3b82f6', true), [36, 36], [18, 18], [0, -20]);
+const userIcon = svgMarker(circleSvg('#8b5cf6'), [36, 36], [18, 18], [0, -20]);
 
 const startAddressInput = document.getElementById('start-address');
 const endAddressInput = document.getElementById('end-address');
@@ -357,9 +474,28 @@ function updateDriverInfo() {
   driverName.textContent = 'Carlos Rodríguez';
 }
 
+function animateValue(el, start, end, duration = 400) {
+  const range = start - end;
+  if (range === 0) return;
+  const startTime = performance.now();
+  const isIncreasing = end > start;
+  function step(currentTime) {
+    const elapsed = currentTime - startTime;
+    const t = Math.min(elapsed / duration, 1);
+    const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    const current = Math.round(start + (end - start) * eased);
+    el.textContent = current;
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
 function updateRemainingTime(progress, totalTimeMinutes) {
-  const remainingMinutes = Math.round((totalTimeMinutes * (100 - progress)) / 100);
-  estimatedTime.textContent = remainingMinutes;
+  const newValue = Math.round((totalTimeMinutes * (100 - progress)) / 100);
+  const oldValue = parseInt(estimatedTime.textContent) || newValue;
+  if (oldValue !== newValue) {
+    animateValue(estimatedTime, oldValue, newValue, 300);
+  }
 }
 
 function resetMapState() {
@@ -367,7 +503,11 @@ function resetMapState() {
   if (routingControl) { map.removeControl(routingControl); routingControl = null; }
   if (endMarker) { map.removeLayer(endMarker); endMarker = null; }
   if (driverMarker) { map.removeLayer(driverMarker); driverMarker = null; }
+  if (pulseMarker) { map.removeLayer(pulseMarker); pulseMarker = null; }
   if (trackingInterval) { clearInterval(trackingInterval); trackingInterval = null; }
+  if (routeGlowLine) { map.removeLayer(routeGlowLine); routeGlowLine = null; }
+  if (routeDecorator) { map.removeLayer(routeDecorator); routeDecorator = null; }
+  if (dashAnimationInterval) { clearInterval(dashAnimationInterval); dashAnimationInterval = null; }
   endPoint = null;
   routeCoordinates = [];
   routeIndex = 0;
@@ -386,32 +526,81 @@ function resetMapState() {
 
 function startTracking(totalTimeMinutes) {
   if (routeCoordinates.length === 0) return;
-  driverMarker = L.marker(startPoint, { icon: driverIcon }).addTo(map).bindPopup('<b>🚛 Repartidor</b><br>Iniciando entrega...').openPopup();
+  const driverDivIcon = svgMarker(circleSvg('#3b82f6', true), [36, 36], [18, 18], [0, -20]);
+  driverMarker = L.marker(startPoint, { icon: driverDivIcon, zIndexOffset: 1000 }).addTo(map)
+    .bindPopup('<b>🚛 Repartidor</b><br>Iniciando entrega...').openPopup();
+  const pulseEl = L.divIcon({ className: 'marker-pulse-ring', iconSize: [44, 44], iconAnchor: [22, 22] });
+  const pulseMarker = L.marker(startPoint, { icon: pulseEl, interactive: false }).addTo(map);
+  driverHeading = 0;
   if (trackingInterval) clearInterval(trackingInterval);
   routeIndex = 0;
   appState.journeyStarted = true;
   setStep(2);
   updateStatus('traveling', 'En Camino', 'Siguiendo la ruta de entrega...');
   updateDriverInfo();
-  const totalTimeMs = totalTimeMinutes * 60 * 1000 * 0.2;
+
+  const simSpeed = 0.15;
+  const totalTimeMs = totalTimeMinutes * 60 * 1000 * simSpeed;
   const steps = routeCoordinates.length;
   const intervalMs = Math.max(10, totalTimeMs / steps);
-  const increment = Math.max(1, Math.floor(routeCoordinates.length / 50));
+  const stepIncrement = Math.max(1, Math.floor(routeCoordinates.length / 60));
+  let subStep = 0;
+  const SUB_STEPS = 5;
+
+  let trailCoords = [];
+  let trailLine = null;
+
   trackingInterval = setInterval(() => {
-    if (routeIndex < routeCoordinates.length) {
-      const currentPos = routeCoordinates[routeIndex];
-      driverMarker.setLatLng(currentPos);
-      if (routeIndex % 10 === 0) map.setView(currentPos, Math.max(map.getZoom(), 15), { animate: true, duration: 0.05 });
+    if (routeIndex < routeCoordinates.length - 1) {
+      const idx = routeIndex;
+      const nextIdx = Math.min(idx + 1, routeCoordinates.length - 1);
+      const current = routeCoordinates[idx];
+      const next = routeCoordinates[nextIdx];
+
+      const t = easeInOut(Math.min(subStep / SUB_STEPS, 1));
+      const lat = current.lat + (next.lat - current.lat) * t;
+      const lng = current.lng + (next.lng - current.lng) * t;
+      const pos = [lat, lng];
+
+      const heading = bearing(current.lat, current.lng, next.lat, next.lng);
+      if (!isNaN(heading) && Math.abs(heading - driverHeading) > 2) {
+        driverHeading = heading;
+        driverMarker.setIcon(svgMarker(circleSvg('#3b82f6', true, heading), [36, 36], [18, 18], [0, -20]));
+      }
+
+      driverMarker.setLatLng(pos);
+      if (pulseMarker) pulseMarker.setLatLng(pos);
+
+      trailCoords.push(L.latLng(lat, lng));
+      if (trailCoords.length > 1) {
+        if (trailLine) map.removeLayer(trailLine);
+        trailLine = L.polyline(trailCoords, {
+          color: '#3b82f6', weight: 3, opacity: 0.35, className: 'trail-line'
+        }).addTo(map);
+      }
+
+      if (routeIndex % 8 === 0) {
+        map.setView(pos, Math.max(map.getZoom(), 15), { animate: true, duration: 0.1 });
+      }
+
       const progress = (routeIndex / routeCoordinates.length) * 100;
       driverMarker.setPopupContent(`<b>🚛 Repartidor</b><br>Progreso: ${Math.round(progress)}%`);
       updateTrackingProgress(progress);
       updateRemainingTime(progress, totalTimeMinutes);
-      routeIndex += increment;
+
+      subStep++;
+      if (subStep >= SUB_STEPS) {
+        subStep = 0;
+        routeIndex += stepIncrement;
+      }
     } else {
       clearInterval(trackingInterval);
+      if (dashAnimationInterval) { clearInterval(dashAnimationInterval); dashAnimationInterval = null; }
       appState.journeyCompleted = true;
       setStep(3);
       updateStatus('completed', 'Entrega Completada', '¡Pedido entregado exitosamente!');
+      const finalIcon = svgMarker(circleSvg('#22c55e'), [36, 36], [18, 18], [0, -20]);
+      driverMarker.setIcon(finalIcon);
       driverMarker.setPopupContent('<b>🎉 Entregado</b><br>¡Pedido completado!').openPopup();
       updateTrackingProgress(100);
       document.getElementById('liveNotification').style.display = 'block';
@@ -434,6 +623,9 @@ function normalizeAddress(address) {
 async function geocodeAddress(address) {
   const originalAddress = address.trim();
   if (!originalAddress) throw new Error('Dirección vacía.');
+  const cached = getCachedGeocode(originalAddress);
+  if (cached) return cached;
+
   const addressVariations = [
     `${normalizeAddress(originalAddress)}, Medellín, Antioquia, Colombia`,
     `${originalAddress}, Medellín, Antioquia, Colombia`,
@@ -476,32 +668,74 @@ async function geocodeAddress(address) {
     const validResults = results.filter(isValidResult).map(result => ({ ...result, score: scoreResult(result, variation) }));
     allResults = allResults.concat(validResults);
     if (validResults.length > 0 && validResults[0].score > 0.5) break;
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
   if (allResults.length === 0) throw new Error('No se encontró la dirección. Verifica e intenta nuevamente.');
   allResults.sort((a, b) => b.score - a.score);
   const bestResult = allResults[0];
-  return {
+  const result = {
     lat: parseFloat(bestResult.lat),
     lng: parseFloat(bestResult.lon),
     display_name: bestResult.display_name
   };
+  setCachedGeocode(originalAddress, result);
+  return result;
+}
+
+function drawEnhancedRoute(coords) {
+  if (routeGlowLine) map.removeLayer(routeGlowLine);
+  if (routeDecorator) map.removeLayer(routeDecorator);
+  if (dashAnimationInterval) { clearInterval(dashAnimationInterval); dashAnimationInterval = null; }
+
+  const latlngs = coords.map(c => L.latLng(c.lat ?? c[0], c.lng ?? c[1]));
+
+  routeGlowLine = L.polyline(latlngs, {
+    color: '#3b82f6',
+    weight: 9,
+    opacity: 0.2,
+    className: 'route-glow'
+  }).addTo(map);
+
+  const mainLine = L.polyline(latlngs, {
+    color: '#5E9DE6',
+    weight: 4,
+    opacity: 0.95,
+    dashArray: '12, 8'
+  }).addTo(map);
+
+  let dashOffset = 0;
+  dashAnimationInterval = setInterval(() => {
+    dashOffset -= 1;
+    mainLine.setStyle({ dashOffset: String(dashOffset) });
+  }, 100);
+
+  if (typeof L.polylineDecorator !== 'undefined' && latlngs.length > 1) {
+    routeDecorator = L.polylineDecorator(latlngs, {
+      patterns: [
+        { offset: 15, repeat: 50, symbol: L.Symbol.arrowHead({ pixelSize: 8, polygon: false, pathOptions: { color: '#5E9DE6', weight: 2, opacity: 0.7 } }) }
+      ]
+    }).addTo(map);
+  }
 }
 
 function calculateRoute(start, end) {
   if (routingControl) map.removeControl(routingControl);
+  const btn = document.getElementById('calculateRoute');
+  if (btn) { btn.innerHTML = '<span class="spinner"></span> Calculando...'; btn.classList.add('btn-loading'); }
   updateStatus('calculating', 'Trazando Ruta', 'Calculando la mejor ruta...');
   routingControl = L.Routing.control({
     waypoints: [L.latLng(start.lat, start.lng), L.latLng(end.lat, end.lng)],
     routeWhileDragging: false,
     show: false,
-    lineOptions: { styles: [{ color: '#7B9FD8', weight: 5, opacity: 0.8 }] },
+    lineOptions: { styles: [{ color: '#5E9DE6', weight: 3, opacity: 0.3, dashArray: '1, 0' }] },
     createMarker: function() { return null; }
   }).addTo(map);
   routingControl.on('routesfound', function(e) {
+    if (btn) { btn.innerHTML = '<i class="fas fa-route"></i> Calcular Ruta'; btn.classList.remove('btn-loading'); }
     const routes = e.routes;
     const route = routes[0];
     routeCoordinates = route.coordinates;
+    drawEnhancedRoute(routeCoordinates);
     const group = new L.featureGroup([startMarker, endMarker]);
     map.fitBounds(group.getBounds().pad(0.1), { animate: true, duration: 1, maxZoom: 15 });
     appState.routeCalculated = true;
@@ -514,6 +748,7 @@ function calculateRoute(start, end) {
     setTimeout(() => startTracking(time), 3000);
   });
   routingControl.on('routingerror', function(e) {
+    if (btn) { btn.innerHTML = '<i class="fas fa-route"></i> Calcular Ruta'; btn.classList.remove('btn-loading'); }
     updateStatus('error', 'Error en Ruta', 'No se pudo calcular la ruta.');
     appState.calculating = false;
   });
@@ -566,6 +801,18 @@ if (navigator.geolocation) {
 //  EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+  // Cargar ruta guardada
+  const rutaGuardada = localStorage.getItem('angelow_ruta_guardada');
+  if (rutaGuardada) {
+    try {
+      const r = JSON.parse(rutaGuardada);
+      if (r.destino && confirm(`Tienes una ruta guardada a "${r.destino}". ¿Cargarla?`)) {
+        endAddressInput.value = r.destino;
+        setTimeout(() => document.getElementById('calculateRoute')?.click(), 1000);
+      }
+    } catch (e) { /* ignorar */ }
+  }
 
   const profileBtn = document.getElementById('profileBtn');
   const dropdownMenu = document.getElementById('dropdownMenu');
@@ -645,17 +892,79 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!endAddress) { updateStatus('error', 'Error', 'Por favor ingresa la dirección de destino.'); return; }
     if (appState.calculating || appState.journeyStarted) return;
     appState.calculating = true;
+    const panel = document.getElementById('controlsPanel');
+    if (panel && panel.classList.contains('expanded')) {
+      panel.classList.remove('expanded');
+      panel.classList.add('collapsed');
+    }
     updateStatus('calculating', 'Calculando Ruta', 'Preparando ruta...');
     try {
       const endLocation = await geocodeAddress(endAddress);
       endPoint = L.latLng(endLocation.lat, endLocation.lng);
       if (endMarker) map.removeLayer(endMarker);
-      if (driverMarker) map.removeLayer(driverMarker);
+      if (driverMarker) { map.removeLayer(driverMarker); driverMarker = null; }
+      if (pulseMarker) { map.removeLayer(pulseMarker); pulseMarker = null; }
       endMarker = L.marker(endPoint, { icon: endIcon }).addTo(map).bindPopup(`<b>🎯 Destino</b><br>${endLocation.display_name}`);
       calculateRoute(startPoint, endLocation);
     } catch (error) { updateStatus('error', 'Error', error.message); appState.calculating = false; }
   });
-  document.getElementById('clearRoute')?.addEventListener('click', resetMapState);
+  document.getElementById('clearRoute')?.addEventListener('click', () => {
+    endAddressInput.value = '';
+    resetMapState();
+  });
+
+  // GUARDAR RUTA
+  document.getElementById('saveRoute')?.addEventListener('click', () => {
+    const dest = endAddressInput.value.trim();
+    const dist = routeDistance.textContent;
+    const t = routeTime.textContent;
+    if (!dest || dist === '--') {
+      showToast({ title: 'Sin ruta', message: 'Calcula una ruta primero', type: 'warning' });
+      return;
+    }
+    localStorage.setItem('angelow_ruta_guardada', JSON.stringify({ destino: dest, distancia: dist, tiempo: t }));
+    showToast({ title: 'Ruta guardada', message: 'Podrás retomarla al recargar la página', type: 'success' });
+  });
+
+  // AUTOCOMPLETE DE DIRECCIONES
+  let debounceTimer = null;
+  endAddressInput.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    const q = this.value.trim();
+    const dropdown = document.getElementById('addressSuggestions');
+    if (q.length < 3) { dropdown.style.display = 'none'; return; }
+    debounceTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&countrycodes=co&bounded=1&viewbox=-75.7,6.0,-75.4,6.4`,
+          { headers: { 'User-Agent': 'DeliveryMapApp/1.0' } }
+        );
+        const data = await res.json();
+        if (!data.length) { dropdown.style.display = 'none'; return; }
+        dropdown.innerHTML = data.map(d => `
+          <div class="autocomplete-item" data-address="${d.display_name}">
+            <i class="fas fa-map-pin"></i>
+            <span>${d.display_name}</span>
+          </div>
+        `).join('');
+        dropdown.style.display = 'block';
+        dropdown.querySelectorAll('.autocomplete-item').forEach(el => {
+          el.addEventListener('click', () => {
+            endAddressInput.value = el.getAttribute('data-address');
+            dropdown.style.display = 'none';
+          });
+        });
+      } catch (e) { document.getElementById('addressSuggestions').style.display = 'none'; }
+    }, 300);
+  });
+
+  // Cerrar autocomplete al hacer clic fuera
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('addressSuggestions');
+    if (!e.target.closest('#end-address') && !e.target.closest('#addressSuggestions')) {
+      if (dropdown) dropdown.style.display = 'none';
+    }
+  });
 
   document.querySelectorAll('.call-btn').forEach(btn => btn.addEventListener('click', () => showToast({ title: 'Llamando', message: 'Llamando al repartidor...', type: 'info' })));
   document.querySelectorAll('.message-btn').forEach(btn => btn.addEventListener('click', () => showToast({ title: 'Mensaje', message: 'Abriendo chat...', type: 'info' })));
@@ -667,6 +976,22 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('zoomIn')?.addEventListener('click', () => map.zoomIn());
   document.getElementById('zoomOut')?.addEventListener('click', () => map.zoomOut());
   document.getElementById('resetView')?.addEventListener('click', () => { if (userMarker) map.setView(userMarker.getLatLng(), 16); else map.setView([6.2442, -75.5812], 14); });
+
+  // LAYER SWITCHER
+  document.querySelectorAll('.layer-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const layer = this.getAttribute('data-layer');
+      if (layer === currentLayer) return;
+      document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      Object.keys(tileLayers).forEach(k => {
+        if (k === layer) tileLayers[k].addTo(map);
+        else if (map.hasLayer(tileLayers[k])) map.removeLayer(tileLayers[k]);
+      });
+      currentLayer = layer;
+    });
+  });
+
   document.getElementById('refreshStatus')?.addEventListener('click', () => {
     updateStatus(statusIndicator.classList[2]?.replace('status-', '') || 'waiting', statusTitle.textContent.replace('Estado: ', ''), statusMessage.textContent);
     showToast({ message: 'Estado actualizado', type: 'success' });
