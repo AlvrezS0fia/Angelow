@@ -1148,3 +1148,10 @@ renderFavorites();
 updateFavBadges();
 checkPendingFavorite();
 initScratchCard();
+if (new URLSearchParams(window.location.search).has('welcome')) {
+  const nombre = (window.phpUser && window.phpUser.nombre) ? window.phpUser.nombre : (currentUser ? currentUser.nombre : '');
+  alert('¡Bienvenido a ANGELOW' + (nombre ? ', ' + nombre + '' : '') + '!');
+  const url = new URL(window.location.href);
+  url.searchParams.delete('welcome');
+  window.history.replaceState({}, '', url.toString());
+}

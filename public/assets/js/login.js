@@ -161,13 +161,12 @@ window.handleEmailLogin = async function() {
         if (data.success) {
             showMessage(data.message, 'success');
             setTimeout(() => {
-                let redirectUrl = APP_URL + '/';  // por defecto: inicio
+                alert('¡Bienvenido a ANGELOW, ' + (data.nombre || '') + '!');
+                let redirectUrl = APP_URL + '/';
                 if (data.redirect) {
-                    // Si es URL absoluta (http...), usarla directamente
                     if (data.redirect.startsWith('http')) {
                         redirectUrl = data.redirect;
                     } else {
-                        // Si es relativa, concatenar limpiando barras
                         const cleanBase = APP_URL.replace(/\/$/, '');
                         const cleanRedirect = data.redirect.replace(/^\//, '');
                         redirectUrl = cleanBase + '/' + cleanRedirect;
@@ -244,6 +243,7 @@ window.handleEmailRegister = async function() {
         if (data.success) {
             showMessage(data.message, 'success');
             setTimeout(() => {
+                alert('¡Bienvenido a ANGELOW, ' + (data.nombre || '') + '!');
                 window.location.href = APP_URL + '/';
             }, 1500);
         } else {

@@ -12,13 +12,12 @@ return [
     ['method' => 'POST', 'path' => '/procesar-compra', 'controller' => 'CompraController', 'action' => 'procesar'],
     ['method' => 'GET', 'path' => '/factura', 'controller' => 'FacturaController', 'action' => 'index'],
     ['method' => 'GET', 'path' => '/seguimiento', 'controller' => 'SeguimientoController', 'action' => 'index'],
-    // ['method' => 'GET', 'path' => '/debug-session', 'controller' => 'DebugController', 'action' => 'session'],
+    ['method' => 'GET', 'path' => '/debug-session', 'controller' => 'DebugController', 'action' => 'session'],
     // Panel de administración
     ['method' => 'GET', 'path' => '/admin', 'controller' => 'Admin\\DashboardController', 'action' => 'index'],
     ['method' => 'GET', 'path' => '/admin/pedidos', 'controller' => 'Admin\\PedidosController', 'action' => 'index'],
     ['method' => 'GET', 'path' => '/admin/usuarios', 'controller' => 'Admin\\UsuariosController', 'action' => 'index'],
     ['method' => 'GET', 'path' => '/admin/repartidores', 'controller' => 'Admin\\RepartidorController', 'action' => 'index'],
-    ['method' => 'GET', 'path' => '/perfil', 'controller' => 'PerfilController', 'action' => 'index'],
     ['method' => 'GET', 'path' => '/admin/inventario', 'controller' => 'Admin\\InventarioController', 'action' => 'index'],
     
     // Documentos legales y de soporte
@@ -46,7 +45,7 @@ return [
     ['method' => 'POST',   'path' => '/api/carrito/actualizar','controller' => 'Api\\CarritoController', 'action' => 'actualizar'],
     ['method' => 'DELETE', 'path' => '/api/carrito/eliminar',  'controller' => 'Api\\CarritoController', 'action' => 'eliminar'],
     ['method' => 'POST',   'path' => '/api/carrito/sincronizar','controller' => 'Api\\CarritoController', 'action' => 'sincronizar'],
-['method' => 'POST',   'path' => '/api/carrito/vaciar',     'controller' => 'Api\\CarritoController', 'action' => 'vaciar'],
+    ['method' => 'POST',   'path' => '/api/carrito/vaciar',     'controller' => 'Api\\CarritoController', 'action' => 'vaciar'],
 
      // ========== RUTAS API FAVORITOS ==========
      ['method' => 'GET',    'path' => '/api/favoritos',         'controller' => 'Api\\FavoritoController', 'action' => 'index'],
@@ -67,8 +66,10 @@ return [
      ['method' => 'GET',    'path' => '/api/inventario',         'controller' => 'Api\\StockController', 'action' => 'index'],
      ['method' => 'POST',   'path' => '/api/inventario',         'controller' => 'Api\\StockController', 'action' => 'update'],
      ['method' => 'GET',    'path' => '/api/clientes',           'controller' => 'Admin\\ClientesController', 'action' => 'index'],
+     ['method' => 'POST',   'path' => '/api/clientes',           'controller' => 'Admin\\ClientesController', 'action' => 'store'],
      ['method' => 'POST',   'path' => '/api/clientes/buscar',    'controller' => 'Admin\\ClientesController', 'action' => 'buscar'],
      ['method' => 'POST',   'path' => '/api/clientes/rol',       'controller' => 'Admin\\ClientesController', 'action' => 'cambiarRol'],
+     ['method' => 'DELETE', 'path' => '/api/clientes/{id}',      'controller' => 'Admin\\ClientesController', 'action' => 'destroy'],
      ['method' => 'GET',    'path' => '/api/pedidos',             'controller' => 'Admin\\PedidosController', 'action' => 'obtenerPedidos'],
      ['method' => 'POST',   'path' => '/api/pedidos/estado',     'controller' => 'Admin\\PedidosController', 'action' => 'updateStatus'],
      ['method' => 'GET',    'path' => '/api/mis-pedidos',          'controller' => 'Cliente\\PedidosController', 'action' => 'index'],
@@ -77,4 +78,35 @@ return [
      ['method' => 'GET',    'path' => '/api/mis-pedidos/:id/factura', 'controller' => 'Cliente\\PedidosController', 'action' => 'factura'],
      ['method' => 'POST',   'path' => '/api/inventario/update',    'controller' => 'Api\\StockController', 'action' => 'update'],
      ['method' => 'POST',   'path' => '/api/inventario/ajustar',    'controller' => 'Api\\StockController', 'action' => 'ajustar'],
-];
+
+     // ========== API REPARTIDOR ==========
+     ['method' => 'POST',   'path' => '/api/repartidor/auth/login',   'controller' => 'Api\\RepartidorAuthController', 'action' => 'login'],
+     ['method' => 'POST',   'path' => '/api/repartidor/auth/logout',  'controller' => 'Api\\RepartidorAuthController', 'action' => 'logout'],
+     ['method' => 'GET',    'path' => '/api/repartidor/auth/me',      'controller' => 'Api\\RepartidorAuthController', 'action' => 'me'],
+
+     ['method' => 'GET',    'path' => '/api/repartidor/pedidos',           'controller' => 'Api\\RepartidorPedidosController', 'action' => 'index'],
+     ['method' => 'GET',    'path' => '/api/repartidor/pedidos/{id}',      'controller' => 'Api\\RepartidorPedidosController', 'action' => 'show'],
+     ['method' => 'POST',   'path' => '/api/repartidor/pedidos',           'controller' => 'Api\\RepartidorPedidosController', 'action' => 'create'],
+     ['method' => 'PUT',    'path' => '/api/repartidor/pedidos/{id}/estado','controller' => 'Api\\RepartidorPedidosController', 'action' => 'updateStatus'],
+     ['method' => 'DELETE', 'path' => '/api/repartidor/pedidos/{id}',      'controller' => 'Api\\RepartidorPedidosController', 'action' => 'destroy'],
+
+     ['method' => 'POST',   'path' => '/api/repartidor/seguimiento/ubicacion', 'controller' => 'Api\\RepartidorSeguimientoController', 'action' => 'ubicacion'],
+     ['method' => 'GET',    'path' => '/api/repartidor/seguimiento/{pedidoId}','controller' => 'Api\\RepartidorSeguimientoController', 'action' => 'show'],
+
+     ['method' => 'GET',    'path' => '/api/repartidor/dashboard/stats',         'controller' => 'Api\\RepartidorDashboardController', 'action' => 'stats'],
+     ['method' => 'GET',    'path' => '/api/repartidor/dashboard/recent-orders', 'controller' => 'Api\\RepartidorDashboardController', 'action' => 'recentOrders'],
+     ['method' => 'GET',    'path' => '/api/repartidor/dashboard/low-stock',     'controller' => 'Api\\RepartidorDashboardController', 'action' => 'lowStock'],
+
+     ['method' => 'GET',    'path' => '/api/repartidor/clientes',      'controller' => 'Api\\RepartidorClientesController', 'action' => 'index'],
+     ['method' => 'GET',    'path' => '/api/repartidor/clientes/{id}', 'controller' => 'Api\\RepartidorClientesController', 'action' => 'show'],
+
+     ['method' => 'POST',   'path' => '/api/repartidor/documentos/subir',       'controller' => 'Api\\RepartidorDocumentosController', 'action' => 'subir'],
+     ['method' => 'GET',    'path' => '/api/repartidor/documentos/{repartidorId}','controller' => 'Api\\RepartidorDocumentosController', 'action' => 'index'],
+     ['method' => 'GET',    'path' => '/api/repartidor/documentos',             'controller' => 'Api\\RepartidorDocumentosController', 'action' => 'index'],
+     
+     // Página repartidor
+     ['method' => 'GET', 'path' => '/repartidor', 'controller' => 'RepartidorController', 'action' => 'index'],
+     ['method' => 'GET', 'path' => '/repartidor/login', 'controller' => 'RepartidorAuthController', 'action' => 'showLogin'],
+     ['method' => 'POST', 'path' => '/repartidor/login', 'controller' => 'RepartidorAuthController', 'action' => 'login'],
+     ['method' => 'GET', 'path' => '/repartidor/logout', 'controller' => 'RepartidorAuthController', 'action' => 'logout'],
+ ];

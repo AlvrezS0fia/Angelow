@@ -52,13 +52,8 @@ $user = $_SESSION['user'];
         <img src="<?= APP_URL ?>/assets/imagenes/general/favoritos.png" alt="Favoritos" style="width:24px;">
         <span id="favHeaderBadge" class="badge" style="display:none">0</span>
       </div>
-      <div class="header-right">
-       <a href="<?= APP_URL ?>/" class="btn-back-header">
-        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M19 12H5M12 19l-7-7 7-7"/>
-        </svg>
-        Volver
-       </a>
+      <div class="icon-btn" onclick="window.location.href='<?= APP_URL ?>/'">
+        <img src="<?= APP_URL ?>/assets/imagenes/general/volver.png" alt="Inicio" style="width:24px;">
       </div>
     </div>
   </header>

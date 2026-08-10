@@ -247,6 +247,24 @@ header {
   filter: brightness(0) invert(1);
 }
 
+.icon-btn-repartidor {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+}
+
+.icon-btn-repartidor:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: scale(1.1);
+}
+
+.icon-btn-repartidor img {
+  filter: brightness(0) invert(1);
+}
+
+.icon-btn-repartidor:hover img {
+  filter: brightness(0) invert(1);
+}
+
 .badge {
   position: absolute;
   top: -6px;

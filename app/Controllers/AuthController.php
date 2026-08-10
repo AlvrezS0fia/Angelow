@@ -52,7 +52,8 @@ class AuthController extends Controller {
         $this->json([
             'success' => true,
             'message' => 'Login exitoso',
-            'redirect' => '/',
+            'redirect' => $redirectUrl,
+            'nombre' => $user['nombre'],
             'rol' => $_SESSION['user']['rol']
         ]);
     }
@@ -129,7 +130,8 @@ class AuthController extends Controller {
             $this->json([
                 'success' => true,
                 'message' => 'Registro exitoso',
-                'redirect' => APP_URL . '/'
+                'redirect' => APP_URL . '/',
+                'nombre' => $nombre
             ]);
         } else {
             $this->json(['success' => false, 'message' => 'Error al registrar. Intenta de nuevo']);
@@ -197,7 +199,7 @@ class AuthController extends Controller {
             ];
 
             // Redirección según rol
-            $redirectUrl = ($_SESSION['user']['rol'] === 'administrador') ? '/admin' : '/';
+            $redirectUrl = ($_SESSION['user']['rol'] === 'administrador') ? '/admin?welcome=1' : '/?welcome=1';
             $this->redirect($redirectUrl);
         } else {
             $this->redirect('/auth/login');

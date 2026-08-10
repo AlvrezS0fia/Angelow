@@ -24,28 +24,37 @@ class UsuarioModel {
     }
 
     public function create($data) {
-        // Verificar que los campos existen en $data
         $email = $data['email'] ?? null;
         $nombre = $data['nombre'] ?? null;
+        $apellido = $data['apellido'] ?? null;
         $password_hash = $data['password_hash'] ?? null;
         $rol = $data['rol'] ?? 'cliente';
+        $telefono = $data['telefono'] ?? null;
+        $direccion = $data['direccion'] ?? null;
+        $tipo_vehiculo = $data['tipo_vehiculo'] ?? null;
+        $placa_vehiculo = $data['placa_vehiculo'] ?? null;
+        $estado = $data['estado'] ?? 'activo';
         $acepta_terminos = isset($data['acepta_terminos']) ? ($data['acepta_terminos'] ? 1 : 0) : 0;
         $fecha_registro = $data['fecha_registro'] ?? date('Y-m-d H:i:s');
-        $estado = $data['estado'] ?? 'activo';
         
-        $sql = "INSERT INTO usuarios (email, nombre, password_hash, rol, acepta_terminos, fecha_registro, estado) 
-                VALUES (:email, :nombre, :password_hash, :rol, :acepta_terminos, :fecha_registro, :estado)";
+        $sql = "INSERT INTO usuarios (email, nombre, apellido, password_hash, rol, telefono, direccion, tipo_vehiculo, placa_vehiculo, estado, acepta_terminos, fecha_registro) 
+                VALUES (:email, :nombre, :apellido, :password_hash, :rol, :telefono, :direccion, :tipo_vehiculo, :placa_vehiculo, :estado, :acepta_terminos, :fecha_registro)";
         
         $stmt = $this->db->prepare($sql);
         
         return $stmt->execute([
             'email' => $email,
             'nombre' => $nombre,
+            'apellido' => $apellido,
             'password_hash' => $password_hash,
             'rol' => $rol,
+            'telefono' => $telefono,
+            'direccion' => $direccion,
+            'tipo_vehiculo' => $tipo_vehiculo,
+            'placa_vehiculo' => $placa_vehiculo,
+            'estado' => $estado,
             'acepta_terminos' => $acepta_terminos,
-            'fecha_registro' => $fecha_registro,
-            'estado' => $estado
+            'fecha_registro' => $fecha_registro
         ]);
     }
 
@@ -84,5 +93,10 @@ class UsuarioModel {
     public function updateRol($id, $rol) {
         $stmt = $this->db->prepare("UPDATE usuarios SET rol = :rol WHERE id = :id");
         return $stmt->execute(['rol' => $rol, 'id' => $id]);
+    }
+
+    public function delete($id) {
+        $stmt = $this->db->prepare("DELETE FROM usuarios WHERE id = :id");
+        return $stmt->execute(['id' => $id]);
     }
 }

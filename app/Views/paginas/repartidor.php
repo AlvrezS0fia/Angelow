@@ -90,6 +90,9 @@
   <div id="loginScreen" class="min-h-screen flex items-center justify-center px-5 bg-black">
     <div class="w-full max-w-md bg-[#0f0f0f] rounded-2xl p-6 shadow-xl border border-gray-800">
       <div class="flex justify-center mb-5">
+        <img src="https://angelow.com.co/assets/imagenes/general/logos.png" alt="ANGELOW" class="w-16 h-16 object-contain" onerror="this.style.display='none'">
+      </div>
+      <div class="flex justify-center mb-5">
         <div class="bg-green-500/20 p-3 rounded-full">
           <i data-lucide="bike" class="w-10 h-10 text-green-500"></i>
         </div>
@@ -117,21 +120,27 @@
     <div id="dynamicHeader" class="bg-[#0c0c0c] border-b border-gray-800 px-4 pt-5 pb-3 sticky top-0 z-20">
       <div class="flex justify-between items-center">
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center overflow-hidden border-2 border-green-500">
-            <img id="profileAvatar" src="https://randomuser.me/api/portraits/men/32.jpg" alt="avatar" class="w-full h-full object-cover">
-          </div>
+          <a href="/" class="block">
+            <img src="https://angelow.com.co/assets/imagenes/general/logos.png" alt="ANGELOW" class="w-10 h-10 object-contain rounded-lg bg-white/10 p-1" onerror="this.style.display='none'">
+          </a>
           <div>
             <h2 id="driverName" class="font-bold text-white text-lg">Carlos Pérez</h2>
             <div class="flex items-center gap-1">
               <i data-lucide="star" class="w-3.5 h-3.5 fill-yellow-400 text-yellow-400"></i>
               <span id="driverRating" class="text-gray-200 text-sm">4.8</span>
               <span class="text-gray-500 text-xs ml-1">(124)</span>
+              <span id="connectionStatus" class="text-xs text-gray-500 ml-2 hidden" style="font-size:10px;">● Conectado al admin</span>
             </div>
           </div>
         </div>
-        <button id="logoutBtnHeader" class="bg-gray-800 hover:bg-gray-700 text-red-400 px-3 py-2 rounded-full text-sm font-medium flex items-center gap-1">
-          <i data-lucide="log-out" class="w-4 h-4"></i> Salir
-        </button>
+        <div class="flex items-center gap-2">
+          <a href="http://localhost:3000" target="_blank" class="bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-full text-sm font-medium flex items-center gap-1 transition-smooth">
+            <i data-lucide="external-link" class="w-4 h-4"></i> Panel Repartidor
+          </a>
+          <button id="logoutBtnHeader" class="bg-gray-800 hover:bg-gray-700 text-red-400 px-3 py-2 rounded-full text-sm font-medium flex items-center gap-1">
+            <i data-lucide="log-out" class="w-4 h-4"></i> Salir
+          </button>
+        </div>
       </div>
     </div>
 
@@ -203,13 +212,19 @@
   </div>
 
   <script>
+    const APP_URL = '<?= APP_URL ?? '' ?>';
+    <?php if (isset($_SESSION['user']) && ($_SESSION['user']['rol'] ?? '') === 'repartidor'): ?>
+    const PHP_USER = <?php echo json_encode($_SESSION['user']); ?>;
+    <?php else: ?>
+    const PHP_USER = null;
+    <?php endif; ?>
     // -------------------- ESTADO GLOBAL --------------------
-    let isLoggedIn = false;
+    let isLoggedIn = <?php echo isset($_SESSION['user']) && ($_SESSION['user']['rol'] ?? '') === 'repartidor' ? 'true' : 'false'; ?>;
     let currentDriver = {
-      name: "Carlos Pérez",
-      rating: 4.8,
+      name: "<?php echo isset($_SESSION['user']) ? htmlspecialchars(($_SESSION['user']['nombre'] ?? '') . ' ' . ($_SESSION['user']['apellido'] ?? '')) : 'Carlos Pérez'; ?>",
+      rating: <?php echo isset($_SESSION['user']) ? number_format($_SESSION['user']['calificacion_promedio'] ?? 5.00, 1) : '4.8'; ?>,
       profileImg: "https://randomuser.me/api/portraits/men/32.jpg",
-      phone: "+57 310 555 1234"
+      phone: "<?php echo isset($_SESSION['user']) ? htmlspecialchars($_SESSION['user']['telefono'] ?? '+57 310 555 1234') : '+57 310 555 1234'; ?>"
     };
     let dailyEarnings = 48750;      // COP
     let dailyDeliveries = 4;
@@ -246,6 +261,25 @@
     // Helper para refrescar íconos Lucide
     function refreshIcons() {
       if (window.lucide) lucide.createIcons();
+    }
+
+    async function loadDashboardData() {
+      try {
+        const token = localStorage.getItem('repartidor_token');
+        if (!token) return;
+        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+        const res = await fetch('/api/repartidor/dashboard/stats', { headers });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.today_earnings) dailyEarnings = data.today_earnings;
+        if (data.total_deliveries) dailyDeliveries = data.total_deliveries;
+        if (data.rating) {
+          currentDriver.rating = data.rating;
+          document.getElementById('driverRating').innerText = data.rating;
+        }
+      } catch (e) {
+        console.warn('No se pudieron cargar datos del dashboard:', e);
+      }
     }
     
     // Actualizar Header con datos del conductor
@@ -284,7 +318,7 @@
             <h3 class="font-semibold text-white flex items-center gap-1"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Órdenes cercanas</h3>
             <span class="text-xs text-gray-400">${availableOrders.length} disponibles</span>
           </div>
-          <div class="orders-scroll max-h-80 overflow-y-auto space-y-3 pr-1 custom-scroll">
+          <div class="orders-scroll max-h-80 overflow-y-auto space-y-3 pr-1 custom-scroll" id="availableOrdersContainer">
             ${availableOrders.length === 0 ? '<div class="text-center text-gray-500 py-10">✨ No hay órdenes cercanas</div>' : 
               availableOrders.map(order => `
                 <div class="bg-[#131313] rounded-xl p-4 border border-gray-800 order-card transition-all" data-order-id="${order.id}">
@@ -304,6 +338,51 @@
           </div>
         </div>
       `;
+      
+      // Intentar cargar órdenes reales desde API si hay token
+      const token = localStorage.getItem('repartidor_token');
+      if (token) {
+        fetch(`${APP_URL || ''}/api/repartidor/pedidos`, {
+          headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+        })
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            const container = document.getElementById('availableOrdersContainer');
+            if (container) {
+              container.innerHTML = data.map(order => `
+                <div class="bg-[#131313] rounded-xl p-4 border border-gray-800 order-card transition-all" data-order-id="${order.id}">
+                  <div class="flex justify-between items-start">
+                    <div><span class="text-green-400 font-bold">$${(parseFloat(order.total) || 0).toLocaleString()}</span></div>
+                    <span class="bg-gray-800 text-xs px-2 py-1 rounded-full">📋 ${order.numero_pedido || order.id}</span>
+                  </div>
+                  <div class="mt-2 text-sm text-gray-300">${order.client_name || order.client_name || 'Cliente'}</div>
+                  <div class="text-xs text-gray-400 mt-1">${order.delivery_address || ''}</div>
+                  <div class="flex gap-3 mt-4">
+                    <button class="accept-order-btn bg-green-600 hover:bg-green-500 flex-1 py-2.5 rounded-xl font-semibold tap-btn transition" data-id="${order.id}">✅ Aceptar</button>
+                    <button class="reject-order-btn bg-gray-700 hover:bg-gray-600 flex-1 py-2.5 rounded-xl font-semibold tap-btn transition" data-id="${order.id}">❌ Rechazar</button>
+                  </div>
+                </div>
+              `).join('');
+              document.querySelectorAll('.accept-order-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                  const id = parseInt(btn.dataset.id);
+                  const order = data.find(o => o.id == id);
+                  if (order) acceptOrder({ ...order, totalPay: parseFloat(order.total) || 0, tip: 0 });
+                });
+              });
+              document.querySelectorAll('.reject-order-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                  const id = parseInt(btn.dataset.id);
+                  availableOrders = availableOrders.filter(o => o.id !== id);
+                  renderHomeView();
+                });
+              });
+            }
+          }
+        })
+        .catch(() => {});
+      }
       
       // Mapa en home
       setTimeout(() => {
@@ -329,27 +408,6 @@
         });
       }
       
-      document.querySelectorAll('.accept-order-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const id = parseInt(btn.dataset.id);
-          const order = availableOrders.find(o => o.id === id);
-          if (order) {
-            const card = btn.closest('.order-card');
-            card.classList.add('animate-accept');
-            setTimeout(() => {
-              acceptOrder(order);
-            }, 180);
-          }
-        });
-      });
-      
-      document.querySelectorAll('.reject-order-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = parseInt(btn.dataset.id);
-          availableOrders = availableOrders.filter(o => o.id !== id);
-          renderHomeView();
-        });
-      });
       refreshIcons();
     }
     
@@ -501,7 +559,7 @@
           <h2 class="text-xl font-bold flex items-center gap-2"><i data-lucide="wallet"></i> Ganancias</h2>
           <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 text-center">
             <p class="text-gray-300 text-sm">Total acumulado hoy</p>
-            <p class="text-4xl font-black text-green-400">$${dailyEarnings.toLocaleString()}</p>
+            <p class="text-4xl font-black text-green-400" id="todayEarningsValue">$${dailyEarnings.toLocaleString()}</p>
             <p class="text-gray-400 mt-1">${dailyDeliveries} entregas completadas</p>
           </div>
           <div class="bg-[#131313] rounded-xl p-4">
@@ -511,6 +569,16 @@
           </div>
         </div>
       `;
+      const token = localStorage.getItem('repartidor_token');
+      if (token) {
+        fetch('/api/repartidor/dashboard/stats', { headers: { 'Authorization': 'Bearer ' + token } })
+          .then(r => r.ok ? r.json() : Promise.reject())
+          .then(data => {
+            const el = document.getElementById('todayEarningsValue');
+            if (el && data.today_earnings) el.textContent = '$' + Number(data.today_earnings).toLocaleString();
+          })
+          .catch(() => {});
+      }
       refreshIcons();
     }
     
@@ -526,7 +594,9 @@
           <div class="bg-[#131313] rounded-xl p-4">
             <p class="flex justify-between"><span class="text-gray-300">📦 Entregas totales</span><span class="font-medium">${dailyDeliveries + 28}</span></p>
             <p class="flex justify-between mt-2"><span class="text-gray-300">⏱️ Tiempo activo</span><span>2 semanas</span></p>
-            <button id="logoutProfileBtn" class="w-full mt-6 bg-red-800/40 text-red-400 py-3 rounded-xl tap-btn">Cerrar sesión</button>
+            <p class="flex justify-between mt-2"><span class="text-gray-300">💰 Ganancias totales</span><span class="text-green-400 font-bold">$${(dailyEarnings + 350000).toLocaleString()}</span></p>
+            <a href="/admin/repartidores" target="_blank" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl tap-btn text-center block font-semibold">Panel de Administración</a>
+            <button id="logoutProfileBtn" class="w-full mt-3 bg-red-800/40 text-red-400 py-3 rounded-xl tap-btn">Cerrar sesión</button>
           </div>
         </div>
       `;
@@ -548,25 +618,58 @@
     }
     
     // Cierre de sesión
-    function logout() {
+    async function logout() {
+      try {
+        await fetch(APP_URL + '/repartidor/logout', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' }
+        });
+      } catch (e) {
+        console.warn('Error al cerrar sesión:', e);
+      }
       isLoggedIn = false;
       activeOrder = null;
+      localStorage.removeItem('repartidor_token');
       loginScreen.classList.remove('hidden');
       appContainer.classList.add('hidden');
       if (homeMap) { homeMap.remove(); homeMap = null; }
       if (activeMapInstance) { activeMapInstance.remove(); activeMapInstance = null; }
+      window.location.href = APP_URL + '/repartidor/login';
     }
     
-    // Login con OTP
-    document.getElementById('loginBtn').addEventListener('click', () => {
+    // Login con OTP (fallback demo si no hay sesión PHP)
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      const phone = document.getElementById('phoneNumber').value.trim();
       const otp = document.getElementById('otpCode').value.trim();
-      if (otp === "123456") {
+
+      if (!phone) {
+        alert('Ingresa tu número de teléfono');
+        return;
+      }
+
+      try {
+        const res = await fetch(APP_URL + '/repartidor/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: phone, password: otp || 'demo123' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          window.location.href = data.redirect || APP_URL + '/repartidor';
+          return;
+        } else {
+          alert(data.message || 'Credenciales incorrectas');
+        }
+      } catch (e) {
+        console.warn('API de login repartidor no disponible, usando modo demo');
+      }
+
+      if (otp === "123456" || otp === "") {
         isLoggedIn = true;
         loginScreen.classList.add('hidden');
         appContainer.classList.remove('hidden');
         updateHeaderUI();
         setActiveNav("home");
-        // Geolocalización real si se permite
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(pos => {
             userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -574,7 +677,7 @@
           }, () => {});
         }
       } else {
-        alert("Código incorrecto. Usa 123456");
+        alert("Código incorrecto. Usa 123456 o conecta con el backend");
       }
     });
     
@@ -607,5 +710,36 @@
       refreshIcons();
     });
   </script>
+  <footer style="background: #0a0a0a; border-top: 1px solid #1f1f1f; padding: 20px; text-align: center; margin-top: 40px;">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
+      <img src="https://angelow.com.co/assets/imagenes/general/logos.png" alt="ANGELOW" style="height: 24px; opacity: 0.8;" onerror="this.style.display='none'">
+      <span style="color: #9ca3af; font-weight: 700; font-size: 14px;">ANGELOW</span>
+    </div>
+    <p style="color: #6b7280; font-size: 12px;">&copy; 2025 ANGELOW. Todos los derechos reservados.</p>
+    <div style="margin-top: 8px; display: flex; justify-content: center; gap: 12px;">
+      <a href="/" style="color: #9ca3af; font-size: 12px; text-decoration: none;">Tienda</a>
+      <a href="/contactenos" style="color: #9ca3af; font-size: 12px; text-decoration: none;">Contacto</a>
+      <a href="/documentos/Preguntas" style="color: #9ca3af; font-size: 12px; text-decoration: none;">Ayuda</a>
+    </div>
+  </footer>
+  <?php if (isset($_SESSION['user']) && ($_SESSION['user']['rol'] ?? '') === 'repartidor'): ?>
+  <script>
+    (function() {
+      isLoggedIn = true;
+      const user = PHP_USER || <?php echo json_encode($_SESSION['user']); ?>;
+      if (user) {
+        currentDriver.name = (user.nombre || '') + ' ' + (user.apellido || '');
+        currentDriver.rating = parseFloat(user.calificacion_promedio || 5.00);
+        currentDriver.phone = user.telefono || '+57 310 555 1234';
+        dailyEarnings = parseFloat(user.ganancias_totales || 0);
+        dailyDeliveries = parseInt(user.total_entregas || 0);
+      }
+      loginScreen.classList.add('hidden');
+      appContainer.classList.remove('hidden');
+      updateHeaderUI();
+      setActiveNav('home');
+    })();
+  </script>
+  <?php endif; ?>
 </body>
 </html>
