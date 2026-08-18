@@ -57,12 +57,7 @@ $user = $user ?? null;
     <div class="icon-btn" id="contactBtn"><a href="<?= APP_URL ?>/contactenos"><img src="<?= APP_URL ?>/assets/imagenes/general/contactenos.png" alt="Contacto" style="width:24px;"></a></div>
     <div class="icon-btn" id="cartBtnHeader"><img src="<?= APP_URL ?>/assets/imagenes/general/carro.png" alt="Carrito" style="width:24px;"><span id="cartCount" class="badge" style="display:none"></span></div>
     <div class="icon-btn" id="favBtnHeader"><img src="<?= APP_URL ?>/assets/imagenes/general/favoritos.png" alt="Favoritos" style="width:24px;"><span id="favHeaderBadge" class="badge" style="display:none">0</span></div>
-    <div class="icon-btn icon-btn-repartidor">
-      <a href="/repartidor/login" target="_blank" title="Ser Repartidor" style="display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; text-decoration: none; width: 100%; height: 100%;">
-        <img src="<?= APP_URL ?>/assets/imagenes/general/motico.png" alt="Repartidor" style="width: 22px; height: 22px; filter: brightness(0) invert(1);">
-      </a>
-    </div>
-    <div class="icon-btn" id="profileBtn"><img src="<?= APP_URL ?>/assets/imagenes/general/avatar.png" alt="Perfil" style="width:24px;"><div class="dropdown-menu" id="dropdownMenu"><a href="<?= APP_URL ?>/perfil" class="dropdown-item" id="loginLink">Mi perfil</a><a href="<?= APP_URL ?>/seguimiento" class="dropdown-item" id="trackOrderLink">Rastrea tu pedido</a><a href="#" class="dropdown-item" id="openFavoritesFromMenu"><span>Mis Favoritos</span><span id="favBadge" class="badge" style="position:static; margin-left:auto; display:none;">0</span></a></div></div>
+    <div class="icon-btn" id="profileBtn"><img src="<?= APP_URL ?>/assets/imagenes/general/avatar.png" alt="Perfil" style="width:24px;"><div class="dropdown-menu" id="dropdownMenu"><a href="<?= APP_URL ?>/perfil" class="dropdown-item" id="loginLink">Mi perfil</a><a href="<?= APP_URL ?>/seguimiento" class="dropdown-item" id="trackOrderLink">Rastrea tu pedido</a><a href="#" class="dropdown-item" id="openFavoritesFromMenu"><span>Mis Favoritos</span><span id="favBadge" class="badge" style="position:static; margin-left:auto; display:none;">0</span></a><a href="<?= APP_URL ?>/repartidor/login" class="dropdown-item" id="serRepartidorMenu">Ser Repartidor</a></div></div>
   </div>
 </header>
 

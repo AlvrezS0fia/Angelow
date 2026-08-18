@@ -1,0 +1,211 @@
+/* Variables globales */
+:root {
+  --primary: #5E9DE6;
+  --primary-dark: #3a7bd5;
+  --accent: #7FBBF2;
+  --bg-light: #F8FBFE;
+  --bg-soft: #EDF4FC;
+  --text-dark: #1E3A8A;
+  --text-secondary: #4B6A9B;
+  --white: #ffffff;
+  --shadow: rgba(94, 157, 230, 0.12);
+  --shadow-hover: rgba(94, 157, 230, 0.25);
+  --border-light: #E0E7F5;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg-light);
+  color: var(--text-dark);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+.repartidor-login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-soft) 100%);
+  padding: 20px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.repartidor-login-card {
+  background: var(--white);
+  border-radius: 24px;
+  padding: 40px 32px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-light);
+  text-align: center;
+}
+
+.repartidor-logo {
+  margin-bottom: 24px;
+}
+
+.repartidor-logo img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.08));
+}
+
+.repartidor-login-card h1 {
+  color: var(--text-dark);
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.repartidor-login-card p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 28px;
+}
+
+.repartidor-form-group {
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.repartidor-form-group label {
+  display: block;
+  color: var(--text-dark);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.repartidor-form-group input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border-light);
+  background: var(--bg-light);
+  color: var(--text-dark);
+  font-size: 15px;
+  font-family: inherit;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.repartidor-form-group input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--shadow);
+  background: var(--white);
+}
+
+.repartidor-form-group input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.repartidor-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: var(--gradient-primary);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s;
+  font-family: inherit;
+  box-shadow: 0 4px 14px var(--shadow);
+}
+
+.repartidor-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px var(--shadow-hover);
+}
+
+.repartidor-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.repartidor-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.repartidor-back:hover {
+  color: var(--primary);
+}
+
+.repartidor-message {
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  display: none;
+}
+
+.repartidor-message.error {
+  display: block;
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.repartidor-message.success {
+  display: block;
+  background: rgba(16, 185, 129, 0.08);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.repartidor-message.warning {
+  display: block;
+  background: rgba(245, 158, 11, 0.08);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+.validation-error {
+  color: var(--error);
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 4px;
+  display: none;
+}
+
+.repartidor-form-group.invalid input {
+  border-color: var(--error);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.repartidor-form-group.invalid .validation-error {
+  display: block;
+}
+
+.repartidor-form-group.valid input {
+  border-color: var(--success);
+}

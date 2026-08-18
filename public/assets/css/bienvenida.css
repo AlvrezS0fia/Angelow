@@ -142,6 +142,13 @@ header {
   gap: 15px;
 }
 
+.header-icons {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+}
+
 .logo {
   display: flex;
   align-items: center;
@@ -247,24 +254,6 @@ header {
   filter: brightness(0) invert(1);
 }
 
-.icon-btn-repartidor {
-  background: linear-gradient(135deg, #10b981, #059669);
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-}
-
-.icon-btn-repartidor:hover {
-  background: linear-gradient(135deg, #059669, #047857);
-  transform: scale(1.1);
-}
-
-.icon-btn-repartidor img {
-  filter: brightness(0) invert(1);
-}
-
-.icon-btn-repartidor:hover img {
-  filter: brightness(0) invert(1);
-}
-
 .badge {
   position: absolute;
   top: -6px;
@@ -321,6 +310,16 @@ header {
 .dropdown-item:hover {
   background: var(--bg-soft);
   color: var(--primary);
+}
+
+#serRepartidorMenu {
+  color: #059669;
+  font-weight: 700;
+}
+
+#serRepartidorMenu:hover {
+  background: #ecfdf5;
+  color: #047857;
 }
 
 /*  CATEGORÍAS  */

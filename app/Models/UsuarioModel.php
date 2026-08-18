@@ -42,7 +42,7 @@ class UsuarioModel {
         
         $stmt = $this->db->prepare($sql);
         
-        return $stmt->execute([
+        $result = $stmt->execute([
             'email' => $email,
             'nombre' => $nombre,
             'apellido' => $apellido,
@@ -56,6 +56,8 @@ class UsuarioModel {
             'acepta_terminos' => $acepta_terminos,
             'fecha_registro' => $fecha_registro
         ]);
+
+        return $result ? (int) $this->db->lastInsertId() : false;
     }
 
     public function updatePassword($email, $passwordHash) {
@@ -80,7 +82,7 @@ class UsuarioModel {
     }
 
     public function getAll() {
-        $stmt = $this->db->query("SELECT id, nombre, email, telefono, rol, fecha_registro FROM usuarios ORDER BY id DESC");
+        $stmt = $this->db->query("SELECT id, nombre, email, telefono, rol, estado, fecha_registro FROM usuarios ORDER BY id DESC");
         return $stmt->fetchAll();
     }
 

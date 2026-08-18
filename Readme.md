@@ -112,9 +112,24 @@ Angelow/
         ├── auth/
         ├── admin/
         ├── paginas/
+        ├── repartidor/          # Vistas del panel de repartidor (login y dashboard)
         ├── documentos/
         └── emails/
-```
+    ```
+    
+    ### Cambios en Estructura de Carpetas (Reorganización Repartidor)
+    - **Vistas movidas**: `app/Views/auth/login-repartidor.php` → `app/Views/repartidor/login.php`
+    - **Nuevo dashboard**: `app/Views/repartidor/dashboard.php` (reemplaza a `app/Views/paginas/repartidor.php`)
+    - **CSS organizado**:
+      - `public/assets/css/repartidor-login.css` - Estilos del login de repartidor
+      - `public/assets/css/repartidor-dashboard.css` - Estilos del dashboard de repartidor
+      - `public/assets/css/repartidor.css` - Estilos generales del panel repartidor
+    - **Proyecto Node.js movido**: El proyecto Node.js anterior de `/Repartidor` fue respaldado en `Document/Repartidor_NodeJS_Backup/` y eliminado de la raíz para evitar conflictos.
+    
+    ### Flujo de Navegación Repartidor
+    1. Usuario hace clic en icono de repartidor en la página principal → redirige a `/repartidor/login`
+    2. Login exitoso → redirige a `/repartidor` (dashboard)
+    3. Cierre de sesión → redirige a `/repartidor/login`
 
 ---
 
@@ -247,6 +262,10 @@ El archivo `angelow.sql` contiene el schema completo. Las tablas principales inc
 - **Admin\InventarioController** - Gestión de inventario.
 - **Admin\SeguimientoControler** - (Vacío, placeholder).
 
+### Repartidor
+- **RepartidorAuthController** (`app/Controllers/RepartidorAuthController.php`) - Login, logout y obtención de datos del repartidor autenticado. Renderiza `repartidor/login.php`.
+- **RepartidorController** (`app/Controllers/RepartidorController.php`) - Dashboard del repartidor. Renderiza `repartidor/dashboard.php`. Protegido por rol `repartidor`.
+
 ### Cliente (API)
 - **Cliente\PedidosController** - Listado, detalle, cancelación y factura de pedidos del cliente autenticado.
 
@@ -295,7 +314,10 @@ El archivo `angelow.sql` contiene el schema completo. Las tablas principales inc
 - `paginas/seguimiento.php` - Seguimiento de pedidos.
 - `paginas/factura.php` - Factura del pedido.
 - `paginas/contactenos.php` - Contacto.
-- `paginas/repartidor.php` - Vista de repartidor.
+
+### Repartidor
+- `repartidor/login.php` - Login de repartidor (diseño acorde al sitio principal).
+- `repartidor/dashboard.php` - Dashboard de repartidor (estadísticas, pedidos, filtros, historial).
 
 ### Administración
 - `admin/panel.php` - Panel de administración con dashboard, mapa Leaflet, gestión completa.
@@ -326,7 +348,9 @@ El archivo `angelow.sql` contiene el schema completo. Las tablas principales inc
 | `perfil.css` | Perfil cliente |
 | `factura.css` | Factura |
 | `contactenos.css` | Contacto |
-| `repartidor.css` | Repartidor |
+| `repartidor.css` | Estilos generales del panel repartidor |
+| `repartidor-login.css` | Estilos del login de repartidor |
+| `repartidor-dashboard.css` | Estilos del dashboard de repartidor |
 | `panel.css` | Panel de administración |
 | `inventario.css` | Inventario admin |
 | `preguntas.css` | Preguntas frecuentes |
@@ -444,6 +468,7 @@ El archivo `angelow.sql` contiene el schema completo. Las tablas principales inc
 - **Tienda**: Ingresar a la raíz del sitio para ver el catálogo y página de inicio.
 - **Registro / Login**: Disponibles en el menú de usuario.
 - **Panel Admin**: Ruta `/admin` (acceso para rol administrador).
+- **Panel Repartidor**: Ruta `/repartidor/login` (acceso para rol repartidor). Una vez autenticado, redirige a `/repartidor`.
 - **Perfil Cliente**: Ruta `/perfil`.
 - **Seguimiento**: Ruta `/seguimiento`.
 - **Contacto**: Ruta `/contactenos`.

@@ -112,6 +112,27 @@ $user = $_SESSION['user'];
 
                 <div class="delivery-grid" id="deliveryGrid"></div>
 
+                <h3 class="section-title" style="margin: 30px 0 20px;">Solicitudes Pendientes</h3>
+                <div id="solicitudesPendientes" style="overflow-x: auto; margin-bottom: 30px;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Teléfono</th>
+                                <th>Vehículo</th>
+                                <th>Placa</th>
+                                <th>Fecha Solicitud</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="solicitudesTable">
+                            <tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--texto-secundario);">Cargando solicitudes...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
                 <h3 class="section-title" style="margin: 30px 0 20px;">Listado General de Repartidores</h3>
                 <div style="overflow-x: auto;">
                     <table class="admin-table">
@@ -249,8 +270,8 @@ $user = $_SESSION['user'];
             }
 
             tbody.innerHTML = drivers.map(d => {
-                const statusClass = d.estado === 'activo' ? 'status-delivered' : d.estado === 'inactivo' ? 'status-cancelled' : 'status-pending';
-                const statusText = d.estado === 'activo' ? 'Activo' : d.estado === 'inactivo' ? 'Inactivo' : 'En ruta';
+                const statusClass = d.estado === 'activo' ? 'status-delivered' : d.estado === 'inactivo' ? 'status-cancelled' : d.estado === 'pendiente' ? 'status-pending' : 'status-pending';
+                const statusText = d.estado === 'activo' ? 'Activo' : d.estado === 'inactivo' ? 'Inactivo' : d.estado === 'pendiente' ? 'Pendiente' : 'En ruta';
                 return `
                     <tr>
                         <td style="font-weight: 600; color: var(--primary);">${d.id}</td>
@@ -413,6 +434,82 @@ $user = $_SESSION['user'];
                 })
                 .catch(() => showToast({ title: 'Error', message: 'No se pudo eliminar', type: 'error' }));
         };
+
+        window.loadSolicitudes = function() {
+            fetch(`${APP_URL}/api/admin/repartidores/solicitudes?estado=pendiente`, {
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('solicitudesTable');
+                if (!data.success || !data.solicitudes || data.solicitudes.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: var(--texto-secundario);">No hay solicitudes pendientes</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.solicitudes.map(s => `
+                    <tr>
+                        <td>${s.id}</td>
+                        <td>${htmlspecialchars(s.nombres + ' ' + (s.apellidos || ''))}</td>
+                        <td>${htmlspecialchars(s.email)}</td>
+                        <td>${htmlspecialchars(s.telefono || '-')}</td>
+                        <td>${htmlspecialchars(s.tipo_vehiculo || '-')}</td>
+                        <td>${htmlspecialchars(s.placa_vehiculo || '-')}</td>
+                        <td>${new Date(s.fecha_solicitud).toLocaleDateString('es-CO')}</td>
+                        <td>
+                            <button class="btn btn-sm" style="background: #10b981; color: white; border: none; margin-right: 8px; cursor: pointer;" onclick="aprobarSolicitud(${s.id})">Aceptar</button>
+                            <button class="btn btn-sm" style="background: #ef4444; color: white; border: none; cursor: pointer;" onclick="rechazarSolicitud(${s.id})">Rechazar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            })
+            .catch(() => {
+                document.getElementById('solicitudesTable').innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #ef4444;">Error al cargar solicitudes</td></tr>';
+            });
+        };
+
+        window.aprobarSolicitud = function(id) {
+            if (!confirm('¿Aprobar esta solicitud de repartidor?')) return;
+            fetch(`${APP_URL}/api/admin/repartidores/solicitudes/aprobar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ id: id })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast({ title: 'Éxito', message: 'Solicitud aprobada', type: 'success' });
+                    loadSolicitudes();
+                    loadDeliveryDrivers();
+                } else {
+                    showToast({ title: 'Error', message: data.message || 'No se pudo aprobar', type: 'error' });
+                }
+            })
+            .catch(() => showToast({ title: 'Error', message: 'Error de conexión', type: 'error' }));
+        };
+
+        window.rechazarSolicitud = function(id) {
+            const obs = prompt('Motivo del rechazo (opcional):');
+            if (obs === null) return;
+            fetch(`${APP_URL}/api/admin/repartidores/solicitudes/rechazar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ id: id, observaciones: obs })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast({ title: 'Info', message: 'Solicitud rechazada', type: 'info' });
+                    loadSolicitudes();
+                } else {
+                    showToast({ title: 'Error', message: data.message || 'No se pudo rechazar', type: 'error' });
+                }
+            })
+            .catch(() => showToast({ title: 'Error', message: 'Error de conexión', type: 'error' }));
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSolicitudes();
+        });
     </script>
 </body>
 </html>

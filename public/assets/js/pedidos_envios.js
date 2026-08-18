@@ -1,30 +1,54 @@
-document.getElementById('currentYear').textContent = new Date().getFullYear();
-// Smooth scroll para los enlaces de navegación
-document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', function(e) {
-        e.preventDefault();
-        const targetId = this.getAttribute('href');
-        const targetSection = document.querySelector(targetId);
-        if (targetSection) {
-            targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            this.classList.add('active');
-        }
+(function() {
+    'use strict';
+
+    const yearElement = document.getElementById('currentYear');
+    if (yearElement) {
+        yearElement.textContent = new Date().getFullYear();
+    }
+
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    navLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const targetId = this.getAttribute('href');
+            const targetSection = document.querySelector(targetId);
+
+            if (targetSection) {
+                targetSection.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+
+                navLinks.forEach(function(l) {
+                    l.classList.remove('active');
+                });
+                this.classList.add('active');
+            }
+        });
     });
-});
-// Actualizar enlace activo al hacer scroll
-window.addEventListener('scroll', () => {
-    let current = '';
-    document.querySelectorAll('.term-section').forEach(section => {
-        const sectionTop = section.offsetTop;
-        if (scrollY >= sectionTop - 200) {
-            current = section.getAttribute('id');
-        }
+
+    const sections = document.querySelectorAll('.term-section');
+
+    window.addEventListener('scroll', function() {
+        let currentSectionId = '';
+        const scrollPosition = window.scrollY;
+
+        sections.forEach(function(section) {
+            const sectionTop = section.offsetTop;
+            if (scrollPosition >= sectionTop - 200) {
+                currentSectionId = section.getAttribute('id');
+            }
+        });
+
+        navLinks.forEach(function(link) {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === '#' + currentSectionId) {
+                link.classList.add('active');
+            }
+        });
     });
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('href') === `#${current}`) {
-            link.classList.add('active');
-        }
-    });
-});
+
+    console.log('✅ Pedidos y Envíos - ANGELOW: JavaScript cargado correctamente');
+})();

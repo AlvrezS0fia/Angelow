@@ -21,12 +21,27 @@ class RepartidorAuthController
         }
 
         $user = Database::query(
-            "SELECT * FROM usuarios WHERE email = ? AND rol = 'repartidor' AND estado = 'activo'",
+            "SELECT * FROM usuarios WHERE email = ? AND rol = 'repartidor'",
             [$email]
         )->fetch();
 
-        if (!$user || !password_verify($password, $user['password_hash'])) {
+        if (!$user) {
             echo json_encode(['success' => false, 'message' => 'Credenciales inválidas']);
+            return;
+        }
+
+        if (!password_verify($password, $user['password_hash'])) {
+            echo json_encode(['success' => false, 'message' => 'Credenciales inválidas']);
+            return;
+        }
+
+        if (($user['estado'] ?? '') === 'pendiente') {
+            echo json_encode(['success' => false, 'message' => 'Tu solicitud está pendiente de aprobación por el administrador', 'pending' => true]);
+            return;
+        }
+
+        if (($user['estado'] ?? '') !== 'activo') {
+            echo json_encode(['success' => false, 'message' => 'Tu cuenta no está activa. Contacta al administrador.']);
             return;
         }
 

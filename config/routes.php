@@ -106,7 +106,15 @@ return [
      
      // Página repartidor
      ['method' => 'GET', 'path' => '/repartidor', 'controller' => 'RepartidorController', 'action' => 'index'],
+     ['method' => 'GET', 'path' => '/repartidor/registro', 'controller' => 'RepartidorController', 'action' => 'registro'],
+     ['method' => 'POST', 'path' => '/repartidor/registro', 'controller' => 'RepartidorAuthController', 'action' => 'registro'],
      ['method' => 'GET', 'path' => '/repartidor/login', 'controller' => 'RepartidorAuthController', 'action' => 'showLogin'],
      ['method' => 'POST', 'path' => '/repartidor/login', 'controller' => 'RepartidorAuthController', 'action' => 'login'],
-     ['method' => 'GET', 'path' => '/repartidor/logout', 'controller' => 'RepartidorAuthController', 'action' => 'logout'],
- ];
+      ['method' => 'GET', 'path' => '/repartidor/logout', 'controller' => 'RepartidorAuthController', 'action' => 'logout'],
+      
+      // Admin - Gestión de repartidores
+      ['method' => 'GET',    'path' => '/api/admin/repartidores/solicitudes',           'controller' => 'Api\\AdminRepartidorController', 'action' => 'solicitudes'],
+      ['method' => 'POST',   'path' => '/api/admin/repartidores/solicitudes/aprobar',   'controller' => 'Api\\AdminRepartidorController', 'action' => 'aprobar'],
+      ['method' => 'POST',   'path' => '/api/admin/repartidores/solicitudes/rechazar',  'controller' => 'Api\\AdminRepartidorController', 'action' => 'rechazar'],
+      ['method' => 'GET',    'path' => '/api/admin/repartidores/estadisticas',          'controller' => 'Api\\AdminRepartidorController', 'action' => 'estadisticas'],
+  ];

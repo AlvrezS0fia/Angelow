@@ -4,31 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guía de Tallas - ANGELOW</title>
-    <link rel="shortcut icon" href="../../assets/imagenes/general/favico.ico" type="image/x-icon">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="<?= APP_URL ?>/assets/imagenes/general/favico.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS de la Guía de Tallas -->
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/guia_tallas.css">
 </head>
 <body>
 
 <header>
-    <a href="<?= APP_URL ?>/" class="logo"> 
-    <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="logo-img">
-    <div class="logo-text">
-        <span>ANGELOW</span>
-        <span>GUÍA DE TALLAS</span>
-    </div>
-</a>
+    <a href="<?= APP_URL ?>/" class="logo">
+        <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="logo-img">
+        <div class="logo-text">
+            <span>ANGELOW</span>
+            <span>Guía de Tallas</span>
+        </div>
+    </a>
 
-<div class="icon-btn" onclick="window.location.href='<?= APP_URL ?>/'">
-    <img src="<?= APP_URL ?>/assets/imagenes/general/volver.png" alt="Inicio" style="width:24px;">
-</div>
+    <div class="header-actions">
+        <!-- BOTÓN VOLVER ESTILO ANGELOW -->
+        <a href="<?= APP_URL ?>/" class="btn-back-home">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <path d="M15 19L8 12L15 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Volver</span>
+        </a>
+    </div>
 </header>
 
 <div class="terms-container">
 
     <div class="welcome-banner">
-        <h2>GUÍA DE TALLAS</h2>
+        <h2><i class="fas fa-ruler"></i> GUÍA DE TALLAS</h2>
         <p>Encuentra la talla perfecta para tu hijo o hija con nuestras tablas detalladas y consejos prácticos</p>
     </div>
 
@@ -38,24 +45,24 @@
     </div>
 
     <div class="terms-nav">
-        <a href="#bebes" class="nav-link active">Bebés</a>
-        <a href="#ninas" class="nav-link">Niñas</a>
-        <a href="#ninos" class="nav-link">Niños</a>
-        <a href="#medidas" class="nav-link">Cómo Medir</a>
-        <a href="#consejos" class="nav-link">Consejos</a>
-        <a href="#equivalencias" class="nav-link">Equivalencias</a>
+        <a href="#bebes" class="nav-link active"><i class="fas fa-baby"></i> Bebés</a>
+        <a href="#ninas" class="nav-link"><i class="fas fa-female"></i> Niñas</a>
+        <a href="#ninos" class="nav-link"><i class="fas fa-male"></i> Niños</a>
+        <a href="#medidas" class="nav-link"><i class="fas fa-arrows-alt-h"></i> Cómo Medir</a>
+        <a href="#consejos" class="nav-link"><i class="fas fa-lightbulb"></i> Consejos</a>
+        <a href="#equivalencias" class="nav-link"><i class="fas fa-exchange-alt"></i> Equivalencias</a>
     </div>
 
     <div class="terms-content">
 
         <div class="highlight-box">
-            <h3>Información Importante</h3>
+            <h3><i class="fas fa-info-circle"></i> Información Importante</h3>
             <p>Todas nuestras medidas están expresadas en centímetros. Las tallas están basadas en la edad promedio, pero cada niño es diferente. Te recomendamos siempre consultar las medidas específicas de altura, pecho, cintura y cadera para asegurar el mejor ajuste.</p>
             <p style="margin-top: 10px;"><strong>Nota:</strong> Si tu hijo o hija está entre dos tallas, te recomendamos elegir la talla mayor para mayor comodidad y durabilidad.</p>
         </div>
 
         <div class="term-section" id="bebes">
-            <h2>TALLAS PARA BEBÉS (0-24 MESES)</h2>
+            <h2><i class="fas fa-baby"></i> TALLAS PARA BEBÉS (0-24 MESES)</h2>
             <p>Nuestras prendas para bebés están diseñadas pensando en su comodidad y facilidad de uso. Las tallas se basan en la edad y altura del bebé.</p>
 
             <div class="size-table-container">
@@ -75,13 +82,13 @@
             </div>
 
             <div class="tip-box">
-                <h4>Consejo para Bebés</h4>
+                <h4><i class="fas fa-lightbulb"></i> Consejo para Bebés</h4>
                 <p>Los bebés crecen muy rápido durante su primer año. Si tu bebé está cerca de pasar a la siguiente talla o quieres que la prenda dure más tiempo, considera comprar una talla más grande.</p>
             </div>
         </div>
 
         <div class="term-section" id="ninas">
-            <h2>TALLAS PARA NIÑAS (2-12 AÑOS)</h2>
+            <h2><i class="fas fa-female"></i> TALLAS PARA NIÑAS (2-12 AÑOS)</h2>
             <div class="size-table-container">
                 <table class="size-table">
                     <thead>
@@ -103,7 +110,7 @@
         </div>
 
         <div class="term-section" id="ninos">
-            <h2>TALLAS PARA NIÑOS (2-12 AÑOS)</h2>
+            <h2><i class="fas fa-male"></i> TALLAS PARA NIÑOS (2-12 AÑOS)</h2>
             <div class="size-table-container">
                 <table class="size-table">
                     <thead>
@@ -125,54 +132,55 @@
         </div>
 
         <div class="term-section" id="medidas">
-            <h2>CÓMO TOMAR LAS MEDIDAS CORRECTAMENTE</h2>
+            <h2><i class="fas fa-arrows-alt-h"></i> CÓMO TOMAR LAS MEDIDAS CORRECTAMENTE</h2>
             <div class="measurement-guide">
                 <h3>Guía de Medición Paso a Paso</h3>
                 <div class="measurement-item">
-                    <h4>1. ALTURA</h4>
+                    <h4><i class="fas fa-arrow-up"></i> 1. ALTURA</h4>
                     <p><strong>Cómo medir:</strong> Coloca al niño o niña descalzo, de pie, con la espalda completamente recta contra una pared. Mide desde el suelo hasta la parte superior de la cabeza.</p>
                 </div>
                 <div class="measurement-item">
-                    <h4>2. PECHO</h4>
+                    <h4><i class="fas fa-arrows-alt"></i> 2. PECHO</h4>
                     <p>Pasa la cinta métrica alrededor de la parte más amplia del pecho, justo debajo de las axilas.</p>
                 </div>
                 <div class="measurement-item">
-                    <h4>3. CINTURA</h4>
+                    <h4><i class="fas fa-circle"></i> 3. CINTURA</h4>
                     <p>Mide alrededor de la parte más estrecha del torso (generalmente a la altura del ombligo).</p>
                 </div>
                 <div class="measurement-item">
-                    <h4>4. CADERA</h4>
+                    <h4><i class="fas fa-square"></i> 4. CADERA</h4>
                     <p>Pasa la cinta alrededor de la parte más ancha de las caderas y glúteos.</p>
                 </div>
             </div>
         </div>
 
         <div class="term-section" id="consejos">
-            <h2>CONSEJOS PARA ELEGIR LA TALLA CORRECTA</h2>
+            <h2><i class="fas fa-lightbulb"></i> CONSEJOS PARA ELEGIR LA TALLA CORRECTA</h2>
             <div class="highlight-box">
                 <ul>
-                    <li>Compara con prendas actuales que le queden bien.</li>
-                    <li>Considera la temporada y el crecimiento esperado.</li>
-                    <li>Lee las reseñas de otros clientes sobre el ajuste.</li>
-                    <li>Si está entre dos tallas, elige la mayor.</li>
+                    <li><i class="fas fa-ruler"></i> Compara con prendas actuales que le queden bien.</li>
+                    <li><i class="fas fa-calendar-alt"></i> Considera la temporada y el crecimiento esperado.</li>
+                    <li><i class="fas fa-star"></i> Lee las reseñas de otros clientes sobre el ajuste.</li>
+                    <li><i class="fas fa-arrows-left-right"></i> Si está entre dos tallas, elige la mayor.</li>
+                    <li><i class="fas fa-chart-bar"></i> Revisa siempre la tabla de medidas específica del producto.</li>
                 </ul>
             </div>
         </div>
 
         <div class="term-section" id="equivalencias">
-            <h2>TABLA DE EQUIVALENCIAS INTERNACIONALES</h2>
+            <h2><i class="fas fa-exchange-alt"></i> TABLA DE EQUIVALENCIAS INTERNACIONALES</h2>
             <div class="size-table-container">
                 <table class="size-table">
                     <thead><tr><th>ANGELOW</th><th>USA</th><th>Europa</th><th>Edad</th></tr></thead>
                     <tbody>
-                        <tr><td>2T</td><td>2T</td><td>92</td><td>2 años</td></tr>
-                        <tr><td>3T</td><td>3T</td><td>98</td><td>3 años</td></tr>
-                        <tr><td>4T</td><td>4T</td><td>104</td><td>4 años</td></tr>
-                        <tr><td>5</td><td>5</td><td>110</td><td>5 años</td></tr>
-                        <tr><td>6</td><td>6/6X</td><td>116</td><td>6 años</td></tr>
-                        <tr><td>8</td><td>8</td><td>128</td><td>8 años</td></tr>
-                        <tr><td>10</td><td>10</td><td>140</td><td>9-10 años</td></tr>
-                        <tr><td>12</td><td>12</td><td>152</td><td>11-12 años</td></tr>
+                        <tr><td class="size-label">2T</td><td>2T</td><td>92</td><td>2 años</td></tr>
+                        <tr><td class="size-label">3T</td><td>3T</td><td>98</td><td>3 años</td></tr>
+                        <tr><td class="size-label">4T</td><td>4T</td><td>104</td><td>4 años</td></tr>
+                        <tr><td class="size-label">5</td><td>5</td><td>110</td><td>5 años</td></tr>
+                        <tr><td class="size-label">6</td><td>6/6X</td><td>116</td><td>6 años</td></tr>
+                        <tr><td class="size-label">8</td><td>8</td><td>128</td><td>8 años</td></tr>
+                        <tr><td class="size-label">10</td><td>10</td><td>140</td><td>9-10 años</td></tr>
+                        <tr><td class="size-label">12</td><td>12</td><td>152</td><td>11-12 años</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -183,14 +191,15 @@
 <footer>
     <p>&copy; <span id="currentYear"></span> ANGELOW - Tienda Online de Ropa Infantil</p>
     <div class="footer-links">
-        <a href="politica-privacidad.html">Política de Privacidad</a>
-        <a href="terminos.html">Términos y Condiciones</a>
-        <a href="pedidos-envios.html">Pedidos y Envíos</a>
-        <a href="preguntas-frecuentes.html">Preguntas Frecuentes</a>
-        <a href="contacto.html">Contacto</a>
+        <a href="<?= APP_URL ?>/documentos/Politicas_Priv"><i class="fas fa-lock"></i> Política de Privacidad</a>
+        <a href="<?= APP_URL ?>/documentos/Terminos"><i class="fas fa-file-contract"></i> Términos y Condiciones</a>
+        <a href="<?= APP_URL ?>/documentos/Pedidos_envios"><i class="fas fa-truck"></i> Pedidos y Envíos</a>
+        <a href="<?= APP_URL ?>/documentos/Preguntas"><i class="fas fa-question-circle"></i> Preguntas Frecuentes</a>
+        <a href="<?= APP_URL ?>/contactenos"><i class="fas fa-envelope"></i> Contacto</a>
     </div>
 </footer>
 
+<!-- JavaScript de la Guía de Tallas -->
 <script src="<?= APP_URL ?>/assets/js/guia_tallas.js"></script>
 </body>
 </html>

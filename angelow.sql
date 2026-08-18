@@ -61,7 +61,7 @@ CREATE TABLE usuarios (
     ultima_sesion TIMESTAMP NULL DEFAULT NULL,
     
     -- Estado
-    estado ENUM('activo', 'inactivo', 'suspendido', 'eliminado') DEFAULT 'activo',
+    estado ENUM('pendiente', 'activo', 'inactivo', 'suspendido', 'eliminado') DEFAULT 'activo',
     en_linea BOOLEAN DEFAULT FALSE,
     
     INDEX idx_email (email),
@@ -565,6 +565,43 @@ CREATE TABLE logs_actividad (
     INDEX idx_usuario (usuario_id),
     INDEX idx_tipo (tipo),
     INDEX idx_fecha (fecha)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =============================================
+-- TABLA DE SOLICITUDES DE REPARTIDORES
+-- =============================================
+CREATE TABLE solicitudes_repartidores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    nombres VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100),
+    email VARCHAR(255) NOT NULL,
+    telefono VARCHAR(20),
+    tipo_vehiculo VARCHAR(50),
+    placa_vehiculo VARCHAR(20),
+    estado ENUM('pendiente', 'aprobada', 'rechazada') DEFAULT 'pendiente',
+    fecha_solicitud TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_respuesta TIMESTAMP NULL DEFAULT NULL,
+    observaciones TEXT,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    INDEX idx_estado (estado),
+    INDEX idx_fecha_solicitud (fecha_solicitud)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =============================================
+-- TABLA DE DOCUMENTOS DE REPARTIDORES
+-- =============================================
+CREATE TABLE documentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    repartidor_id INT NOT NULL,
+    tipo VARCHAR(50) NOT NULL,
+    archivo_url VARCHAR(500),
+    estado VARCHAR(50) DEFAULT 'pendiente',
+    observaciones TEXT,
+    fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (repartidor_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    INDEX idx_repartidor (repartidor_id),
+    INDEX idx_estado (estado)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =============================================

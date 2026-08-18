@@ -11,6 +11,11 @@ class RepartidorController extends Controller
             $this->redirect('/repartidor/login');
             return;
         }
-        $this->view('paginas.repartidor', ['user' => $_SESSION['user']]);
+        $this->view('repartidor.dashboard', ['user' => $_SESSION['user']]);
+    }
+
+    public function registro()
+    {
+        $this->view('repartidor.registro_repartidor');
     }
 }
