@@ -15,6 +15,7 @@ $user = $_SESSION['user'];
   <link rel="shortcut icon" href="<?= APP_URL ?>/assets/imagenes/general/favico.ico" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/compra.css">
+  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/back-button.css">
   <script>const APP_URL = '<?= APP_URL ?>';</script>
   <script>window.CURRENT_USER = <?= json_encode($user ?? null) ?>;</script>
   <script src="<?= APP_URL ?>/assets/js/compra.js" defer></script>
@@ -33,8 +34,8 @@ $user = $_SESSION['user'];
         <span class="brand-sub">FINALIZAR COMPRA</span>
       </div>
     </div>
-    <a href="<?= APP_URL ?>/" class="back-btn-header">
-      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+    <a href="<?= APP_URL ?>/" class="btn-back-header">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
         <path d="M19 12H5M12 19l-7-7 7-7"/>
       </svg>
       Volver

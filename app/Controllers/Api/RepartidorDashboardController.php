@@ -10,8 +10,14 @@ class RepartidorDashboardController
     {
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
         $token = str_replace('Bearer ', '', $authHeader);
+        if (!$token) return null;
         $payload = JWTHelper::decode($token);
-        return $payload['sub'] ?? null;
+        if (!$payload) return null;
+        $userId = $payload['sub'] ?? null;
+        if (!$userId) return null;
+        $user = Database::query("SELECT id, rol, estado FROM usuarios WHERE id = ?", [$userId])->fetch();
+        if (!$user || $user['rol'] !== 'repartidor' || $user['estado'] !== 'activo') return null;
+        return $userId;
     }
 
     private function json($data, $code = 200)
@@ -109,5 +115,21 @@ class RepartidorDashboardController
     public function lowStock()
     {
         $this->json([]);
+    }
+
+    public function notificaciones()
+    {
+        $repartidorId = $this->getRepartidorId();
+        if (!$repartidorId) {
+            $this->json(['error' => 'No autorizado'], 401);
+            return;
+        }
+
+        $notificaciones = Database::query(
+            "SELECT id, tipo, titulo, mensaje, enlace, leida, fecha_envio FROM notificaciones WHERE usuario_id = ? ORDER BY fecha_envio DESC LIMIT 20",
+            [$repartidorId]
+        )->fetchAll();
+
+        $this->json(['success' => true, 'notificaciones' => $notificaciones]);
     }
 }

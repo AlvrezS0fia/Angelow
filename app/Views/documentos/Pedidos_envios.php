@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/pedidos_envios.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/back-button.css">
     <script>const APP_URL = '<?= APP_URL ?>';</script>
 </head>
 <body>
@@ -22,11 +23,11 @@
     </a>
 
     <div class="header-actions">
-        <a href="<?= APP_URL ?>/" class="btn-back-home">
-            <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                <path d="M15 19L8 12L15 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <a href="<?= APP_URL ?>/" class="btn-back-header">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
             </svg>
-            <span>Volver</span>
+            Volver
         </a>
     </div>
 </header>

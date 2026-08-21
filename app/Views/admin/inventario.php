@@ -18,8 +18,8 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script>const APP_URL = '<?= APP_URL ?>';</script>
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/inventario.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/back-button.css">
 
-    
 </head>
 <body>
 
@@ -31,9 +31,12 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
             <span>INVENTARIO</span>
         </div>
     </a>
-    <div class="icon-btn" onclick="window.location.href='<?= APP_URL ?>/'">
-        <img src="<?= APP_URL ?>/assets/imagenes/general/volver.png" alt="Inicio" style="width:24px;">  
-    </div>
+    <a href="<?= APP_URL ?>/" class="btn-back-header">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Volver
+    </a>
 </header>
 
 <main class="main-container">
@@ -173,55 +176,137 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
     </div>
 </footer>
 
-<!-- Modal Editar Stock - Version Compacta -->
+<!-- Modal Editar Stock - Profesional -->
 <div class="modal-overlay" id="stockEditModal">
-    <div class="modal-container">
-        <div class="modal-header">
-            <h3><i class="fas fa-edit"></i> Editar Stock</h3>
+    <div class="modal-container modal-stock">
+        <div class="modal-header modal-header-stock">
+            <div class="modal-header-left">
+                <div class="modal-icon-edit"><i class="fas fa-boxes-stacked"></i></div>
+                <div>
+                    <h3 id="stockEditModalTitle">Editar Stock</h3>
+                    <span class="modal-subtitle" id="stockEditModalSubtitle"></span>
+                </div>
+            </div>
             <button class="modal-close" onclick="closeStockEditModal()">✕</button>
         </div>
         <div class="modal-body">
-            <div class="product-info-compact">
-                <div class="product-name-compact" id="stockEditProductName">Producto</div>
-                <div class="stock-current-compact">
-                    <span class="stock-current-label">Stock actual:</span>
+            <div class="stock-product-preview">
+                <img id="stockEditProductImage" src="" alt="" class="stock-preview-img">
+                <div class="stock-preview-info">
+                    <div class="stock-preview-name" id="stockEditProductName">Producto</div>
+                    <div class="stock-preview-meta">
+                        <span class="stock-preview-price" id="stockEditProductPrice">$0</span>
+                        <span class="stock-preview-category" id="stockEditProductCategory"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stock-current-display">
+                <div class="stock-current-inner">
+                    <span class="stock-current-label">Stock Actual</span>
                     <span class="stock-current-value" id="stockEditCurrent">0</span>
+                    <span class="stock-current-unit">unidades</span>
+                </div>
+                <div class="stock-status-indicator" id="stockStatusIndicator">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="stockStatusText">En stock</span>
                 </div>
             </div>
-            
-            <div class="form-group">
-                <label><i class="fas fa-exchange-alt"></i> Tipo de Cambio</label>
-                <select id="stockChangeType" class="form-input">
-                    <option value="set">Establecer nuevo valor</option>
-                    <option value="add">Agregar unidades</option>
-                    <option value="subtract">Quitar unidades</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label><i class="fas fa-sort-amount-up"></i> Cantidad</label>
-                <div class="quantity-control">
-                    <button type="button" class="qty-btn" id="decrementQty">−</button>
-                    <input type="number" id="stockChangeAmount" class="quantity-input" value="0" min="0" step="1">
-                    <button type="button" class="qty-btn" id="incrementQty">+</button>
+
+            <div class="stock-operations">
+                <div class="stock-op-tabs">
+                    <button class="stock-op-tab active" data-op="set" onclick="setStockOp('set')">
+                        <i class="fas fa-sliders"></i> Establecer
+                    </button>
+                    <button class="stock-op-tab" data-op="add" onclick="setStockOp('add')">
+                        <i class="fas fa-plus-circle"></i> Agregar
+                    </button>
+                    <button class="stock-op-tab" data-op="subtract" onclick="setStockOp('subtract')">
+                        <i class="fas fa-minus-circle"></i> Quitar
+                    </button>
                 </div>
-                <small class="limit-hint" id="qtyLimitHint"></small>
-            </div>
-            
-            <div class="form-group">
-                <label><i class="fas fa-comment"></i> Motivo</label>
-                <textarea id="stockChangeReason" class="form-input" rows="2" placeholder="Ej: Nueva mercancia, devolucion, ajuste..."></textarea>
+
+                <div class="stock-input-group">
+                    <label class="stock-input-label" id="stockInputLabel">Nuevo valor</label>
+                    <div class="stock-qty-control">
+                        <button type="button" class="stock-qty-btn" id="decrementQty">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <input type="number" id="stockChangeAmount" class="stock-qty-input" value="0" min="0" step="1">
+                        <button type="button" class="stock-qty-btn" id="incrementQty">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <small class="stock-input-hint" id="qtyLimitHint">Establece el stock directamente</small>
+                </div>
+
+                <div class="stock-preview-result" id="stockPreviewResult" style="display:none;">
+                    <span class="stock-preview-label">Resultado:</span>
+                    <span class="stock-preview-before" id="stockPreviewBefore">0</span>
+                    <i class="fas fa-arrow-right"></i>
+                    <span class="stock-preview-after" id="stockPreviewAfter">0</span>
+                </div>
+
+                <div class="stock-input-group">
+                    <label class="stock-input-label"><i class="fas fa-sticky-note"></i> Observaciones</label>
+                    <textarea id="stockChangeReason" class="stock-textarea" rows="2" placeholder="Ej: Nueva mercancía, devolución, ajuste de inventario..."></textarea>
+                </div>
             </div>
         </div>
-        <div class="modal-footer">
-            <button class="btn-cancel" onclick="closeStockEditModal()">Cancelar</button>
-            <button class="btn-save" onclick="updateStock()">Guardar</button>
+        <div class="modal-footer modal-footer-stock">
+            <button class="btn-stock-cancel" onclick="closeStockEditModal()">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button class="btn-stock-save" id="btnSaveStock" onclick="saveStockUpdate()">
+                <i class="fas fa-check"></i> Guardar Cambios
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div class="modal-overlay" id="deleteConfirmModal">
+    <div class="modal-container modal-delete">
+        <div class="modal-header modal-header-delete">
+            <div class="modal-header-left">
+                <div class="modal-icon-delete"><i class="fas fa-trash-alt"></i></div>
+                <div>
+                    <h3>Eliminar Producto</h3>
+                    <span class="modal-subtitle">Esta accion no se puede deshacer</span>
+                </div>
+            </div>
+            <button class="modal-close" onclick="closeDeleteModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="delete-product-preview">
+                <img id="deleteProductImage" src="" alt="" class="delete-preview-img">
+                <div class="delete-preview-info">
+                    <div class="delete-preview-name" id="deleteProductName"></div>
+                    <div class="delete-preview-meta">
+                        <span id="deleteProductCategory"></span>
+                        <span id="deleteProductStock"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="delete-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Se eliminará permanentemente este producto y todos sus datos asociados del inventario.</p>
+            </div>
+        </div>
+        <div class="modal-footer modal-footer-delete">
+            <button class="btn-stock-cancel" onclick="closeDeleteModal()">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button class="btn-delete-confirm" id="btnConfirmDelete" onclick="confirmDeleteProduct()">
+                <i class="fas fa-trash-alt"></i> Eliminar
+            </button>
         </div>
     </div>
 </div>
 
 <script>
-// Toast notifications system
+const APP_URL_BASE = APP_URL;
+
 function showToast({title, message, type = "info", duration = 4000}) {
     let container = document.getElementById("toastContainer");
     if (!container) {
@@ -232,109 +317,68 @@ function showToast({title, message, type = "info", duration = 4000}) {
     }
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
-    
     let iconSvg = '';
     if(type === 'success') iconSvg = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>';
     else if(type === 'error') iconSvg = '<svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     else iconSvg = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
-    
     toast.innerHTML = `
         <div class="toast-icon">${iconSvg}</div>
         <div class="toast-content">
             <div class="toast-title">${title}</div>
             <div class="toast-message">${message}</div>
         </div>
-        <button class="toast-close">×</button>
+        <button class="toast-close">&times;</button>
     `;
-    
     container.appendChild(toast);
     setTimeout(() => toast.classList.add("show"), 50);
     toast.querySelector(".toast-close").onclick = () => toast.remove();
-    setTimeout(() => { 
-        toast.classList.remove("show"); 
-        setTimeout(() => toast.remove(), 400); 
-    }, duration);
+    setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 400); }, duration);
 }
 
-// Inventory Products Data
 let inventoryProducts = [];
 let currentFilter = 'all';
 let currentCategory = 'all';
 let currentSearch = '';
 let editingProductId = null;
+let deletingProductId = null;
 let currentMaxLimit = 9999;
+let currentStockOp = 'set';
 
 async function loadInitialProducts() {
     try {
-        const res = await fetch(`${APP_URL}/api/inventario`, {
-            headers: { 'Accept': 'application/json' }
-        });
+        const res = await fetch(`${APP_URL_BASE}/api/inventario`, { headers: { 'Accept': 'application/json' } });
         const data = await res.json();
         if (Array.isArray(data)) {
-            inventoryProducts = data.map(p => ({
-                ...p,
-                image: p.imagen || (p.imagenes ? (Array.isArray(p.imagenes) ? p.imagenes[0] : p.imagenes) : ''),
-                stock: p.stock || p.stock_total || 0
-            }));
+            inventoryProducts = data.map(p => {
+                let img = p.image || p.imagen || (p.imagenes ? (Array.isArray(p.imagenes) ? p.imagenes[0] : p.imagenes) : '');
+                if (img && !img.startsWith('http') && !img.startsWith('data:') && !img.startsWith('/')) {
+                    img = APP_URL_BASE + '/' + img;
+                }
+                return {
+                    ...p,
+                    name: p.name || p.nombre || 'Sin nombre',
+                    category: p.category || p.categoria || 'Sin categoría',
+                    price: p.price || p.precio || 0,
+                    image: img,
+                    stock: p.stock || p.stock_total || 0,
+                    stock_minimo: p.stock_minimo || 10
+                };
+            });
         }
     } catch (e) {
         console.error('Error al cargar inventario:', e);
-        showToast({ title: "Error", message: "No se pudo cargar el inventario desde la base de datos", type: "error" });
+        showToast({ title: "Error", message: "No se pudo cargar el inventario", type: "error" });
     }
     updateCategoryFilter();
     renderInventoryTable();
     updateSummary();
 }
 
-async function updateStock() {
-    const product = inventoryProducts.find(p => p.id === editingProductId);
-    if (!product) return;
-    const changeType = document.getElementById('stockChangeType').value;
-    let amount = parseInt(document.getElementById('stockChangeAmount').value);
-    if (isNaN(amount) || amount < 0) {
-        showToast({ title: "Error", message: "Ingresa una cantidad valida", type: "error" });
-        return;
-    }
-
-    try {
-        const res = await fetch(`${APP_URL}/api/inventario/ajustar`, {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                id: editingProductId,
-                cantidad: amount,
-                tipo: changeType
-            })
-        });
-        const data = await res.json();
-        
-        if (data.success) {
-            product.stock = data.nuevo_stock;
-            renderInventoryTable();
-            updateSummary();
-            closeStockEditModal();
-            const tipoTexto = changeType === 'add' ? 'agregado' : changeType === 'subtract' ? 'quitado' : 'establecido';
-            showToast({ 
-                title: "Stock actualizado", 
-                message: `${product.nombre} ahora tiene ${data.nuevo_stock} unidades. (${tipoTexto} ${amount})`, 
-                type: "success" 
-            });
-        } else {
-            showToast({ title: "Error", message: data.error || "No se pudo actualizar el stock", type: "error" });
-        }
-    } catch (e) {
-        showToast({ title: "Error", message: "Error al conectar con el servidor", type: "error" });
-    }
-}
-
 function updateCategoryFilter() {
-    const categories = [...new Set(inventoryProducts.map(p => p.category))];
+    const categories = [...new Set(inventoryProducts.map(p => p.category))].sort();
     const select = document.getElementById('inventoryCategoryFilter');
     if (select) {
-        select.innerHTML = '<option value="all">Todas las categorias</option>';
+        select.innerHTML = '<option value="all">Todas las categorías</option>';
         categories.forEach(cat => {
             select.innerHTML += `<option value="${cat}">${cat}</option>`;
         });
@@ -348,9 +392,7 @@ function getFilteredProducts() {
         else if (currentFilter === 'low-stock') filtered = filtered.filter(p => p.stock > 0 && p.stock <= 10);
         else if (currentFilter === 'out-of-stock') filtered = filtered.filter(p => p.stock === 0);
     }
-    if (currentCategory !== 'all') {
-        filtered = filtered.filter(p => p.category === currentCategory);
-    }
+    if (currentCategory !== 'all') filtered = filtered.filter(p => p.category === currentCategory);
     if (currentSearch) {
         const term = currentSearch.toLowerCase();
         filtered = filtered.filter(p => p.name.toLowerCase().includes(term) || p.id.toString().includes(term));
@@ -363,7 +405,7 @@ function renderInventoryTable() {
     if (!tbody) return;
     const filtered = getFilteredProducts();
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No hay productos que coincidan con los filtros</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px; color:var(--text-secondary);"><i class="fas fa-box-open" style="font-size:32px; margin-bottom:12px; display:block; opacity:0.4;"></i>No hay productos que coincidan</td></tr>';
         return;
     }
     tbody.innerHTML = filtered.map(p => {
@@ -373,14 +415,23 @@ function renderInventoryTable() {
         else { statusClass = 'status-success'; statusText = 'En stock'; }
         return `
             <tr>
-                <td style="font-weight:600;">${p.id}</td>
-                <td><img src="${p.image}" alt="${p.name}" style="width:50px; height:50px; object-fit:cover; border-radius:12px;" onerror="this.src='https://placehold.co/300x300/EDF4FC/5E9DE6?text=Producto'"></td>
-                <td><strong>${p.name}</strong></td>
-                <td>${p.category}</td>
-                <td>$${p.price.toLocaleString()}</td>
-                <td style="font-weight:700;">${p.stock}</td>
+                <td><span class="inv-id-badge">${p.id}</span></td>
+                <td><img src="${p.image}" alt="${p.name}" class="inv-product-thumb" onerror="this.src='${APP_URL_BASE}/assets/imagenes/general/placeholder.png'"></td>
+                <td><div class="inv-product-name">${p.name}</div></td>
+                <td><span class="inv-category-tag">${p.category}</span></td>
+                <td class="inv-price">$${p.price.toLocaleString()}</td>
+                <td><span class="inv-stock-value ${p.stock === 0 ? 'inv-stock-zero' : p.stock <= 10 ? 'inv-stock-low' : ''}">${p.stock}</span></td>
                 <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                <td><button class="action-btn" onclick="openStockEditModal(${p.id})" title="Editar stock"><i class="fas fa-edit"></i></button></td>
+                <td>
+                    <div class="inv-actions">
+                        <button class="action-btn inv-btn-edit" onclick="openStockEditModal(${p.id})" title="Editar stock">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn inv-btn-delete" onclick="openDeleteModal(${p.id})" title="Eliminar producto">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </td>
             </tr>
         `;
     }).join('');
@@ -402,13 +453,11 @@ function updateMaxLimit(changeType, currentStock) {
     let hint = '';
     if (changeType === 'subtract') {
         max = currentStock;
-        hint = `Maximo permitido: ${max} unidades (no puedes quitar mas del stock actual)`;
+        hint = `Máximo: ${max} unidades (stock actual)`;
     } else if (changeType === 'set') {
-        max = 9999;
-        hint = `Puedes establecer cualquier valor (max. 9999)`;
+        hint = 'Establece el stock directamente (0 - 9,999)';
     } else if (changeType === 'add') {
-        max = 9999;
-        hint = `Puedes agregar hasta 9999 unidades`;
+        hint = 'Agrega unidades al stock actual';
     }
     currentMaxLimit = max;
     const amountInput = document.getElementById('stockChangeAmount');
@@ -419,47 +468,155 @@ function updateMaxLimit(changeType, currentStock) {
         if (val > max) amountInput.value = max;
         if (val < 0) amountInput.value = 0;
     }
-    const hintSpan = document.getElementById('qtyLimitHint');
-    if (hintSpan) hintSpan.innerText = hint;
+    document.getElementById('qtyLimitHint').innerText = hint;
+}
+
+function setStockOp(op) {
+    currentStockOp = op;
+    document.querySelectorAll('.stock-op-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.stock-op-tab[data-op="${op}"]`).classList.add('active');
+    const product = inventoryProducts.find(p => p.id === editingProductId);
+    if (!product) return;
+    updateMaxLimit(op, product.stock);
+    const labels = { set: 'Nuevo valor', add: 'Unidades a agregar', subtract: 'Unidades a quitar' };
+    document.getElementById('stockInputLabel').textContent = labels[op];
+    document.getElementById('stockChangeAmount').value = op === 'set' ? product.stock : 0;
+    updateStockPreview();
+}
+
+function updateStockPreview() {
+    const product = inventoryProducts.find(p => p.id === editingProductId);
+    if (!product) return;
+    let amount = parseInt(document.getElementById('stockChangeAmount').value) || 0;
+    let newStock = product.stock;
+    if (currentStockOp === 'set') newStock = amount;
+    else if (currentStockOp === 'add') newStock = product.stock + amount;
+    else if (currentStockOp === 'subtract') newStock = Math.max(0, product.stock - amount);
+    const previewEl = document.getElementById('stockPreviewResult');
+    if (newStock !== product.stock || currentStockOp !== 'set') {
+        previewEl.style.display = 'flex';
+        document.getElementById('stockPreviewBefore').textContent = product.stock;
+        document.getElementById('stockPreviewAfter').textContent = newStock;
+        const afterEl = document.getElementById('stockPreviewAfter');
+        afterEl.className = 'stock-preview-after';
+        if (newStock === 0) afterEl.classList.add('preview-danger');
+        else if (newStock <= 10) afterEl.classList.add('preview-warning');
+        else afterEl.classList.add('preview-success');
+    } else {
+        previewEl.style.display = 'none';
+    }
 }
 
 function openStockEditModal(productId) {
     const product = inventoryProducts.find(p => p.id === productId);
     if (!product) return;
     editingProductId = productId;
-    document.getElementById('stockEditProductName').innerText = product.name;
-    document.getElementById('stockEditCurrent').innerText = product.stock;
-    document.getElementById('stockChangeAmount').value = 0;
+    document.getElementById('stockEditProductName').textContent = product.name;
+    document.getElementById('stockEditProductPrice').textContent = '$' + product.price.toLocaleString();
+    document.getElementById('stockEditProductCategory').textContent = product.category;
+    document.getElementById('stockEditCurrent').textContent = product.stock;
+    const img = document.getElementById('stockEditProductImage');
+    img.src = product.image;
+    img.alt = product.name;
+    document.getElementById('stockChangeAmount').value = product.stock;
     document.getElementById('stockChangeReason').value = '';
-    const changeType = document.getElementById('stockChangeType').value;
-    updateMaxLimit(changeType, product.stock);
+    const statusEl = document.getElementById('stockStatusIndicator');
+    const statusTextEl = document.getElementById('stockStatusText');
+    if (product.stock === 0) { statusEl.className = 'stock-status-indicator status-empty'; statusTextEl.textContent = 'Agotado'; }
+    else if (product.stock <= 10) { statusEl.className = 'stock-status-indicator status-low'; statusTextEl.textContent = 'Stock bajo'; }
+    else { statusEl.className = 'stock-status-indicator status-ok'; statusTextEl.textContent = 'Disponible'; }
+    setStockOp('set');
     document.getElementById('stockEditModal').classList.add('active');
 }
 
 function closeStockEditModal() {
     document.getElementById('stockEditModal').classList.remove('active');
     editingProductId = null;
+    currentStockOp = 'set';
 }
 
-function updateStock() {
+async function saveStockUpdate() {
     const product = inventoryProducts.find(p => p.id === editingProductId);
     if (!product) return;
-    const changeType = document.getElementById('stockChangeType').value;
     let amount = parseInt(document.getElementById('stockChangeAmount').value);
     if (isNaN(amount) || amount < 0) {
-        showToast({ title: "Error", message: "Ingresa una cantidad valida", type: "error" });
+        showToast({ title: "Error", message: "Ingresa una cantidad válida", type: "error" });
         return;
     }
-    let newStock = product.stock;
-    if (changeType === 'set') newStock = amount;
-    else if (changeType === 'add') newStock += amount;
-    else if (changeType === 'subtract') newStock = Math.max(0, product.stock - amount);
-    
-    product.stock = newStock;
-    renderInventoryTable();
-    updateSummary();
-    closeStockEditModal();
-    showToast({ title: "Stock actualizado", message: `${product.name} ahora tiene ${newStock} unidades.`, type: "success" });
+    const btn = document.getElementById('btnSaveStock');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    try {
+        const res = await fetch(`${APP_URL_BASE}/api/inventario/ajustar`, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: editingProductId, cantidad: amount, tipo: currentStockOp })
+        });
+        const data = await res.json();
+        if (data.success) {
+            product.stock = data.nuevo_stock;
+            renderInventoryTable();
+            updateSummary();
+            closeStockEditModal();
+            const tipoTexto = currentStockOp === 'add' ? 'agregadas' : currentStockOp === 'subtract' ? 'quitadas' : 'establecidas';
+            showToast({ title: "Stock actualizado", message: `${product.name}: ${data.nuevo_stock} unidades (${tipoTexto} ${amount})`, type: "success" });
+        } else {
+            showToast({ title: "Error", message: data.error || "No se pudo actualizar el stock", type: "error" });
+        }
+    } catch (e) {
+        showToast({ title: "Error", message: "Error de conexión con el servidor", type: "error" });
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> Guardar Cambios';
+    }
+}
+
+function openDeleteModal(productId) {
+    const product = inventoryProducts.find(p => p.id === productId);
+    if (!product) return;
+    deletingProductId = productId;
+    document.getElementById('deleteProductName').textContent = product.name;
+    document.getElementById('deleteProductCategory').textContent = product.category;
+    document.getElementById('deleteProductStock').textContent = product.stock + ' unidades';
+    const img = document.getElementById('deleteProductImage');
+    img.src = product.image;
+    img.alt = product.name;
+    document.getElementById('deleteConfirmModal').classList.add('active');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteConfirmModal').classList.remove('active');
+    deletingProductId = null;
+}
+
+async function confirmDeleteProduct() {
+    const product = inventoryProducts.find(p => p.id === deletingProductId);
+    if (!product) return;
+    const btn = document.getElementById('btnConfirmDelete');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
+    try {
+        const res = await fetch(`${APP_URL_BASE}/api/inventario/eliminar`, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: deletingProductId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            inventoryProducts = inventoryProducts.filter(p => p.id !== deletingProductId);
+            renderInventoryTable();
+            updateSummary();
+            closeDeleteModal();
+            showToast({ title: "Producto eliminado", message: `"${product.name}" fue eliminado correctamente`, type: "success" });
+        } else {
+            showToast({ title: "Error", message: data.error || "No se pudo eliminar el producto", type: "error" });
+        }
+    } catch (e) {
+        showToast({ title: "Error", message: "Error de conexión con el servidor", type: "error" });
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-trash-alt"></i> Eliminar';
+    }
 }
 
 async function exportToPDF() {
@@ -470,9 +627,9 @@ async function exportToPDF() {
     doc.setFontSize(10);
     doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 30);
     const filtered = getFilteredProducts();
-    const tableData = filtered.map(p => [p.id, p.name, p.category, `$${p.price.toLocaleString()}`, p.stock]);
+    const tableData = filtered.map(p => [p.id, p.name, p.category, '$' + p.price.toLocaleString(), p.stock.toString()]);
     doc.autoTable({
-        head: [['ID', 'Producto', 'Categoria', 'Precio', 'Stock']],
+        head: [['ID', 'Producto', 'Categoría', 'Precio', 'Stock']],
         body: tableData,
         startY: 40,
         theme: 'striped',
@@ -480,7 +637,7 @@ async function exportToPDF() {
         margin: { left: 14, right: 14 }
     });
     doc.save(`inventario_${new Date().toISOString().slice(0,10)}.pdf`);
-    showToast({ title: "Exito", message: "Inventario exportado a PDF", type: "success" });
+    showToast({ title: "Éxito", message: "Inventario exportado a PDF", type: "success" });
 }
 
 function initFilters() {
@@ -492,25 +649,12 @@ function initFilters() {
             renderInventoryTable();
         });
     });
-    const categorySelect = document.getElementById('inventoryCategoryFilter');
-    if (categorySelect) {
-        categorySelect.addEventListener('change', function() {
-            currentCategory = this.value;
-            renderInventoryTable();
-        });
-    }
+    const catSelect = document.getElementById('inventoryCategoryFilter');
+    if (catSelect) catSelect.addEventListener('change', function() { currentCategory = this.value; renderInventoryTable(); });
     const searchInput = document.getElementById('inventorySearchInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            currentSearch = this.value;
-            renderInventoryTable();
-        });
-    }
-    document.getElementById('refreshInventoryBtn')?.addEventListener('click', () => {
-        inventoryProducts = loadInitialProducts();
-        updateCategoryFilter();
-        renderInventoryTable();
-        updateSummary();
+    if (searchInput) searchInput.addEventListener('input', function() { currentSearch = this.value; renderInventoryTable(); });
+    document.getElementById('refreshInventoryBtn')?.addEventListener('click', async () => {
+        await loadInitialProducts();
         showToast({ title: "Inventario", message: "Datos recargados correctamente", type: "info" });
     });
     document.getElementById('exportInventoryBtn')?.addEventListener('click', exportToPDF);
@@ -520,64 +664,50 @@ function initQuantityButtons() {
     const decrementBtn = document.getElementById('decrementQty');
     const incrementBtn = document.getElementById('incrementQty');
     const amountInput = document.getElementById('stockChangeAmount');
-    if (decrementBtn && incrementBtn && amountInput) {
-        decrementBtn.addEventListener('click', () => {
-            let val = parseInt(amountInput.value) || 0;
-            if (val > 0) {
-                amountInput.value = val - 1;
-                amountInput.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        });
-        incrementBtn.addEventListener('click', () => {
-            let val = parseInt(amountInput.value) || 0;
-            if (val < currentMaxLimit) {
-                amountInput.value = val + 1;
-            } else {
-                showToast({ title: "Limite alcanzado", message: `No puedes superar ${currentMaxLimit} unidades`, type: "warning" });
-            }
-        });
-        amountInput.addEventListener('input', function() {
-            let val = parseInt(this.value);
-            if (isNaN(val)) this.value = 0;
-            if (val > currentMaxLimit) {
-                this.value = currentMaxLimit;
-                showToast({ title: "Limite alcanzado", message: `Maximo permitido: ${currentMaxLimit}`, type: "warning" });
-            }
-            if (val < 0) this.value = 0;
-        });
-    }
+    if (decrementBtn) decrementBtn.addEventListener('click', () => {
+        let val = parseInt(amountInput.value) || 0;
+        if (val > 0) { amountInput.value = val - 1; amountInput.dispatchEvent(new Event('input')); }
+    });
+    if (incrementBtn) incrementBtn.addEventListener('click', () => {
+        let val = parseInt(amountInput.value) || 0;
+        if (val < currentMaxLimit) { amountInput.value = val + 1; amountInput.dispatchEvent(new Event('input')); }
+        else showToast({ title: "Límite", message: `Máximo ${currentMaxLimit} unidades`, type: "warning" });
+    });
+    if (amountInput) amountInput.addEventListener('input', function() {
+        let val = parseInt(this.value);
+        if (isNaN(val)) this.value = 0;
+        if (val > currentMaxLimit) { this.value = currentMaxLimit; showToast({ title: "Límite", message: `Máximo: ${currentMaxLimit}`, type: "warning" }); }
+        if (val < 0) this.value = 0;
+        updateStockPreview();
+    });
 }
 
-// Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', async function() {
     await loadInitialProducts();
-    updateCategoryFilter();
-    renderInventoryTable();
-    updateSummary();
     initFilters();
     initQuantityButtons();
     document.getElementById('currentYear').textContent = new Date().getFullYear();
-    
-    // Event listener for modal close on overlay click
+
     window.onclick = function(e) {
-        if (e.target === document.getElementById('stockEditModal')) {
-            closeStockEditModal();
-        }
+        if (e.target === document.getElementById('stockEditModal')) closeStockEditModal();
+        if (e.target === document.getElementById('deleteConfirmModal')) closeDeleteModal();
     };
-    
-    // Event listener for stock change type
-    document.getElementById('stockChangeType')?.addEventListener('change', function() {
-        const product = inventoryProducts.find(p => p.id === editingProductId);
-        if (product) {
-            updateMaxLimit(this.value, product.stock);
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeStockEditModal();
+            closeDeleteModal();
         }
     });
 });
 
-// Make functions globally available for inline onclick handlers
 window.openStockEditModal = openStockEditModal;
 window.closeStockEditModal = closeStockEditModal;
-window.updateStock = updateStock;
+window.saveStockUpdate = saveStockUpdate;
+window.openDeleteModal = openDeleteModal;
+window.closeDeleteModal = closeDeleteModal;
+window.confirmDeleteProduct = confirmDeleteProduct;
+window.setStockOp = setStockOp;
 </script>
 
 </body>

@@ -15,6 +15,10 @@
     --warning: #f59e0b;
     --error: #ef4444;
     --danger: #ef4444;
+    --info: #3b82f6;
+    --border-color: #E0E7F5;
+    --bg-card: #ffffff;
+    --text-primary: #1E3A8A;
 }
 
 /* ======================== ESTILOS GENERALES ======================== */
@@ -539,6 +543,7 @@ body {
 .admin-menu-icon.icon-delivery { color: var(--primary); }
 .admin-menu-icon.icon-analytics { color: var(--primary); }
 .admin-menu-icon.icon-settings { color: var(--primary); }
+.admin-menu-icon.icon-seguimiento { color: var(--primary); }
 
 .admin-menu a.active .admin-menu-icon,
 .admin-menu a:hover .admin-menu-icon {
@@ -562,6 +567,8 @@ body {
 .admin-menu a:hover .icon-analytics { color: var(--primary); }
 .admin-menu a.active .icon-settings,
 .admin-menu a:hover .icon-settings { color: var(--primary); }
+.admin-menu a.active .icon-seguimiento,
+.admin-menu a:hover .icon-seguimiento { color: var(--primary); }
 
 /* BOTONES GENERALES */
 .btn {

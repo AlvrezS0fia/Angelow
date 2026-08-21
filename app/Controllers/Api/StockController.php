@@ -133,4 +133,44 @@ class StockController extends Controller
             echo json_encode(['error' => 'Error al actualizar stock']);
         }
     }
+
+    public function destroy()
+    {
+        if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
+            http_response_code(403);
+            echo json_encode(['error' => 'No autorizado']);
+            return;
+        }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        $id = $data['id'] ?? 0;
+
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID del producto requerido']);
+            return;
+        }
+
+        $db = \App\Core\Database::getInstance()->getConnection();
+
+        $stmt = $db->prepare("SELECT id, nombre FROM productos WHERE id = :id");
+        $stmt->execute(['id' => $id]);
+        $producto = $stmt->fetch();
+
+        if (!$producto) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Producto no encontrado']);
+            return;
+        }
+
+        $stmt = $db->prepare("DELETE FROM productos WHERE id = :id");
+        $result = $stmt->execute(['id' => $id]);
+
+        if ($result) {
+            echo json_encode(['success' => true, 'message' => 'Producto "' . $producto['nombre'] . '" eliminado correctamente']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al eliminar el producto']);
+        }
+    }
 }

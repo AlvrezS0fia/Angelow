@@ -1,0 +1,1318 @@
+/* ================================================================
+   PERFIL TRACKING - Estilos para la sección de rastreo en perfil.php
+   Todos los estilos están scoped bajo #rastreo para evitar conflictos
+   ================================================================ */
+
+/* TRACKING WRAPPER - Grid layout: mapa + panel */
+#rastreo .tracking-wrapper {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  height: calc(100vh - 280px);
+  min-height: 500px;
+}
+
+/* MAP CONTAINER */
+#rastreo .map-container {
+  position: relative;
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 5px 15px rgba(94, 157, 230, 0.12);
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #E0E7F5;
+}
+
+#rastreo #trkMap {
+  flex: 1;
+  width: 100%;
+  border-radius: 18px;
+  z-index: 1;
+}
+
+/* SKELETON LOADING */
+#rastreo .map-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: #F8FBFE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s ease;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+#rastreo .map-skeleton.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#rastreo .skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(94,157,230,0.08) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: trkSkeletonShimmer 2s linear infinite;
+}
+
+@keyframes trkSkeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+#rastreo .skeleton-content {
+  text-align: center;
+  z-index: 1;
+}
+
+#rastreo .skeleton-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #EDF4FC;
+  padding: 10px;
+  margin-bottom: 16px;
+  animation: trkSkeletonPulse 1.5s ease-in-out infinite;
+}
+
+#rastreo .skeleton-text {
+  font-size: 0.9rem;
+  color: #4B6A9B;
+  font-weight: 500;
+}
+
+@keyframes trkSkeletonPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+/* CONTROLS PANEL - Planificador de Ruta */
+#rastreo .controls-panel {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+  background: white;
+  border-radius: 28px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 55px;
+  height: 55px;
+  overflow: hidden;
+  border: 1px solid #E0E7F5;
+  transition: all 0.3s ease;
+}
+
+#rastreo .controls-panel.collapsed {
+  width: 55px;
+  height: 55px;
+  border-radius: 28px;
+}
+
+#rastreo .controls-panel.expanded {
+  width: 300px;
+  max-width: calc(100% - 40px);
+  border-radius: 20px;
+  height: auto;
+  max-height: 90%;
+  overflow-y: auto;
+}
+
+#rastreo .controls-toggle-btn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1001;
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5E9DE6 0%, #7FBBF2 100%);
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s;
+}
+
+#rastreo .controls-toggle-btn:hover {
+  background: #7FBBF2;
+  transform: scale(1.02);
+}
+
+#rastreo .controls-panel.collapsed .controls-toggle-btn {
+  display: flex;
+}
+
+#rastreo .controls-panel.expanded .controls-toggle-btn {
+  display: none;
+}
+
+#rastreo .panel-header {
+  padding: 10px 15px;
+  border-bottom: 1px solid #E0E7F5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #5E9DE6 0%, #7FBBF2 100%);
+  color: white;
+  border-radius: 20px 20px 0 0;
+}
+
+#rastreo .panel-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#rastreo .panel-title h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+#rastreo .panel-actions {
+  display: flex;
+  gap: 8px;
+}
+
+#rastreo .panel-close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+}
+
+#rastreo .panel-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+#rastreo .panel-content {
+  display: none;
+  padding: 12px;
+}
+
+#rastreo .controls-panel.expanded .panel-content {
+  display: block;
+}
+
+#rastreo .input-group {
+  margin-bottom: 12px;
+}
+
+#rastreo .input-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+#rastreo .input-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: #1E3A8A;
+  font-size: 0.8rem;
+}
+
+#rastreo .input-label i {
+  color: #5E9DE6;
+}
+
+#rastreo .input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+#rastreo .input-icon {
+  position: absolute;
+  left: 10px;
+  color: #5E9DE6;
+  font-size: 0.75rem;
+}
+
+#rastreo .address-input {
+  width: 100%;
+  padding: 7px 7px 7px 28px;
+  border: 2px solid #E0E7F5;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-family: 'Inter', sans-serif;
+  background: white;
+  transition: all 0.3s ease;
+  color: #1E3A8A;
+}
+
+#rastreo .address-input:focus {
+  outline: none;
+  border-color: #5E9DE6;
+  box-shadow: 0 0 0 2px rgba(94, 157, 230, 0.12);
+}
+
+/* ROUTE INFO CARD */
+#rastreo .route-info-card {
+  background: #EDF4FC;
+  border-radius: 10px;
+  padding: 8px;
+  margin: 10px 0;
+  border: 1px solid #E0E7F5;
+}
+
+#rastreo .info-card-header h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1E3A8A;
+  font-size: 0.85rem;
+  margin: 0 0 8px 0;
+}
+
+#rastreo .info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+#rastreo .info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #E0E7F5;
+}
+
+#rastreo .info-item.highlighted {
+  background: linear-gradient(135deg, #5E9DE6 0%, #7FBBF2 100%);
+  color: white;
+  border: none;
+}
+
+#rastreo .info-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#rastreo .info-details {
+  flex: 1;
+}
+
+#rastreo .info-label {
+  display: block;
+  font-size: 0.6rem;
+  opacity: 0.9;
+}
+
+#rastreo .info-value {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* STATUS PANEL */
+#rastreo .status-panel {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  width: 240px;
+  border: 1px solid #E0E7F5;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+#rastreo .status-panel:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+#rastreo .status-header {
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #1E3A8A 0%, #2c3e50 100%);
+  color: white;
+}
+
+#rastreo .status-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+  font-size: 0.75rem;
+}
+
+#rastreo .status-indicator-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#rastreo .status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+#rastreo .status-indicator.pulse {
+  animation: trkPulse 2s infinite;
+}
+
+@keyframes trkPulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+#rastreo .status-waiting { background: #f59e0b; }
+#rastreo .status-ready { background: #10b981; }
+#rastreo .status-traveling { background: #5E9DE6; }
+#rastreo .status-completed { background: #4B6A9B; }
+#rastreo .status-error { background: #ef4444; }
+#rastreo .status-calculating { background: #8b5cf6; }
+
+#rastreo .status-content {
+  padding: 10px;
+}
+
+#rastreo .status-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px;
+  background: #EDF4FC;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+#rastreo .status-message i {
+  color: #5E9DE6;
+  font-size: 0.85rem;
+}
+
+#rastreo .status-message p {
+  flex: 1;
+  font-size: 0.7rem;
+  color: #1E3A8A;
+  margin: 0;
+}
+
+#rastreo .detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+#rastreo .detail-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#rastreo .detail-item i {
+  width: 16px;
+  color: #5E9DE6;
+  font-size: 0.7rem;
+}
+
+#rastreo .detail-label {
+  display: block;
+  font-size: 0.6rem;
+  color: #4B6A9B;
+}
+
+#rastreo .detail-value {
+  display: block;
+  font-weight: 600;
+  color: #1E3A8A;
+  font-size: 0.7rem;
+}
+
+/* GPS INDICATOR */
+#rastreo .gps-indicator {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 5px 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #E0E7F5;
+}
+
+#rastreo .gps-icon {
+  color: #5E9DE6;
+  font-size: 0.9rem;
+}
+
+#rastreo .gps-text {
+  display: flex;
+  flex-direction: column;
+}
+
+#rastreo .gps-status {
+  font-weight: 600;
+  font-size: 0.7rem;
+  color: #1E3A8A;
+}
+
+#rastreo .gps-accuracy {
+  font-size: 0.6rem;
+  color: #4B6A9B;
+}
+
+/* LAYER SWITCHER */
+#rastreo .layer-switcher {
+  position: absolute;
+  bottom: 80px;
+  left: 20px;
+  z-index: 1000;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #E0E7F5;
+}
+
+#rastreo .layer-btn {
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: white;
+  color: #4B6A9B;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #E0E7F5;
+}
+
+#rastreo .layer-btn:last-child {
+  border-bottom: none;
+}
+
+#rastreo .layer-btn:hover {
+  background: #EDF4FC;
+  color: #5E9DE6;
+}
+
+#rastreo .layer-btn.active {
+  background: #5E9DE6;
+  color: white;
+}
+
+/* INPUT ACTION BUTTON */
+#rastreo .input-action {
+  background: none;
+  border: none;
+  color: #5E9DE6;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+#rastreo .input-action:hover {
+  background: #EDF4FC;
+}
+
+/* INPUT HINT */
+#rastreo .input-hint {
+  font-size: 0.65rem;
+  color: #ef4444;
+  font-weight: 600;
+}
+
+/* ROUTE ACTIONS */
+#rastreo .route-actions {
+  margin: 12px 0;
+}
+
+#rastreo .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+  width: 100%;
+}
+
+#rastreo .btn-primary {
+  background: linear-gradient(135deg, #5E9DE6 0%, #7FBBF2 100%);
+  color: white;
+}
+
+#rastreo .btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px rgba(94, 157, 230, 0.25);
+}
+
+#rastreo .btn-secondary {
+  background: #EDF4FC;
+  color: #1E3A8A;
+  border: 2px solid #E0E7F5;
+}
+
+#rastreo .btn-secondary:hover:not(:disabled) {
+  background: #E0E7F5;
+}
+
+#rastreo .btn-outline {
+  background: transparent;
+  color: #5E9DE6;
+  border: 2px solid #5E9DE6;
+}
+
+#rastreo .btn-outline:hover:not(:disabled) {
+  background: #5E9DE6;
+  color: white;
+}
+
+#rastreo .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#rastreo .secondary-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ADDRESS SUGGESTIONS */
+#rastreo .address-suggestions {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#rastreo .suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: #EDF4FC;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.7rem;
+}
+
+#rastreo .suggestion:hover {
+  background: #E0E7F5;
+  transform: translateX(3px);
+}
+
+#rastreo .suggestion i {
+  color: #5E9DE6;
+}
+
+/* AUTOCOMPLETE DROPDOWN */
+#rastreo .autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 2000;
+  background: white;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #E0E7F5;
+  border-top: none;
+}
+
+#rastreo .autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: #1E3A8A;
+  border-bottom: 1px solid #E0E7F5;
+  transition: background 0.2s;
+}
+
+#rastreo .autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+#rastreo .autocomplete-item:hover {
+  background: #EDF4FC;
+}
+
+#rastreo .autocomplete-item i {
+  color: #5E9DE6;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+/* LOADING SPINNER */
+#rastreo .trk-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: trkSpin 0.6s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes trkSpin {
+  to { transform: rotate(360deg); }
+}
+
+#rastreo .trk-btn-loading {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* NOTIFICATION */
+#rastreo .notification {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  background: linear-gradient(135deg, #5E9DE6 0%, #7FBBF2 100%);
+  color: white;
+  border-radius: 14px;
+  padding: 12px 16px;
+  box-shadow: 0 10px 25px rgba(94, 157, 230, 0.25);
+  animation: trkSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 400px;
+  width: 90%;
+}
+
+@keyframes trkSlideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(80px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+#rastreo .notification-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#rastreo .notification-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+/* TRACKING CONTAINER - Panel derecho */
+#rastreo .tracking-container {
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 5px 15px rgba(94, 157, 230, 0.12);
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #E0E7F5;
+  overflow: hidden;
+}
+
+#rastreo .tracking-header {
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #E0E7F5;
+}
+
+#rastreo .tracking-header .header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+#rastreo .tracking-header .header-main h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.2rem;
+  color: #1E3A8A;
+  margin: 0;
+}
+
+#rastreo .order-status-badge {
+  padding: 4px 10px;
+  border-radius: 18px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#rastreo .status-active {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+#rastreo .status-inactive {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+#rastreo .tracking-header .header-secondary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#rastreo .order-meta {
+  display: flex;
+  gap: 12px;
+}
+
+#rastreo .meta-item {
+  display: flex;
+  flex-direction: column;
+}
+
+#rastreo .meta-label {
+  font-size: 0.7rem;
+  color: #4B6A9B;
+}
+
+#rastreo .meta-value {
+  font-weight: 600;
+  color: #1E3A8A;
+  font-size: 0.85rem;
+}
+
+#rastreo .tracking-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+/* PROGRESS TIMELINE */
+#rastreo .progress-timeline {
+  background: #EDF4FC;
+  border-radius: 16px;
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid #E0E7F5;
+}
+
+#rastreo .timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+#rastreo .timeline-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1rem;
+  color: #1E3A8A;
+  margin: 0;
+}
+
+#rastreo .timeline-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#rastreo .progress-bar {
+  width: 80px;
+  height: 5px;
+  background: white;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+#rastreo .progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #5E9DE6 0%, #7FBBF2 100%);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+#rastreo .progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: trkShimmerBar 1.5s ease-in-out infinite;
+}
+
+@keyframes trkShimmerBar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+#rastreo .progress-text {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #5E9DE6;
+}
+
+#rastreo .timeline-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+#rastreo .step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  background: white;
+  border-radius: 12px;
+  border: 2px solid #E0E7F5;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#rastreo .step.completed {
+  border-color: #10b981;
+}
+
+#rastreo .step.active {
+  border-color: #5E9DE6;
+  box-shadow: 0 3px 10px rgba(94, 157, 230, 0.12);
+}
+
+#rastreo .step-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #EDF4FC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4B6A9B;
+  font-size: 1rem;
+}
+
+#rastreo .step.completed .step-icon {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+#rastreo .step.active .step-icon {
+  background: rgba(94, 157, 230, 0.1);
+  color: #5E9DE6;
+}
+
+#rastreo .step-content {
+  flex: 1;
+}
+
+#rastreo .step-content h4 {
+  font-size: 0.9rem;
+  color: #1E3A8A;
+  margin-bottom: 2px;
+}
+
+#rastreo .step-time {
+  font-size: 0.65rem;
+  color: #5E9DE6;
+  font-weight: 600;
+}
+
+#rastreo .step-connector {
+  width: 2px;
+  height: 20px;
+  background: #E0E7F5;
+  margin: 0 auto;
+}
+
+#rastreo .step-connector.completed {
+  background: #10b981;
+}
+
+/* DRIVER CARD */
+#rastreo .driver-card {
+  background: white;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  border: 1px solid #E0E7F5;
+  overflow: hidden;
+}
+
+#rastreo .driver-card .card-header {
+  padding: 12px 15px;
+  background: #EDF4FC;
+  border-bottom: 1px solid #E0E7F5;
+}
+
+#rastreo .driver-card .card-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1rem;
+  color: #1E3A8A;
+  margin: 0;
+}
+
+#rastreo .driver-card .card-content {
+  padding: 15px;
+}
+
+#rastreo .driver-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+#rastreo .driver-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #5E9DE6;
+  flex-shrink: 0;
+}
+
+#rastreo .driver-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#rastreo .driver-info h4 {
+  font-size: 1rem;
+  color: #1E3A8A;
+  margin-bottom: 4px;
+}
+
+#rastreo .driver-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+}
+
+#rastreo .stars {
+  color: #FFD700;
+  font-size: 0.8rem;
+}
+
+#rastreo .driver-contact {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+#rastreo .contact-btn {
+  padding: 8px 4px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+#rastreo .call-btn {
+  background: #5E9DE6;
+  color: white;
+}
+
+#rastreo .message-btn {
+  background: #EDF4FC;
+  color: #1E3A8A;
+  border: 2px solid #E0E7F5;
+}
+
+#rastreo .location-btn {
+  background: white;
+  color: #5E9DE6;
+  border: 2px solid #5E9DE6;
+}
+
+#rastreo .driver-vehicle {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #E0E7F5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #4B6A9B;
+}
+
+#rastreo .driver-vehicle i {
+  color: #5E9DE6;
+}
+
+/* ESTIMATE CARD */
+#rastreo .estimate-card {
+  background: linear-gradient(135deg, #5E9DE6 0%, #7FBBF2 100%);
+  border-radius: 16px;
+  margin-bottom: 20px;
+  color: white;
+  overflow: hidden;
+}
+
+#rastreo .estimate-card .card-header {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 12px 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#rastreo .estimate-card .card-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1rem;
+  color: white;
+  margin: 0;
+}
+
+#rastreo .estimate-card .card-content {
+  padding: 15px;
+}
+
+#rastreo .estimate-main {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+#rastreo .estimate-time {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+}
+
+#rastreo .time-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  transition: all 0.5s ease;
+}
+
+#rastreo .estimate-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+#rastreo .estimate-details .detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+/* DELIVERY COMPLETED CARD */
+#rastreo .delivery-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+#rastreo .delivery-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #166534;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#rastreo .delivery-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 14px;
+  font-size: 13px;
+  color: #166534;
+}
+
+#rastreo .delivery-stats div strong {
+  display: block;
+  font-size: 16px;
+}
+
+/* MARKER STYLES */
+#rastreo .custom-marker {
+  background: none !important;
+  border: none !important;
+}
+
+#rastreo .custom-marker svg {
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+#rastreo .marker-pulse-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+#rastreo .marker-pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid rgba(59, 130, 246, 0.5);
+  animation: trkPulseRing 1.8s ease-out infinite;
+}
+
+@keyframes trkPulseRing {
+  0% { transform: scale(0.5); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ROUTE GLOW & ANIMATION */
+#rastreo .route-glow {
+  filter: drop-shadow(0 0 8px rgba(94, 157, 230, 0.5));
+}
+
+#rastreo .trail-line {
+  transition: opacity 0.5s ease;
+}
+
+#rastreo .leaflet-polyline-decorator path {
+  opacity: 0.7;
+}
+
+/* LOADING SPINNER */
+#rastreo .trk-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: trkSpin 0.6s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes trkSpin {
+  to { transform: rotate(360deg); }
+}
+
+#rastreo .trk-btn-loading {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* SELECTOR */
+#rastreo .trk-selector {
+  margin-bottom: 20px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1024px) {
+  #rastreo .tracking-wrapper {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    height: auto;
+  }
+
+  #rastreo .map-container,
+  #rastreo .tracking-container {
+    height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  #rastreo .controls-panel.expanded {
+    width: 260px;
+  }
+
+  #rastreo .status-panel {
+    width: 200px;
+    bottom: 10px;
+    right: 10px;
+  }
+
+  #rastreo .gps-indicator {
+    top: 10px;
+    right: 10px;
+  }
+
+  #rastreo .layer-switcher {
+    bottom: 70px;
+    left: 10px;
+  }
+
+  #rastreo .layer-btn {
+    width: 34px;
+    height: 34px;
+    font-size: 0.85rem;
+  }
+}

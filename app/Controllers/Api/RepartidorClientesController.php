@@ -10,8 +10,14 @@ class RepartidorClientesController
     {
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
         $token = str_replace('Bearer ', '', $authHeader);
+        if (!$token) return null;
         $payload = JWTHelper::decode($token);
-        return $payload['sub'] ?? null;
+        if (!$payload) return null;
+        $userId = $payload['sub'] ?? null;
+        if (!$userId) return null;
+        $user = Database::query("SELECT id, rol, estado FROM usuarios WHERE id = ?", [$userId])->fetch();
+        if (!$user || $user['rol'] !== 'repartidor' || $user['estado'] !== 'activo') return null;
+        return $userId;
     }
 
     private function json($data, $code = 200)

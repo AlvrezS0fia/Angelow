@@ -10,8 +10,14 @@ class RepartidorSeguimientoController
     {
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
         $token = str_replace('Bearer ', '', $authHeader);
+        if (!$token) return null;
         $payload = JWTHelper::decode($token);
-        return $payload['sub'] ?? null;
+        if (!$payload) return null;
+        $userId = $payload['sub'] ?? null;
+        if (!$userId) return null;
+        $user = Database::query("SELECT id, rol, estado FROM usuarios WHERE id = ?", [$userId])->fetch();
+        if (!$user || $user['rol'] !== 'repartidor' || $user['estado'] !== 'activo') return null;
+        return $userId;
     }
 
     private function json($data, $code = 200)
@@ -40,6 +46,12 @@ class RepartidorSeguimientoController
 
         if (!$pedidoId || $latitud === null || $longitud === null) {
             $this->json(['error' => 'pedido_id, latitud y longitud requeridos'], 400);
+            return;
+        }
+
+        $order = Database::query("SELECT id FROM pedidos WHERE id = ? AND repartidor_id = ?", [$pedidoId, $repartidorId])->fetch();
+        if (!$order) {
+            $this->json(['error' => 'Pedido no asignado'], 403);
             return;
         }
 

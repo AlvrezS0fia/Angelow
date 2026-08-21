@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/politicas_priv.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/back-button.css">
 </head>
 <body>
 
@@ -23,9 +24,12 @@
         </div>
     </a>
 
-    <div class="icon-btn" onclick="window.location.href='<?= APP_URL ?>/'">
-        <img src="<?= APP_URL ?>/assets/imagenes/general/volver.png" alt="Inicio" style="width:24px;">
-    </div>
+    <a href="<?= APP_URL ?>/" class="btn-back-header">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Volver
+    </a>
 </header>
 
 <div class="terms-container">

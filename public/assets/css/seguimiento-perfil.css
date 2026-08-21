@@ -1,0 +1,1312 @@
+/* ============================================================
+   SEGUIMIENTO DENTRO DE PERFIL - CSS ESCOPADO
+   Solo estilos de la sección de seguimiento, sin afectar
+   las demás secciones del perfil.
+   ============================================================ */
+
+/* ======================== TRACKING SECTION (dentro de perfil) ======================== */
+#seguimientoSection .seg-main-content {
+  padding: 0;
+  max-width: 100%;
+  margin: 0;
+  width: 100%;
+}
+
+#seguimientoSection .seg-page-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem 0;
+}
+
+#seguimientoSection .seg-page-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: 0.8rem;
+}
+
+#seguimientoSection .seg-page-title i {
+  color: var(--primary);
+  font-size: 2rem;
+}
+
+#seguimientoSection .seg-page-subtitle {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* ======================== TRACKING WRAPPER ======================== */
+#seguimientoSection .seg-tracking-wrapper {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  height: calc(100vh - 300px);
+  min-height: 500px;
+}
+
+/* ======================== MAP CONTAINER ======================== */
+#seguimientoSection .seg-map-container {
+  position: relative;
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 5px 15px var(--shadow);
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-light);
+}
+
+#seguimientoSection .seg-map-container #segMap {
+  flex: 1;
+  width: 100%;
+  border-radius: 18px;
+  z-index: 1;
+}
+
+/* ======================== PANEL DE CONTROL ======================== */
+#seguimientoSection .seg-controls-panel {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+  background: white;
+  border-radius: 28px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 55px;
+  height: 55px;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+  transition: all 0.3s ease;
+}
+
+#seguimientoSection .seg-controls-panel.seg-collapsed {
+  width: 55px;
+  height: 55px;
+  border-radius: 28px;
+}
+
+#seguimientoSection .seg-controls-panel.seg-expanded {
+  width: 300px;
+  max-width: calc(100% - 40px);
+  border-radius: 20px;
+  height: auto;
+  max-height: 90%;
+  overflow-y: auto;
+}
+
+#seguimientoSection .seg-controls-toggle-btn {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1001;
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s;
+}
+
+#seguimientoSection .seg-controls-toggle-btn:hover {
+  background: var(--accent);
+  transform: scale(1.02);
+}
+
+#seguimientoSection .seg-controls-panel.seg-collapsed .seg-controls-toggle-btn {
+  display: flex;
+}
+
+#seguimientoSection .seg-controls-panel.seg-expanded .seg-controls-toggle-btn {
+  display: none;
+}
+
+#seguimientoSection .seg-panel-header {
+  padding: 10px 15px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+  border-radius: 20px 20px 0 0;
+}
+
+#seguimientoSection .seg-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#seguimientoSection .seg-panel-title h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+#seguimientoSection .seg-panel-actions {
+  display: flex;
+  gap: 8px;
+}
+
+#seguimientoSection .seg-panel-action-btn,
+#seguimientoSection .seg-panel-close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+}
+
+#seguimientoSection .seg-panel-action-btn:hover,
+#seguimientoSection .seg-panel-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+#seguimientoSection .seg-panel-content {
+  display: none;
+  padding: 12px;
+}
+
+#seguimientoSection .seg-controls-panel.seg-expanded .seg-panel-content {
+  display: block;
+}
+
+#seguimientoSection .seg-input-group {
+  margin-bottom: 12px;
+}
+
+#seguimientoSection .seg-input-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+#seguimientoSection .seg-input-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 0.8rem;
+}
+
+#seguimientoSection .seg-input-label i {
+  color: var(--primary);
+}
+
+#seguimientoSection .seg-input-action {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+#seguimientoSection .seg-input-action:hover {
+  background: var(--bg-soft);
+}
+
+#seguimientoSection .seg-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+#seguimientoSection .seg-input-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--primary);
+  font-size: 0.75rem;
+}
+
+#seguimientoSection .seg-address-input {
+  width: 100%;
+  padding: 7px 7px 7px 28px;
+  border: 2px solid var(--border-light);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-family: 'Inter', sans-serif;
+  background: white;
+  transition: all 0.3s ease;
+  color: var(--text-dark);
+}
+
+#seguimientoSection .seg-address-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--shadow);
+}
+
+#seguimientoSection .seg-address-suggestions {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#seguimientoSection .seg-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: var(--bg-soft);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.7rem;
+}
+
+#seguimientoSection .seg-suggestion:hover {
+  background: var(--border-light);
+  transform: translateX(3px);
+}
+
+#seguimientoSection .seg-suggestion i {
+  color: var(--primary);
+}
+
+/* ======================== ROUTE ACTIONS ======================== */
+#seguimientoSection .seg-route-actions {
+  margin: 12px 0;
+}
+
+#seguimientoSection .seg-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Inter', sans-serif;
+  width: 100%;
+}
+
+#seguimientoSection .seg-btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+}
+
+#seguimientoSection .seg-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px var(--shadow-hover);
+}
+
+#seguimientoSection .seg-btn-secondary {
+  background: var(--bg-soft);
+  color: var(--text-dark);
+  border: 2px solid var(--border-light);
+}
+
+#seguimientoSection .seg-btn-secondary:hover:not(:disabled) {
+  background: var(--border-light);
+}
+
+#seguimientoSection .seg-btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+}
+
+#seguimientoSection .seg-btn-outline:hover:not(:disabled) {
+  background: var(--primary);
+  color: white;
+}
+
+#seguimientoSection .seg-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#seguimientoSection .seg-secondary-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ======================== ROUTE INFO CARD ======================== */
+#seguimientoSection .seg-route-info-card {
+  background: var(--bg-soft);
+  border-radius: 10px;
+  padding: 8px;
+  margin: 10px 0;
+  border: 1px solid var(--border-light);
+}
+
+#seguimientoSection .seg-info-card-header h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dark);
+  font-size: 0.85rem;
+  margin: 0 0 8px 0;
+}
+
+#seguimientoSection .seg-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+#seguimientoSection .seg-info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+}
+
+#seguimientoSection .seg-info-item.seg-highlighted {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+  border: none;
+}
+
+#seguimientoSection .seg-info-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#seguimientoSection .seg-info-details {
+  flex: 1;
+}
+
+#seguimientoSection .seg-info-label {
+  display: block;
+  font-size: 0.6rem;
+  opacity: 0.9;
+}
+
+#seguimientoSection .seg-info-value {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* ======================== STATUS PANEL ======================== */
+#seguimientoSection .seg-status-panel {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  width: 240px;
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+#seguimientoSection .seg-status-panel:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+#seguimientoSection .seg-status-header {
+  padding: 8px 12px;
+  background: linear-gradient(135deg, var(--text-dark) 0%, #2c3e50 100%);
+  color: white;
+}
+
+#seguimientoSection .seg-status-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+  font-size: 0.75rem;
+}
+
+#seguimientoSection .seg-status-indicator-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#seguimientoSection .seg-status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+#seguimientoSection .seg-status-indicator.seg-pulse {
+  animation: segPulse 2s infinite;
+}
+
+@keyframes segPulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+#seguimientoSection .seg-status-waiting { background: var(--warning); }
+#seguimientoSection .seg-status-ready { background: var(--success); }
+#seguimientoSection .seg-status-traveling { background: var(--primary); }
+#seguimientoSection .seg-status-completed { background: var(--text-secondary); }
+#seguimientoSection .seg-status-error { background: var(--error); }
+#seguimientoSection .seg-status-calculating { background: var(--info); }
+
+#seguimientoSection .seg-status-refresh {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+#seguimientoSection .seg-status-refresh:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(180deg);
+}
+
+#seguimientoSection .seg-status-content {
+  padding: 10px;
+}
+
+#seguimientoSection .seg-status-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px;
+  background: var(--bg-soft);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+#seguimientoSection .seg-status-message i {
+  color: var(--primary);
+  font-size: 0.85rem;
+}
+
+#seguimientoSection .seg-status-message p {
+  flex: 1;
+  font-size: 0.7rem;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+#seguimientoSection .seg-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+#seguimientoSection .seg-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#seguimientoSection .seg-detail-item i {
+  width: 16px;
+  color: var(--primary);
+  font-size: 0.7rem;
+}
+
+#seguimientoSection .seg-detail-label {
+  display: block;
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+}
+
+#seguimientoSection .seg-detail-value {
+  display: block;
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 0.7rem;
+}
+
+/* ======================== GPS INDICATOR ======================== */
+#seguimientoSection .seg-gps-indicator {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  padding: 5px 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-light);
+}
+
+#seguimientoSection .seg-gps-icon {
+  color: var(--primary);
+  font-size: 0.9rem;
+}
+
+#seguimientoSection .seg-gps-text {
+  display: flex;
+  flex-direction: column;
+}
+
+#seguimientoSection .seg-gps-status {
+  font-weight: 600;
+  font-size: 0.7rem;
+  color: var(--text-dark);
+}
+
+#seguimientoSection .seg-gps-accuracy {
+  font-size: 0.6rem;
+  color: var(--text-secondary);
+}
+
+/* ======================== LAYER SWITCHER ======================== */
+#seguimientoSection .seg-layer-switcher {
+  position: absolute;
+  bottom: 80px;
+  left: 20px;
+  z-index: 1000;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+}
+
+#seguimientoSection .seg-layer-btn {
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: white;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--border-light);
+}
+
+#seguimientoSection .seg-layer-btn:last-child {
+  border-bottom: none;
+}
+
+#seguimientoSection .seg-layer-btn:hover {
+  background: var(--bg-soft);
+  color: var(--primary);
+}
+
+#seguimientoSection .seg-layer-btn.seg-active {
+  background: var(--primary);
+  color: white;
+}
+
+/* ======================== MAP SKELETON ======================== */
+#seguimientoSection .seg-map-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: var(--bg-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s ease;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+#seguimientoSection .seg-map-skeleton.seg-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#seguimientoSection .seg-skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(94,157,230,0.08) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: segSkeletonShimmer 2s linear infinite;
+}
+
+@keyframes segSkeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+#seguimientoSection .seg-skeleton-content {
+  text-align: center;
+  z-index: 1;
+}
+
+#seguimientoSection .seg-skeleton-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: var(--bg-soft);
+  padding: 10px;
+  margin-bottom: 16px;
+  animation: segSkeletonPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes segSkeletonPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+#seguimientoSection .seg-skeleton-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ======================== NOTIFICATION ======================== */
+#seguimientoSection .seg-notification {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+  border-radius: 14px;
+  padding: 12px 16px;
+  box-shadow: 0 10px 25px rgba(94, 157, 230, 0.25);
+  display: none;
+  animation: segSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 400px;
+  width: 90%;
+}
+
+@keyframes segSlideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(80px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+#seguimientoSection .seg-notification-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#seguimientoSection .seg-notification-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+/* ======================== TRACKING PANEL (derecha) ======================== */
+#seguimientoSection .seg-tracking-container {
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 5px 15px var(--shadow);
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+#seguimientoSection .seg-tracking-header {
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+#seguimientoSection .seg-header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+#seguimientoSection .seg-header-main h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.2rem;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+#seguimientoSection .seg-order-status-badge {
+  padding: 4px 10px;
+  border-radius: 18px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#seguimientoSection .seg-status-active {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+}
+
+#seguimientoSection .seg-header-secondary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#seguimientoSection .seg-order-meta {
+  display: flex;
+  gap: 12px;
+}
+
+#seguimientoSection .seg-meta-item {
+  display: flex;
+  flex-direction: column;
+}
+
+#seguimientoSection .seg-meta-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+#seguimientoSection .seg-meta-value {
+  font-weight: 600;
+  color: var(--text-dark);
+  font-size: 0.85rem;
+}
+
+#seguimientoSection .seg-header-action {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.3s;
+}
+
+#seguimientoSection .seg-header-action:hover {
+  background: var(--bg-soft);
+}
+
+#seguimientoSection .seg-tracking-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+/* ======================== PROGRESS TIMELINE ======================== */
+#seguimientoSection .seg-progress-timeline {
+  background: var(--bg-soft);
+  border-radius: 16px;
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-light);
+}
+
+#seguimientoSection .seg-timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+#seguimientoSection .seg-timeline-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1rem;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+#seguimientoSection .seg-timeline-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#seguimientoSection .seg-progress-bar {
+  width: 80px;
+  height: 5px;
+  background: white;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+#seguimientoSection .seg-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+#seguimientoSection .seg-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: segShimmerBar 1.5s ease-in-out infinite;
+}
+
+@keyframes segShimmerBar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+#seguimientoSection .seg-progress-text {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+#seguimientoSection .seg-timeline-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+#seguimientoSection .seg-step {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  background: white;
+  border-radius: 12px;
+  border: 2px solid var(--border-light);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#seguimientoSection .seg-step.seg-completed {
+  border-color: var(--success);
+}
+
+#seguimientoSection .seg-step.seg-active {
+  border-color: var(--primary);
+  box-shadow: 0 3px 10px var(--shadow);
+}
+
+#seguimientoSection .seg-step-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+#seguimientoSection .seg-step.seg-completed .seg-step-icon {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+  transition: all 0.3s ease;
+}
+
+#seguimientoSection .seg-step.seg-active .seg-step-icon {
+  background: rgba(94, 157, 230, 0.1);
+  color: var(--primary);
+}
+
+#seguimientoSection .seg-step-content {
+  flex: 1;
+}
+
+#seguimientoSection .seg-step-content h4 {
+  font-size: 0.9rem;
+  color: var(--text-dark);
+  margin-bottom: 2px;
+}
+
+#seguimientoSection .seg-step-time {
+  font-size: 0.65rem;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ======================== DRIVER CARD ======================== */
+#seguimientoSection .seg-driver-card {
+  background: white;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+#seguimientoSection .seg-card-header {
+  padding: 12px 15px;
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--border-light);
+}
+
+#seguimientoSection .seg-card-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1rem;
+  color: var(--text-dark);
+  margin: 0;
+}
+
+#seguimientoSection .seg-card-content {
+  padding: 15px;
+}
+
+#seguimientoSection .seg-driver-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+#seguimientoSection .seg-driver-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid var(--primary);
+  flex-shrink: 0;
+}
+
+#seguimientoSection .seg-driver-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#seguimientoSection .seg-driver-info h4 {
+  font-size: 1rem;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+
+#seguimientoSection .seg-driver-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 0.75rem;
+}
+
+#seguimientoSection .seg-stars {
+  color: #FFD700;
+  font-size: 0.8rem;
+}
+
+#seguimientoSection .seg-driver-contact {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+#seguimientoSection .seg-contact-btn {
+  padding: 8px 4px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+#seguimientoSection .seg-call-btn {
+  background: var(--primary);
+  color: white;
+}
+
+#seguimientoSection .seg-message-btn {
+  background: var(--bg-soft);
+  color: var(--text-dark);
+  border: 2px solid var(--border-light);
+}
+
+#seguimientoSection .seg-location-btn {
+  background: white;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+}
+
+/* ======================== ESTIMATE CARD ======================== */
+#seguimientoSection .seg-estimate-card {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  border-radius: 16px;
+  margin-bottom: 20px;
+  color: white;
+  overflow: hidden;
+}
+
+#seguimientoSection .seg-estimate-card .seg-card-header {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#seguimientoSection .seg-estimate-main {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+#seguimientoSection .seg-estimate-time {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+}
+
+#seguimientoSection .seg-time-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  transition: all 0.5s ease;
+}
+
+#seguimientoSection .seg-time-value.seg-updating {
+  transform: scale(1.1);
+  color: #f59e0b;
+}
+
+#seguimientoSection .seg-estimate-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+#seguimientoSection .seg-estimate-details .seg-est-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+/* ======================== AUTOCOMPLETE DROPDOWN ======================== */
+#seguimientoSection .seg-autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 2000;
+  background: white;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border-light);
+  border-top: none;
+}
+
+#seguimientoSection .seg-autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--text-dark);
+  border-bottom: 1px solid var(--border-light);
+  transition: background 0.2s;
+}
+
+#seguimientoSection .seg-autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+#seguimientoSection .seg-autocomplete-item:hover {
+  background: var(--bg-soft);
+}
+
+#seguimientoSection .seg-autocomplete-item i {
+  color: var(--primary);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+/* ======================== LOADING SPINNER ======================== */
+#seguimientoSection .seg-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: segSpin 0.6s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes segSpin {
+  to { transform: rotate(360deg); }
+}
+
+#seguimientoSection .seg-btn-loading {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* ======================== MAP MARKER OVERRIDES ======================== */
+#seguimientoSection .custom-marker {
+  background: none !important;
+  border: none !important;
+}
+
+#seguimientoSection .custom-marker svg {
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+#seguimientoSection .driver-marker {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#seguimientoSection .driver-marker-pulse {
+  animation: segDriverPulse 2s ease-in-out infinite;
+}
+
+@keyframes segDriverPulse {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.4)); }
+  50% { filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8)); }
+}
+
+#seguimientoSection .route-glow {
+  filter: drop-shadow(0 0 8px rgba(94, 157, 230, 0.5));
+}
+
+#seguimientoSection .trail-line {
+  transition: opacity 0.5s ease;
+}
+
+/* Leaflet poly decorator */
+#seguimientoSection .leaflet-polyline-decorator path {
+  opacity: 0.7;
+}
+
+/* Marker pulse ring */
+#seguimientoSection .marker-pulse-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+#seguimientoSection .marker-pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid rgba(59, 130, 246, 0.5);
+  animation: segPulseRing 1.8s ease-out infinite;
+}
+
+@keyframes segPulseRing {
+  0% { transform: scale(0.5); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ======================== RESPONSIVE ======================== */
+@media (max-width: 1024px) {
+  #seguimientoSection .seg-tracking-wrapper {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    height: auto;
+  }
+
+  #seguimientoSection .seg-map-container,
+  #seguimientoSection .seg-tracking-container {
+    height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  #seguimientoSection .seg-controls-panel.seg-expanded {
+    width: 260px;
+    top: 10px;
+    left: 10px;
+  }
+
+  #seguimientoSection .seg-status-panel {
+    width: 200px;
+    bottom: 10px;
+    right: 10px;
+  }
+
+  #seguimientoSection .seg-gps-indicator {
+    top: 10px;
+    right: 10px;
+  }
+
+  #seguimientoSection .seg-layer-switcher {
+    bottom: 70px;
+    left: 10px;
+  }
+
+  #seguimientoSection .seg-layer-btn {
+    width: 34px;
+    height: 34px;
+    font-size: 0.85rem;
+  }
+
+  #seguimientoSection .seg-page-title {
+    font-size: 1.6rem;
+  }
+}

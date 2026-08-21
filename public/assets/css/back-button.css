@@ -1,0 +1,48 @@
+/* ===== BOTÓN VOLVER - DISEÑO UNIFICADO ANGELOW ===== */
+.btn-back-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--white, #ffffff);
+    color: var(--primary, #5E9DE6);
+    font-weight: 700;
+    font-size: 14px;
+    padding: 8px 18px;
+    border: 2px solid var(--border-light, #E0E7F5);
+    border-radius: 40px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(94, 157, 230, 0.12);
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: 'Inter', sans-serif;
+}
+
+.btn-back-header:hover {
+    border-color: var(--primary, #5E9DE6);
+    background: var(--bg-soft, #EDF4FC);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(94, 157, 230, 0.25);
+}
+
+.btn-back-header svg {
+    stroke: var(--primary, #5E9DE6);
+    fill: none;
+    stroke-width: 2.5;
+    width: 18px;
+    height: 18px;
+}
+
+@media (max-width: 768px) {
+    .btn-back-header {
+        font-size: 13px;
+        padding: 7px 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .btn-back-header {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+}

@@ -6,6 +6,7 @@
 <title>Repartidor — ANGELOW</title>
 <link rel="shortcut icon" href="<?= APP_URL ?>/assets/imagenes/general/favico.ico" type="image/x-icon">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="<?= APP_URL ?>/assets/css/back-button.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -94,8 +95,10 @@ input::placeholder{color:var(--text-secondary);font-weight:400;}
     <span class="topbar-name">ANGELOW</span>
     <span class="topbar-sub">Repartidores</span>
   </div>
-  <a href="<?= APP_URL ?>/" class="btn-back-home">
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M15 19L8 12L15 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <a href="<?= APP_URL ?>/" class="btn-back-header">
+    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
     Volver
   </a>
 </header>
@@ -196,13 +199,10 @@ function doLogin() {
   btn.disabled = true;
   btn.innerHTML = 'Ingresando...';
 
-  const formData = new FormData();
-  formData.append('email', val('email'));
-  formData.append('password', val('password'));
-
   fetch('<?= APP_URL ?>/repartidor/login', {
     method: 'POST',
-    body: formData
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ email: val('email'), password: val('password') })
   })
   .then(r => r.json())
   .then(data => {
@@ -215,7 +215,14 @@ function doLogin() {
         window.location.href = data.redirect || '<?= APP_URL ?>/repartidor';
       }, 500);
     } else {
-      showToast({ title: 'Error', message: data.message || 'No se pudo iniciar sesión', type: 'error' });
+      if (data.pending) {
+        showToast({ title: 'Solicitud pendiente', message: data.message || 'Tu solicitud está pendiente de aprobación por el administrador.', type: 'warning', duration: 6000 });
+        setTimeout(() => {
+          window.location.href = data.redirect || '<?= APP_URL ?>/repartidor/dashboard';
+        }, 2000);
+      } else {
+        showToast({ title: 'Error', message: data.message || 'No se pudo iniciar sesión', type: 'error' });
+      }
       btn.disabled = false;
       btn.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Ingresar';
     }
@@ -229,6 +236,16 @@ function doLogin() {
 
 document.getElementById('email').addEventListener('blur', () => { if (document.getElementById('f-email')) validateLogin(); });
 document.getElementById('password').addEventListener('blur', () => { if (document.getElementById('f-password')) validateLogin(); });
+
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('pending') === '1') {
+    showToast({ title: 'Solicitud enviada', message: 'Tu solicitud fue enviada correctamente. El administrador revisará tu petición y te aprobará el acceso como repartidor.', type: 'info', duration: 8000 });
+  }
+  if (params.get('approved') === '1') {
+    showToast({ title: 'Cuenta aprobada', message: '¡Tu cuenta ha sido aprobada! Ya puedes iniciar sesión como repartidor.', type: 'success', duration: 6000 });
+  }
+});
 </script>
 </body>
 </html>

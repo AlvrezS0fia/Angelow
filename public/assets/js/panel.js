@@ -116,11 +116,9 @@ async function cambiarEstadoPedido(pedidoId, nuevoEstado) {
     }
 }
 
-let deliveryDrivers = JSON.parse(localStorage.getItem('angelow_delivery_drivers')) || [
-    { id: 1, name: "Carlos Martínez", email: "carlos.martinez@angelow.com", phone: "3001112233", idNumber: "1234567890", idType: "CC", address: "Calle 45 #23-12, Medellín", vehicle: "Moto", licensePlate: "ABC-123", licenseNumber: "LIC-2025-001", emergencyContact: "María Martínez - 3001112244", status: "active", currentRoute: "ORD-001", completedDeliveries: 156, rating: 4.8, hireDate: "2024-01-15", birthDate: "1990-05-20", bloodType: "O+", avatar: null, notes: "Repartidor destacado del mes" },
-    { id: 2, name: "Andrea López", email: "andrea.lopez@angelow.com", phone: "3004445566", idNumber: "9876543210", idType: "CC", address: "Carrera 32 #67-89, Bogotá", vehicle: "Carro", licensePlate: "XYZ-789", licenseNumber: "LIC-2025-002", emergencyContact: "Pedro López - 3004445577", status: "on-route", currentRoute: "ORD-002, ORD-003", completedDeliveries: 89, rating: 4.9, hireDate: "2024-03-10", birthDate: "1992-08-15", bloodType: "A+", avatar: null, notes: "Prefiere rutas del norte" },
-    { id: 3, name: "Javier Rodríguez", email: "javier.rodriguez@angelow.com", phone: "3007778899", idNumber: "4567891230", idType: "CC", address: "Avenida 68 #12-34, Cali", vehicle: "Bicicleta", licensePlate: "N/A", licenseNumber: "LIC-2025-003", emergencyContact: "Ana Rodríguez - 3007778800", status: "inactive", currentRoute: "", completedDeliveries: 45, rating: 4.5, hireDate: "2024-06-20", birthDate: "1988-11-30", bloodType: "B-", avatar: null, notes: "En período de prueba" }
-];
+let deliveryDrivers = [];
+let solicitudes = [];
+let dashboardStats = {};
 
 // ======================== VARIABLES GLOBALES ========================
 let salesChart, productsChart, trafficChart, conversionChart;
@@ -135,8 +133,6 @@ let activeCategory = "all";
 let activeStock = "all";
 let activeSort = "name";
 let selectedSizes = {};
-let editingDeliveryId = null;
-let selectedDeliveryAvatar = null;
 let editingCategoryId = null;
 let editingSubcategoryId = null;
 let currentModalType = 'categoria';
@@ -146,7 +142,6 @@ function saveAllData() {
     localStorage.setItem('angelow_main_categories', JSON.stringify(mainCategories));
     localStorage.setItem('angelow_sub_categories', JSON.stringify(subCategories));
     localStorage.setItem('angelow_products', JSON.stringify(products));
-    localStorage.setItem('angelow_delivery_drivers', JSON.stringify(deliveryDrivers));
     localStorage.setItem('angelow_orders', JSON.stringify(orders));
     updateClientCategories();
 }
@@ -1427,399 +1422,284 @@ function setupCustomerSearch() {
 }
 
 // ======================== SECCIÓN REPARTIDORES ========================
-function renderDeliveryGrid() {
-    const grid = document.getElementById('deliveryGrid');
-    if (!grid) return;
+async function cargarSolicitudes() {
+    const cached = localStorage.getItem('angelow_solicitudes');
+    if (cached) {
+        try { solicitudes = JSON.parse(cached); renderSolicitudes(); updateDriverStats(); } catch(e) {}
+    }
+    try {
+        const res = await fetch(`${APP_URL}/api/admin/repartidores/solicitudes`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.success) {
+            solicitudes = data.solicitudes || [];
+            localStorage.setItem('angelow_solicitudes', JSON.stringify(solicitudes));
+            renderSolicitudes();
+            updateDriverStats();
+        }
+    } catch (e) {
+        console.error('Error al cargar solicitudes:', e);
+    }
+}
 
-    if (deliveryDrivers.length === 0) {
-        grid.innerHTML = `
-            <div class="no-results" style="grid-column:1/-1; text-align:center; padding:100px 20px; color:var(--text-secondary);">
-                No hay repartidores registrados
+async function cargarRepartidoresActivos() {
+    const cached = localStorage.getItem('angelow_delivery_drivers');
+    if (cached) {
+        try { deliveryDrivers = JSON.parse(cached); renderDeliveryTable(); } catch(e) {}
+    }
+    try {
+        const res = await fetch(`${APP_URL}/api/admin/repartidores/activos`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.success) {
+            deliveryDrivers = data.drivers || [];
+            localStorage.setItem('angelow_delivery_drivers', JSON.stringify(deliveryDrivers));
+            renderDeliveryTable();
+        }
+    } catch (e) {
+        console.error('Error al cargar repartidores:', e);
+    }
+}
+
+async function cargarEstadisticasRepartidores() {
+    try {
+        const res = await fetch(`${APP_URL}/api/admin/repartidores/estadisticas`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.success) {
+            const el = id => document.getElementById(id);
+            if (el('driverPending')) el('driverPending').textContent = data.pendientes || 0;
+            if (el('driverActive')) el('driverActive').textContent = data.activos || 0;
+            if (el('driverApproved')) el('driverApproved').textContent = data.aprobadas || 0;
+            if (el('driverRejected')) el('driverRejected').textContent = data.rechazadas || 0;
+            const badge = el('pendingBadge');
+            if (badge) badge.textContent = data.pendientes || 0;
+        }
+    } catch (e) {
+        console.error('Error al cargar estadísticas de repartidores:', e);
+    }
+}
+
+function updateDriverStats() {
+    const pendientes = solicitudes.filter(s => s.estado === 'pendiente').length;
+    const badge = document.getElementById('pendingBadge');
+    if (badge) badge.textContent = pendientes;
+    cargarEstadisticasRepartidores();
+}
+
+function renderSolicitudes() {
+    const container = document.getElementById('solicitudesContainer');
+    if (!container) return;
+
+    const pendientes = solicitudes.filter(s => s.estado === 'pendiente');
+
+    if (pendientes.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:50px 20px; color:var(--text-secondary); background:var(--bg-soft); border-radius:12px; border:2px dashed var(--border-color);">
+                <i class="fas fa-check-circle" style="font-size:40px; color:var(--success); margin-bottom:12px; display:block;"></i>
+                <p style="font-size:16px; font-weight:600;">No hay solicitudes pendientes</p>
+                <p style="font-size:13px;">Todas las solicitudes han sido procesadas</p>
             </div>
         `;
         return;
     }
 
-    grid.innerHTML = deliveryDrivers.map(driver => {
-        const statusText = {
-            'active': 'Activo',
-            'inactive': 'Inactivo',
-            'on-route': 'En ruta'
-        }[driver.status] || driver.status;
-
-        const statusClass = {
-            'active': 'active',
-            'inactive': 'inactive',
-            'on-route': 'on-route'
-        }[driver.status] || 'inactive';
+    container.innerHTML = pendientes.map(s => {
+        const initials = ((s.nombre || 'N')[0] + (s.apellido || 'A')[0]).toUpperCase();
+        const docs = s.documentos || [];
+        const docsHtml = docs.map(d => `
+            <a href="${APP_URL}/${d.archivo_url}" target="_blank" 
+               style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:var(--bg-soft); border-radius:8px; text-decoration:none; color:var(--primary); font-size:12px; font-weight:600; border:1px solid var(--border-color);">
+                <i class="fas fa-file-${d.tipo === 'foto_perfil' ? 'image' : d.tipo === 'hoja_vida' ? 'alt' : 'pdf'}"></i>
+                ${d.tipo.replace(/_/g, ' ')}
+            </a>
+        `).join('');
 
         return `
-            <div class="delivery-card">
-                <div class="delivery-header">
-                    <div class="delivery-avatar">
-                        ${driver.avatar ? `<img src="${driver.avatar}" alt="${driver.name}">` : driver.name.split(' ').map(n => n[0]).join('').substring(0,2)}
+            <div style="background:var(--bg-card); border-radius:16px; padding:24px; margin-bottom:16px; border:2px solid var(--warning); border-left:6px solid var(--warning); box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                <div style="display:flex; align-items:flex-start; gap:20px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:280px;">
+                        <div style="display:flex; align-items:center; gap:14px; margin-bottom:16px;">
+                            <div style="width:56px; height:56px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:20px; flex-shrink:0;">
+                                ${initials}
+                            </div>
+                            <div>
+                                <h4 style="margin:0; font-size:18px; color:var(--text-primary);">${s.nombre} ${s.apellido}</h4>
+                                <span style="font-size:12px; color:var(--text-secondary);">${s.email}</span>
+                            </div>
+                        </div>
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; font-size:13px;">
+                            <div><strong style="color:var(--text-secondary);">Documento:</strong> ${s.tipo_documento || 'CC'} ${s.numero_documento || s.cedula || 'N/A'}</div>
+                            <div><strong style="color:var(--text-secondary);">Teléfono:</strong> ${s.telefono || 'N/A'}</div>
+                            <div><strong style="color:var(--text-secondary);">Vehículo:</strong> ${s.tipo_vehiculo || 'N/A'} ${s.placa_vehiculo ? '• ' + s.placa_vehiculo : ''}</div>
+                            <div><strong style="color:var(--text-secondary);">Licencia:</strong> ${s.numero_licencia || 'N/A'} ${s.categoria_licencia ? '(Cat. ' + s.categoria_licencia + ')' : ''}</div>
+                            <div><strong style="color:var(--text-secondary);">Tarjeta profesional:</strong> ${s.numero_tarjeta || 'N/A'}</div>
+                            <div><strong style="color:var(--text-secondary);">Fecha solicitud:</strong> ${s.fecha_solicitud ? new Date(s.fecha_solicitud).toLocaleDateString('es-CO') : 'N/A'}</div>
+                        </div>
                     </div>
-                    <div class="delivery-info">
-                        <div class="delivery-name">${driver.name}</div>
-                        <span class="delivery-role">Repartidor</span>
+                    <div style="flex:1; min-width:200px;">
+                        <div style="margin-bottom:12px;">
+                            <strong style="color:var(--text-secondary); font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">Documentos Cargados</strong>
+                            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
+                                ${docsHtml || '<span style="color:var(--text-secondary); font-size:12px;">Sin documentos</span>'}
+                            </div>
+                        </div>
                     </div>
-                </div>
-
-                <div class="delivery-details">
-                    <div class="delivery-detail-item">
-                        <span class="delivery-detail-label">Contacto</span>
-                        <span class="delivery-detail-value">
-                            ${driver.phone}
-                        </span>
+                    <div style="display:flex; gap:10px; flex-shrink:0;">
+                        <button onclick="aprobarSolicitud(${s.id})" style="padding:10px 20px; background:var(--success); color:white; border:none; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                            <i class="fas fa-check"></i> Aprobar
+                        </button>
+                        <button onclick="rechazarSolicitud(${s.id})" style="padding:10px 20px; background:var(--danger); color:white; border:none; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                            <i class="fas fa-times"></i> Rechazar
+                        </button>
                     </div>
-
-                    <div class="delivery-detail-item">
-                        <span class="delivery-detail-label">Email</span>
-                        <span class="delivery-detail-value">
-                            ${driver.email}
-                        </span>
-                    </div>
-
-                    <div class="delivery-detail-item">
-                        <span class="delivery-detail-label">Vehículo</span>
-                        <span class="delivery-detail-value">
-                            ${driver.vehicle}
-                        </span>
-                    </div>
-
-                    <div class="delivery-detail-item">
-                        <span class="delivery-detail-label">Documento</span>
-                        <span class="delivery-detail-value">
-                            ${driver.idType} ${driver.idNumber}
-                        </span>
-                    </div>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0;">
-                    <span class="delivery-badge ${statusClass}">${statusText}</span>
-                    <span style="font-size: 13px; color: var(--text-secondary);">
-                        ${driver.completedDeliveries} entregas
-                    </span>
-                </div>
-
-                ${driver.currentRoute ? `
-                    <div style="background: var(--bg-soft); padding: 10px; border-radius: 8px; margin: 10px 0;">
-                        <small style="color: var(--text-secondary); display: block;">Ruta actual:</small>
-                        <span style="font-weight: 600; color: var(--primary);">${driver.currentRoute}</span>
-                    </div>
-                ` : ''}
-
-                <div class="delivery-actions">
-                    <button class="action-btn action-view" onclick="viewDeliveryDetails(${driver.id})" title="Ver detalles">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M22 12c-2.667 4.667-6 7-10 7s-7.333-2.333-10-7c2.667-4.667 6-7 10-7s7.333 2.333 10 7z"/>
-                        </svg>
-                    </button>
-                    <button class="action-btn action-edit" onclick="editDeliveryDriver(${driver.id})" title="Editar">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"/>
-                            <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"/>
-                        </svg>
-                    </button>
-                    <button class="action-btn action-delete" onclick="deleteDeliveryDriver(${driver.id})" title="Eliminar">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"/>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                            <line x1="10" y1="11" x2="10" y2="17"/>
-                            <line x1="14" y1="11" x2="14" y2="17"/>
-                        </svg>
-                    </button>
                 </div>
             </div>
         `;
     }).join('');
+}
+
+async function aprobarSolicitud(id) {
+    if (!confirm('¿Aprobar esta solicitud? El usuario será habilitado como repartidor.')) return;
+    try {
+        const res = await fetch(`${APP_URL}/api/admin/repartidores/solicitudes/aprobar`, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast({ title: "Solicitud aprobada", message: "El repartidor ha sido habilitado exitosamente", type: "success" });
+            solicitudes = solicitudes.filter(s => s.id !== id);
+            localStorage.setItem('angelow_solicitudes', JSON.stringify(solicitudes));
+            renderSolicitudes();
+            await Promise.all([cargarRepartidoresActivos(), cargarEstadisticasRepartidores()]);
+        } else {
+            showToast({ title: "Error", message: data.error || 'No se pudo aprobar', type: "error" });
+        }
+    } catch (e) {
+        showToast({ title: "Error", message: 'Error al aprobar solicitud', type: "error" });
+    }
+}
+
+async function rechazarSolicitud(id) {
+    const motivo = prompt('Motivo del rechazo (opcional):');
+    if (motivo === null) return;
+    try {
+        const res = await fetch(`${APP_URL}/api/admin/repartidores/solicitudes/rechazar`, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, observaciones: motivo })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast({ title: "Solicitud rechazada", message: "La solicitud ha sido rechazada", type: "success" });
+            solicitudes = solicitudes.filter(s => s.id !== id);
+            localStorage.setItem('angelow_solicitudes', JSON.stringify(solicitudes));
+            renderSolicitudes();
+            await cargarEstadisticasRepartidores();
+        } else {
+            showToast({ title: "Error", message: data.error || 'No se pudo rechazar', type: "error" });
+        }
+    } catch (e) {
+        showToast({ title: "Error", message: 'Error al rechazar solicitud', type: "error" });
+    }
+}
+
+async function suspenderRepartidor(id) {
+    if (!confirm('¿Suspender este repartidor? No podrá aceptar pedidos hasta ser reactivado.')) return;
+    try {
+        const res = await fetch(`${APP_URL}/api/admin/repartidores/suspender`, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast({ title: "Repartidor suspendido", message: "El repartidor ha sido suspendido", type: "warning" });
+            await cargarRepartidoresActivos();
+        } else {
+            showToast({ title: "Error", message: data.error || 'No se pudo suspender', type: "error" });
+        }
+    } catch (e) {
+        showToast({ title: "Error", message: 'Error al suspender', type: "error" });
+    }
+}
+
+async function activarRepartidor(id) {
+    if (!confirm('¿Reactivar este repartidor?')) return;
+    try {
+        const res = await fetch(`${APP_URL}/api/admin/repartidores/activar`, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast({ title: "Repartidor activado", message: "El repartidor ha sido reactivado", type: "success" });
+            await cargarRepartidoresActivos();
+        } else {
+            showToast({ title: "Error", message: data.error || 'No se pudo activar', type: "error" });
+        }
+    } catch (e) {
+        showToast({ title: "Error", message: 'Error al activar', type: "error" });
+    }
 }
 
 function renderDeliveryTable() {
     const tbody = document.getElementById('deliveryTable');
     if (!tbody) return;
 
-    tbody.innerHTML = deliveryDrivers.map(driver => {
-        const statusText = {
-            'active': 'Activo',
-            'inactive': 'Inactivo',
-            'on-route': 'En ruta'
-        }[driver.status] || driver.status;
+    if (deliveryDrivers.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="9" style="text-align:center; padding:40px; color:var(--text-secondary);">
+                    No hay repartidores registrados en el sistema
+                </td>
+            </tr>
+        `;
+        return;
+    }
 
-        const statusClass = {
-            'active': 'status-delivered',
-            'inactive': 'status-cancelled',
-            'on-route': 'status-shipped'
-        }[driver.status] || 'status-pending';
+    tbody.innerHTML = deliveryDrivers.map(d => {
+        const initials = ((d.nombre || 'N')[0] + (d.apellido || 'A')[0]).toUpperCase();
+        const statusClass = d.estado === 'activo' ? 'status-delivered' : d.estado === 'suspendido' ? 'status-cancelled' : 'status-pending';
+        const statusText = d.estado === 'activo' ? 'Activo' : d.estado === 'suspendido' ? 'Suspendido' : d.estado || 'Pendiente';
+        const docs = d.documentos || [];
+        const docsCount = docs.length;
+        const docsLinks = docs.map(doc => `<a href="${APP_URL}/${doc.archivo_url}" target="_blank" title="${doc.tipo} - ${doc.estado}" style="font-size:11px; color:var(--primary); text-decoration:underline; display:block;">${doc.tipo.replace(/_/g,' ')}</a>`).join('');
+
+        const toggleBtn = d.estado === 'activo'
+            ? `<button onclick="suspenderRepartidor(${d.id})" style="padding:5px 10px; background:#FEE2E2; color:#991B1B; border:none; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;">Suspender</button>`
+            : `<button onclick="activarRepartidor(${d.id})" style="padding:5px 10px; background:#DCFCE7; color:#166534; border:none; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;">Activar</button>`;
 
         return `
             <tr>
-                <td style="font-weight: 600; color: var(--primary);">${driver.id}</td>
+                <td style="font-weight:600; color:var(--primary);">${d.id}</td>
                 <td>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div class="delivery-avatar" style="width: 40px; height: 40px; font-size: 16px;">
-                            ${driver.avatar ? `<img src="${driver.avatar}" alt="${driver.name}">` : driver.name.split(' ').map(n => n[0]).join('').substring(0,2)}
-                        </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:36px; height:36px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:12px; flex-shrink:0;">${initials}</div>
+                        <span style="font-weight:600;">${d.nombre} ${d.apellido}</span>
                     </div>
                 </td>
-                <td>${driver.name}</td>
-                <td>${driver.email}</td>
-                <td>${driver.phone}</td>
-                <td>${driver.vehicle}</td>
+                <td>${d.email}</td>
+                <td>${d.telefono || '-'}</td>
+                <td>${d.tipo_vehiculo || '-'} ${d.placa_vehiculo ? '• ' + d.placa_vehiculo : ''}</td>
+                <td>${d.placa_vehiculo || '-'}</td>
                 <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                <td>${driver.completedDeliveries}</td>
+                <td style="text-align:center; font-weight:600;">${d.total_entregas || 0}</td>
                 <td>
-                    <div class="action-buttons">
-                        <button class="action-btn action-view" title="Ver detalles" onclick="viewDeliveryDetails(${driver.id})">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="3"/>
-                                <path d="M22 12c-2.667 4.667-6 7-10 7s-7.333-2.333-10-7c2.667-4.667 6-7 10-7s7.333 2.333 10 7z"/>
-                            </svg>
-                        </button>
-                        <button class="action-btn action-edit" title="Editar" onclick="editDeliveryDriver(${driver.id})">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"/>
-                                <polygon points="18 2 22 6 12 16 8 16 8 12 18 2"/>
-                            </svg>
-                        </button>
-                        <button class="action-btn action-delete" title="Eliminar" onclick="deleteDeliveryDriver(${driver.id})">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"/>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                <line x1="10" y1="11" x2="10" y2="17"/>
-                                <line x1="14" y1="11" x2="14" y2="17"/>
-                            </svg>
-                        </button>
+                    <div style="display:flex; gap:4px; align-items:center; flex-direction:column; align-items:flex-start;">
+                        ${docsCount > 0 ? `<span style="background:var(--primary-light); color:var(--primary); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:600;">${docsCount} docs</span>${docsLinks}` : '<span style="color:var(--text-secondary); font-size:11px;">Sin docs</span>'}
+                        <div style="margin-top:4px;">${toggleBtn}</div>
                     </div>
                 </td>
             </tr>
         `;
     }).join('');
-}
-
-function setupDeliveryAvatarUpload() {
-    const input = document.getElementById('deliveryAvatar');
-    if (!input) return;
-
-    input.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                selectedDeliveryAvatar = e.target.result;
-                document.getElementById('deliveryAvatarPreview').innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-            };
-            reader.readAsDataURL(file);
-        } else {
-            showToast({ title: "Error", message: "Por favor selecciona una imagen válida", type: "error" });
-        }
-
-        input.value = '';
-    });
-}
-
-function openDeliveryModal(driver = null) {
-    const modal = document.getElementById('deliveryModal');
-    const modalTitle = document.getElementById('deliveryModalTitle');
-    const saveBtn = document.getElementById('deliveryModalSaveBtn');
-
-    if (!modal || !modalTitle || !saveBtn) return;
-
-    selectedDeliveryAvatar = null;
-
-    if (driver) {
-        modalTitle.textContent = 'Editar Repartidor';
-        saveBtn.textContent = 'Guardar Cambios';
-
-        document.getElementById('deliveryName').value = driver.name || '';
-        document.getElementById('deliveryEmail').value = driver.email || '';
-        document.getElementById('deliveryPhone').value = driver.phone || '';
-        document.getElementById('deliveryIdType').value = driver.idType || 'CC';
-        document.getElementById('deliveryIdNumber').value = driver.idNumber || '';
-        document.getElementById('deliveryAddress').value = driver.address || '';
-        document.getElementById('deliveryVehicle').value = driver.vehicle || '';
-        document.getElementById('deliveryLicensePlate').value = driver.licensePlate || '';
-        document.getElementById('deliveryLicenseNumber').value = driver.licenseNumber || '';
-        document.getElementById('deliveryStatus').value = driver.status || 'active';
-        document.getElementById('deliveryEmergencyContact').value = driver.emergencyContact || '';
-        document.getElementById('deliveryBirthDate').value = driver.birthDate || '';
-        document.getElementById('deliveryBloodType').value = driver.bloodType || '';
-        document.getElementById('deliveryNotes').value = driver.notes || '';
-
-        if (driver.avatar) {
-            selectedDeliveryAvatar = driver.avatar;
-            document.getElementById('deliveryAvatarPreview').innerHTML = `<img src="${driver.avatar}" alt="Preview">`;
-        } else {
-            document.getElementById('deliveryAvatarPreview').innerHTML = driver.name.split(' ').map(n => n[0]).join('').substring(0, 2);
-        }
-
-        editingDeliveryId = driver.id;
-    } else {
-        modalTitle.textContent = 'Agregar Nuevo Repartidor';
-        saveBtn.textContent = 'Agregar Repartidor';
-        editingDeliveryId = null;
-
-        document.getElementById('deliveryName').value = '';
-        document.getElementById('deliveryEmail').value = '';
-        document.getElementById('deliveryPhone').value = '';
-        document.getElementById('deliveryIdType').value = 'CC';
-        document.getElementById('deliveryIdNumber').value = '';
-        document.getElementById('deliveryAddress').value = '';
-        document.getElementById('deliveryVehicle').value = '';
-        document.getElementById('deliveryLicensePlate').value = '';
-        document.getElementById('deliveryLicenseNumber').value = '';
-        document.getElementById('deliveryStatus').value = 'active';
-        document.getElementById('deliveryEmergencyContact').value = '';
-        document.getElementById('deliveryBirthDate').value = '';
-        document.getElementById('deliveryBloodType').value = '';
-        document.getElementById('deliveryNotes').value = '';
-
-        document.getElementById('deliveryAvatarPreview').innerHTML = '👤';
-    }
-
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeDeliveryModal() {
-    const modal = document.getElementById('deliveryModal');
-    if (modal) {
-        modal.classList.remove('active');
-        document.body.style.overflow = 'auto';
-    }
-}
-
-function saveDeliveryDriver() {
-    const name = document.getElementById('deliveryName')?.value.trim();
-    const email = document.getElementById('deliveryEmail')?.value.trim();
-    const phone = document.getElementById('deliveryPhone')?.value.trim();
-    const idType = document.getElementById('deliveryIdType')?.value;
-    const idNumber = document.getElementById('deliveryIdNumber')?.value.trim();
-    const address = document.getElementById('deliveryAddress')?.value.trim();
-    const vehicle = document.getElementById('deliveryVehicle')?.value;
-    const licensePlate = document.getElementById('deliveryLicensePlate')?.value.trim();
-    const licenseNumber = document.getElementById('deliveryLicenseNumber')?.value.trim();
-    const status = document.getElementById('deliveryStatus')?.value;
-    const emergencyContact = document.getElementById('deliveryEmergencyContact')?.value.trim();
-    const birthDate = document.getElementById('deliveryBirthDate')?.value;
-    const bloodType = document.getElementById('deliveryBloodType')?.value;
-    const notes = document.getElementById('deliveryNotes')?.value.trim();
-
-    if (!name) {
-        showToast({ title: "Error", message: "El nombre es obligatorio", type: "error" });
-        return;
-    }
-    if (!email) {
-        showToast({ title: "Error", message: "El email es obligatorio", type: "error" });
-        return;
-    }
-    if (!phone) {
-        showToast({ title: "Error", message: "El teléfono es obligatorio", type: "error" });
-        return;
-    }
-    if (!idNumber) {
-        showToast({ title: "Error", message: "El número de documento es obligatorio", type: "error" });
-        return;
-    }
-    if (!vehicle) {
-        showToast({ title: "Error", message: "El tipo de vehículo es obligatorio", type: "error" });
-        return;
-    }
-
-    if (editingDeliveryId) {
-        const index = deliveryDrivers.findIndex(d => d.id === editingDeliveryId);
-        if (index !== -1) {
-            deliveryDrivers[index] = {
-                ...deliveryDrivers[index],
-                name,
-                email,
-                phone,
-                idType,
-                idNumber,
-                address,
-                vehicle,
-                licensePlate,
-                licenseNumber,
-                status,
-                emergencyContact,
-                birthDate,
-                bloodType,
-                notes,
-                avatar: selectedDeliveryAvatar || deliveryDrivers[index].avatar
-            };
-
-            localStorage.setItem('angelow_delivery_drivers', JSON.stringify(deliveryDrivers));
-            renderDeliveryGrid();
-            renderDeliveryTable();
-            showToast({ title: "Éxito", message: `Repartidor "${name}" actualizado correctamente`, type: "success" });
-        }
-    } else {
-        const newDriver = {
-            id: deliveryDrivers.length > 0 ? Math.max(...deliveryDrivers.map(d => d.id)) + 1 : 1,
-            name,
-            email,
-            phone,
-            idType,
-            idNumber,
-            address,
-            vehicle,
-            licensePlate,
-            licenseNumber,
-            status,
-            emergencyContact,
-            birthDate,
-            bloodType,
-            notes,
-            avatar: selectedDeliveryAvatar,
-            completedDeliveries: 0,
-            rating: 0,
-            hireDate: new Date().toISOString().split('T')[0],
-            currentRoute: ""
-        };
-
-        deliveryDrivers.push(newDriver);
-        localStorage.setItem('angelow_delivery_drivers', JSON.stringify(deliveryDrivers));
-        renderDeliveryGrid();
-        renderDeliveryTable();
-        showToast({ title: "Éxito", message: `Repartidor "${name}" agregado correctamente`, type: "success" });
-    }
-
-    closeDeliveryModal();
-}
-
-function editDeliveryDriver(id) {
-    const driver = deliveryDrivers.find(d => d.id === id);
-    if (driver) {
-        openDeliveryModal(driver);
-    }
-}
-
-function deleteDeliveryDriver(id) {
-    const driver = deliveryDrivers.find(d => d.id === id);
-    if (!driver) return;
-
-    if (confirm(`¿Estás seguro de que deseas eliminar al repartidor "${driver.name}"?`)) {
-        deliveryDrivers = deliveryDrivers.filter(d => d.id !== id);
-        localStorage.setItem('angelow_delivery_drivers', JSON.stringify(deliveryDrivers));
-        renderDeliveryGrid();
-        renderDeliveryTable();
-        showToast({ title: "Éxito", message: `Repartidor "${driver.name}" eliminado correctamente`, type: "success" });
-    }
-}
-
-function viewDeliveryDetails(id) {
-    const driver = deliveryDrivers.find(d => d.id === id);
-    if (!driver) return;
-
-    showToast({
-        title: "Detalles del Repartidor",
-        message: `${driver.name}\nEmail: ${driver.email}\nTeléfono: ${driver.phone}\nDocumento: ${driver.idType} ${driver.idNumber}\nVehículo: ${driver.vehicle}\nEstado: ${driver.status}\nEntregas: ${driver.completedDeliveries}`,
-        type: "info",
-        duration: 8000
-    });
 }
 
 // ======================== SECCIÓN CARRITO/FAVORITOS ========================
@@ -2077,13 +1957,20 @@ function initNavigation() {
                 }
 
                 if (sectionId === 'delivery') {
-                    renderDeliveryGrid();
-                    renderDeliveryTable();
+                    cargarSolicitudes();
+                    cargarRepartidoresActivos();
+                    cargarEstadisticasRepartidores();
                 }
 
                 if (sectionId === 'categories') {
                     renderMainCategories();
                     renderSubCategories();
+                }
+
+                if (sectionId === 'seguimiento') {
+                    setTimeout(() => {
+                        if (typeof initSeguimiento === 'function') initSeguimiento();
+                    }, 150);
                 }
             }
         });
@@ -2165,25 +2052,6 @@ function setupModal() {
             </div>
         `).join('');
     }
-}
-
-function setupDeliveryModal() {
-    const modal = document.getElementById('deliveryModal');
-    const closeBtn = document.querySelector('.delivery-modal-close');
-    const cancelBtn = document.querySelector('#deliveryModal .btn-secondary');
-    const saveBtn = document.getElementById('deliveryModalSaveBtn');
-
-    if (!modal || !closeBtn || !cancelBtn || !saveBtn) return;
-
-    closeBtn.addEventListener('click', closeDeliveryModal);
-    cancelBtn.addEventListener('click', closeDeliveryModal);
-    saveBtn.addEventListener('click', saveDeliveryDriver);
-
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            closeDeliveryModal();
-        }
-    });
 }
 
 function setupCategoryModal() {
@@ -2344,42 +2212,82 @@ function exportarClientesPDF() {
 }
 
 // ======================== MÉTRICAS ========================
-function updateMetrics() {
-    const totalOrders = orders.length;
-    const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing').length;
-    const totalRevenue = orders
-        .filter(o => o.status === 'delivered')
-        .reduce((sum, o) => sum + o.total, 0);
-    const totalFavorites = favorites.length;
-
-    document.getElementById('totalOrders').textContent = totalOrders;
-    document.getElementById('pendingOrders').textContent = pendingOrders;
-    document.getElementById('totalFavorites').textContent = totalFavorites;
-    document.getElementById('totalRevenue').textContent = `$${(totalRevenue / 1000000).toFixed(1)}M`;
-
-    document.getElementById('totalOrdersChange').textContent = `+${totalOrders} este mes`;
-    document.getElementById('pendingOrdersChange').textContent = `-${pendingOrders} esta semana`;
-    document.getElementById('favoritesChange').textContent = `+${totalFavorites} este mes`;
-    document.getElementById('revenueChange').textContent = `+${((totalRevenue / 1000000)).toFixed(1)}% este mes`;
-
-    const totalUsersEl = document.getElementById('totalUsers');
-    const usersChangeEl = document.getElementById('usersChange');
-    if (totalUsersEl && usuarios.length > 0) {
-        totalUsersEl.textContent = usuarios.length;
-        if (usersChangeEl) {
-            usersChangeEl.textContent = `+${usuarios.length} registrados`;
+async function cargarDashboardStats() {
+    try {
+        const res = await fetch(`${APP_URL}/api/admin/dashboard/stats`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.success) {
+            dashboardStats = data;
+            updateMetrics();
+            updateChartsWithRealData(data);
         }
+    } catch (e) {
+        console.error('Error al cargar estadísticas del dashboard:', e);
+    }
+}
+
+function updateMetrics() {
+    const el = id => document.getElementById(id);
+    const s = dashboardStats;
+
+    if (s.totalPedidos !== undefined) {
+        if (el('totalOrders')) el('totalOrders').textContent = s.totalPedidos;
+        if (el('totalOrdersChange')) el('totalOrdersChange').textContent = `${s.pedidosMes || 0} este mes`;
+    }
+    if (s.pendientes !== undefined) {
+        if (el('pendingOrders')) el('pendingOrders').textContent = s.pendientes;
+        if (el('pendingOrdersChange')) el('pendingOrdersChange').textContent = `${s.pendientes} pendientes`;
+    }
+    if (s.ganancias !== undefined) {
+        if (el('totalRevenue')) el('totalRevenue').textContent = `$${(s.ganancias / 1000000).toFixed(1)}M`;
+        if (el('revenueChange')) el('revenueChange').textContent = `+${s.porcentajeVentas || 0}% vs mes anterior`;
+    }
+    if (s.favoritos !== undefined) {
+        if (el('totalFavorites')) el('totalFavorites').textContent = s.favoritos;
+        if (el('favoritesChange')) el('favoritesChange').textContent = `+${s.favoritos} este mes`;
+    }
+    if (s.totalUsuarios !== undefined) {
+        if (el('totalUsers')) el('totalUsers').textContent = s.totalUsuarios;
+        if (el('usersChange')) el('usersChange').textContent = `+${s.usuariosMes || 0} este mes`;
     }
 
+    const totalRevenue = s.ganancias || 0;
     const progress = totalRevenue > 0 ? Math.min((totalRevenue / 35000000) * 100, 100) : 0;
-    document.getElementById('progressBar').style.width = `${progress}%`;
-    document.getElementById('progressPercent').textContent = `${progress.toFixed(0)}%`;
-    document.getElementById('progressText').textContent = `$${(totalRevenue / 1000000).toFixed(1)}M / $35M`;
+    if (el('progressBar')) el('progressBar').style.width = `${progress}%`;
+    if (el('progressPercent')) el('progressPercent').textContent = `${progress.toFixed(0)}%`;
+    if (el('progressText')) el('progressText').textContent = `$${(totalRevenue / 1000000).toFixed(1)}M / $35M`;
 
-    document.getElementById('visitorsCount').textContent = '1,254';
-    document.getElementById('conversionRate').textContent = '3.2%';
-    document.getElementById('avgOrderValue').textContent = '$124';
-    document.getElementById('bounceRate').textContent = '42%';
+    if (s.repartidoresActivos !== undefined) {
+        if (el('driverPending')) el('driverPending').textContent = s.solicitudesPendientes || 0;
+        if (el('driverActive')) el('driverActive').textContent = s.repartidoresActivos || 0;
+        if (el('driverApproved')) el('driverApproved').textContent = s.repartidoresActivos || 0;
+    }
+}
+
+function updateChartsWithRealData(data) {
+    if (salesChart && data.ventasMensuales) {
+        salesChart.data.datasets[0].data = data.ventasMensuales.map(v => v.total);
+        salesChart.update();
+    }
+    if (productsChart && data.topProductos && data.topProductos.length > 0) {
+        productsChart.data.labels = data.topProductos.map(p => p.nombre);
+        productsChart.data.datasets[0].data = data.topProductos.map(p => p.vendidos);
+        productsChart.update();
+    }
+    if (conversionChart && data.pedidosPorEstado && data.pedidosPorEstado.length > 0) {
+        const entregados = data.pedidosPorEstado.find(e => e.estado === 'entregado');
+        const cancelados = data.pedidosPorEstado.find(e => e.estado === 'cancelado');
+        const otros = data.pedidosPorEstado.filter(e => e.estado !== 'entregado' && e.estado !== 'cancelado');
+        const total = data.pedidosPorEstado.reduce((s, e) => s + e.total, 0);
+        conversionChart.data.datasets[0].data = [
+            entregados ? Math.round((entregados.total / total) * 100) : 0,
+            otros.reduce((s, e) => s + e.total, 0) ? Math.round((otros.reduce((s, e) => s + e.total, 0) / total) * 100) : 0,
+            cancelados ? Math.round((cancelados.total / total) * 100) : 0
+        ];
+        conversionChart.update();
+    }
 }
 
 // ======================== ESCUCHAR CAMBIOS EN LOCALSTORAGE ========================
@@ -2414,7 +2322,6 @@ document.addEventListener('DOMContentLoaded', function() {
     mainCategories = JSON.parse(localStorage.getItem('angelow_main_categories')) || mainCategories;
     subCategories = JSON.parse(localStorage.getItem('angelow_sub_categories')) || subCategories;
     products = JSON.parse(localStorage.getItem('angelow_products')) || products;
-    deliveryDrivers = JSON.parse(localStorage.getItem('angelow_delivery_drivers')) || deliveryDrivers;
     cart = JSON.parse(localStorage.getItem("angelow_cart")) || [];
     favorites = JSON.parse(localStorage.getItem("angelow_favorites")) || [];
 
@@ -2424,8 +2331,10 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCategorySelects();
     cargarPedidos();
     cargarUsuarios();
-    renderDeliveryGrid();
-    renderDeliveryTable();
+    cargarSolicitudes();
+    cargarRepartidoresActivos();
+    cargarEstadisticasRepartidores();
+    cargarDashboardStats();
 
     initCharts();
     initNavigation();
@@ -2433,13 +2342,10 @@ document.addEventListener('DOMContentLoaded', function() {
     setupOrderFilters();
     setupButtons();
     setupModal();
-    setupDeliveryModal();
     setupCategoryModal();
-    setupDeliveryAvatarUpload();
     setupImageUpload();
     setupCustomerSearch();
 
-    updateMetrics();
     updateClientCategories();
 
     setTimeout(() => {
@@ -2448,8 +2354,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     setInterval(async function() {
         await cargarPedidos();
-        updateMetrics();
     }, 30000);
+
+    setInterval(async function() {
+        await cargarSolicitudes();
+        await cargarRepartidoresActivos();
+        await cargarDashboardStats();
+    }, 60000);
 });
 
 // ======================== EXPONER FUNCIONES GLOBALES ========================
@@ -2472,12 +2383,10 @@ window.editMainCategory = editMainCategory;
 window.editSubCategory = editSubCategory;
 window.deleteMainCategory = deleteMainCategory;
 window.deleteSubCategory = deleteSubCategory;
-window.openDeliveryModal = openDeliveryModal;
-window.closeDeliveryModal = closeDeliveryModal;
-window.saveDeliveryDriver = saveDeliveryDriver;
-window.editDeliveryDriver = editDeliveryDriver;
-window.deleteDeliveryDriver = deleteDeliveryDriver;
-window.viewDeliveryDetails = viewDeliveryDetails;
+window.aprobarSolicitud = aprobarSolicitud;
+window.rechazarSolicitud = rechazarSolicitud;
+window.suspenderRepartidor = suspenderRepartidor;
+window.activarRepartidor = activarRepartidor;
 window.exportOrdersToPDF = exportOrdersToPDF;
 window.exportarClientesPDF = exportarClientesPDF;
 window.refreshOrdersRealTime = refreshOrdersRealTime;

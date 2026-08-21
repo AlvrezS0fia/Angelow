@@ -31,14 +31,16 @@ class UsuarioModel {
         $rol = $data['rol'] ?? 'cliente';
         $telefono = $data['telefono'] ?? null;
         $direccion = $data['direccion'] ?? null;
+        $ciudad = $data['ciudad'] ?? null;
+        $tipo_documento = $data['tipo_documento'] ?? null;
         $tipo_vehiculo = $data['tipo_vehiculo'] ?? null;
         $placa_vehiculo = $data['placa_vehiculo'] ?? null;
         $estado = $data['estado'] ?? 'activo';
         $acepta_terminos = isset($data['acepta_terminos']) ? ($data['acepta_terminos'] ? 1 : 0) : 0;
         $fecha_registro = $data['fecha_registro'] ?? date('Y-m-d H:i:s');
         
-        $sql = "INSERT INTO usuarios (email, nombre, apellido, password_hash, rol, telefono, direccion, tipo_vehiculo, placa_vehiculo, estado, acepta_terminos, fecha_registro) 
-                VALUES (:email, :nombre, :apellido, :password_hash, :rol, :telefono, :direccion, :tipo_vehiculo, :placa_vehiculo, :estado, :acepta_terminos, :fecha_registro)";
+        $sql = "INSERT INTO usuarios (email, nombre, apellido, password_hash, rol, telefono, direccion, ciudad, tipo_documento, tipo_vehiculo, placa_vehiculo, estado, acepta_terminos, fecha_registro) 
+                VALUES (:email, :nombre, :apellido, :password_hash, :rol, :telefono, :direccion, :ciudad, :tipo_documento, :tipo_vehiculo, :placa_vehiculo, :estado, :acepta_terminos, :fecha_registro)";
         
         $stmt = $this->db->prepare($sql);
         
@@ -50,6 +52,8 @@ class UsuarioModel {
             'rol' => $rol,
             'telefono' => $telefono,
             'direccion' => $direccion,
+            'ciudad' => $ciudad,
+            'tipo_documento' => $tipo_documento,
             'tipo_vehiculo' => $tipo_vehiculo,
             'placa_vehiculo' => $placa_vehiculo,
             'estado' => $estado,

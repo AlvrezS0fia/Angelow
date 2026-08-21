@@ -10,8 +10,14 @@ class RepartidorPedidosController
     {
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
         $token = str_replace('Bearer ', '', $authHeader);
+        if (!$token) return null;
         $payload = JWTHelper::decode($token);
-        return $payload['sub'] ?? null;
+        if (!$payload) return null;
+        $userId = $payload['sub'] ?? null;
+        if (!$userId) return null;
+        $user = Database::query("SELECT id, rol, estado FROM usuarios WHERE id = ?", [$userId])->fetch();
+        if (!$user || $user['rol'] !== 'repartidor' || $user['estado'] !== 'activo') return null;
+        return $userId;
     }
 
     private function json($data, $code = 200)
@@ -35,7 +41,7 @@ class RepartidorPedidosController
         $date = $_GET['date'] ?? null;
         $search = $_GET['search'] ?? null;
 
-        $sql = "SELECT p.* FROM pedidos p WHERE p.repartidor_id = ?";
+        $sql = "SELECT p.* FROM pedidos p WHERE (p.repartidor_id = ? OR (p.repartidor_id IS NULL AND p.estado IN ('pendiente', 'listo')))";
         $params = [$repartidorId];
 
         if ($status) {
@@ -101,14 +107,7 @@ class RepartidorPedidosController
         )->fetch();
 
         if (!$order) {
-            $order = Database::query(
-                "SELECT * FROM pedidos WHERE id = ?",
-                [$id]
-            )->fetch();
-        }
-
-        if (!$order) {
-            $this->json(['error' => 'Pedido no encontrado'], 404);
+            $this->json(['error' => 'Pedido no encontrado o no asignado'], 404);
             return;
         }
 
@@ -139,77 +138,6 @@ class RepartidorPedidosController
         ]);
     }
 
-    public function create()
-    {
-        $repartidorId = $this->getRepartidorId();
-        if (!$repartidorId) {
-            $this->json(['error' => 'No autorizado'], 401);
-            return;
-        }
-
-        $data = json_decode(file_get_contents('php://input'), true);
-
-        $clientId = intval($data['client_id'] ?? 0);
-        $itemsData = $data['items'] ?? [];
-        $notas = $data['notes'] ?? '';
-
-        $clienteNombre = 'Cliente';
-        $clienteTelefono = '';
-        $direccion = '';
-
-        if ($clientId) {
-            $client = Database::query("SELECT * FROM usuarios WHERE id = ?", [$clientId])->fetch();
-            if ($client) {
-                $clienteNombre = $client['nombre'] . ' ' . ($client['apellido'] ?? '');
-                $clienteTelefono = $client['telefono'] ?? '';
-                $direccion = $client['direccion'] ?? '';
-            }
-        }
-
-        $total = floatval($data['total'] ?? 0);
-        if ($total <= 0) {
-            foreach ($itemsData as $item) {
-                $total += (floatval($item['price'] ?? 0)) * (intval($item['quantity'] ?? 1));
-            }
-        }
-
-        Database::query(
-            "INSERT INTO pedidos (usuario_id, repartidor_id, nombre_cliente, telefono_cliente, direccion_envio, ciudad, departamento, subtotal, total, estado, notas_cliente, fecha_pedido) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', ?, NOW())",
-            [$clientId ?: $repartidorId, $repartidorId, $clienteNombre, $clienteTelefono, $direccion, 'Medellín', 'Antioquia', $total, $total, $notas]
-        );
-
-        $pedidoId = Database::getInstance()->getConnection()->lastInsertId();
-
-        foreach ($itemsData as $item) {
-            Database::query(
-                "INSERT INTO detalles_pedido (pedido_id, producto_id, nombre_producto, cantidad, precio_unitario, subtotal) VALUES (?, 1, ?, ?, ?, ?)",
-                [$pedidoId, $item['product_name'] ?? 'Producto', intval($item['quantity'] ?? 1), floatval($item['price'] ?? 0), (intval($item['quantity'] ?? 1)) * (floatval($item['price'] ?? 0))]
-            );
-        }
-
-        $order = Database::query("SELECT * FROM pedidos WHERE id = ?", [$pedidoId])->fetch();
-
-        $this->json([
-            'success' => true,
-            'id' => $order['id'],
-            'numero_pedido' => $order['numero_pedido'],
-            'message' => 'Pedido creado',
-        ], 201);
-    }
-
-    private function ensureAsignadoStatus()
-    {
-        try {
-            Database::query("UPDATE pedidos SET estado = 'asignado' WHERE id = -1");
-        } catch (\Exception $e) {
-            try {
-                Database::query("ALTER TABLE pedidos MODIFY COLUMN estado ENUM('pendiente','asignado','confirmado','procesando','listo','en_camino','entregado','cancelado','reembolsado') DEFAULT 'pendiente'");
-            } catch (\Exception $e2) {
-                // silent
-            }
-        }
-    }
-
     public function updateStatus($id)
     {
         $repartidorId = $this->getRepartidorId();
@@ -219,21 +147,35 @@ class RepartidorPedidosController
         }
 
         $data = json_decode(file_get_contents('php://input'), true);
-        $newStatus = $data['status'] ?? '';
+        $newStatus = $data['status'] ?? $data['estado'] ?? '';
 
-        $validStatuses = ['pendiente', 'asignado', 'confirmado', 'procesando', 'listo', 'en_camino', 'entregado', 'cancelado'];
-        if (!in_array($newStatus, $validStatuses)) {
-            $this->json(['error' => 'Estado inválido'], 400);
-            return;
-        }
+        $validTransitions = [
+            'asignado'    => ['aceptado'],
+            'aceptado'    => ['recogido'],
+            'recogido'    => ['en_camino'],
+            'en_camino'   => ['entregado'],
+        ];
 
-        $order = Database::query("SELECT * FROM pedidos WHERE id = ?", [$id])->fetch();
+        $order = Database::query("SELECT * FROM pedidos WHERE id = ? AND repartidor_id = ?", [$id, $repartidorId])->fetch();
         if (!$order) {
-            $this->json(['error' => 'Pedido no encontrado'], 404);
+            $this->json(['error' => 'Pedido no encontrado o no asignado'], 404);
             return;
         }
 
-        $this->ensureAsignadoStatus();
+        $currentStatus = $order['estado'];
+
+        if ($newStatus === 'cancelado') {
+            if (!in_array($currentStatus, ['asignado', 'aceptado'])) {
+                $this->json(['error' => 'No se puede cancelar un pedido en estado: ' . $currentStatus], 400);
+                return;
+            }
+        } else {
+            $allowedNext = $validTransitions[$currentStatus] ?? [];
+            if (!in_array($newStatus, $allowedNext)) {
+                $this->json(['error' => 'Transición no válida: ' . $currentStatus . ' → ' . $newStatus], 400);
+                return;
+            }
+        }
 
         if ($newStatus === 'entregado') {
             $ganancia = floatval($order['ganancias_repartidor'] ?? 5000);
@@ -243,17 +185,12 @@ class RepartidorPedidosController
             );
             Database::query(
                 "INSERT INTO historial_entregas (pedido_id, repartidor_id, ganancia, tiempo_entrega_minutos) VALUES (?, ?, ?, TIMESTAMPDIFF(MINUTE, ?, NOW()))",
-                [$id, $order['repartidor_id'] ?: $repartidorId, $ganancia, $order['fecha_pedido']]
+                [$id, $repartidorId, $ganancia, $order['fecha_pedido']]
             );
-        } elseif ($newStatus === 'asignado') {
+        } elseif ($newStatus === 'cancelado') {
             Database::query(
-                "UPDATE pedidos SET estado = ?, repartidor_id = ?, fecha_estimada_entrega = DATE_ADD(NOW(), INTERVAL COALESCE(tiempo_estimado_minutos, 30) MINUTE) WHERE id = ?",
-                [$newStatus, $repartidorId, $id]
-            );
-        } elseif ($newStatus === 'en_camino' && !$order['repartidor_id']) {
-            Database::query(
-                "UPDATE pedidos SET estado = ?, repartidor_id = ?, fecha_estimada_entrega = DATE_ADD(NOW(), INTERVAL COALESCE(tiempo_estimado_minutos, 30) MINUTE) WHERE id = ?",
-                [$newStatus, $repartidorId, $id]
+                "UPDATE pedidos SET estado = ?, notas_cliente = CONCAT(COALESCE(notas_cliente, ''), ' | Cancelado por repartidor') WHERE id = ?",
+                [$newStatus, $id]
             );
         } else {
             Database::query(
@@ -268,21 +205,12 @@ class RepartidorPedidosController
             'success' => true,
             'id' => $updated['id'],
             'status' => $updated['estado'],
-            'message' => 'Estado actualizado',
+            'message' => 'Estado actualizado a: ' . $newStatus,
         ]);
     }
 
     public function destroy($id)
     {
-        $repartidorId = $this->getRepartidorId();
-        if (!$repartidorId) {
-            $this->json(['error' => 'No autorizado'], 401);
-            return;
-        }
-
-        Database::query("DELETE FROM detalles_pedido WHERE pedido_id = ?", [$id]);
-        Database::query("DELETE FROM pedidos WHERE id = ?", [$id]);
-
-        $this->json(['message' => 'Pedido eliminado']);
+        $this->json(['error' => 'No permitido. Use el panel administrativo.'], 403);
     }
 }

@@ -1114,8 +1114,12 @@ function initSidebar() {
             this.classList.add('active'); 
             document.querySelectorAll('.profile-section').forEach(s => s.classList.remove('active')); 
             const target = document.getElementById(section); 
-            if (target) target.classList.add('active'); 
-            else { 
+            if (target) {
+                target.classList.add('active');
+                if (section === 'seguimientoSection' && typeof initSeguimiento === 'function') {
+                    setTimeout(() => initSeguimiento(), 100);
+                }
+            } else { 
                 showToast({message: "Sección en desarrollo", type: "info"}); 
                 document.getElementById('datosPersonales').classList.add('active'); 
                 document.querySelector('.menu-item[data-section="datosPersonales"]').classList.add('active'); 

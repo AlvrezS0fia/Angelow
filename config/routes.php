@@ -17,7 +17,6 @@ return [
     ['method' => 'GET', 'path' => '/admin', 'controller' => 'Admin\\DashboardController', 'action' => 'index'],
     ['method' => 'GET', 'path' => '/admin/pedidos', 'controller' => 'Admin\\PedidosController', 'action' => 'index'],
     ['method' => 'GET', 'path' => '/admin/usuarios', 'controller' => 'Admin\\UsuariosController', 'action' => 'index'],
-    ['method' => 'GET', 'path' => '/admin/repartidores', 'controller' => 'Admin\\RepartidorController', 'action' => 'index'],
     ['method' => 'GET', 'path' => '/admin/inventario', 'controller' => 'Admin\\InventarioController', 'action' => 'index'],
     
     // Documentos legales y de soporte
@@ -74,12 +73,32 @@ return [
      ['method' => 'POST',   'path' => '/api/pedidos/estado',     'controller' => 'Admin\\PedidosController', 'action' => 'updateStatus'],
      ['method' => 'GET',    'path' => '/api/mis-pedidos',          'controller' => 'Cliente\\PedidosController', 'action' => 'index'],
      ['method' => 'GET',    'path' => '/api/mis-pedidos/:id',      'controller' => 'Cliente\\PedidosController', 'action' => 'detalle'],
+     ['method' => 'GET',    'path' => '/api/mis-pedidos/:id/seguimiento', 'controller' => 'Cliente\\PedidosController', 'action' => 'seguimiento'],
      ['method' => 'POST',   'path' => '/api/mis-pedidos/:id/cancelar', 'controller' => 'Cliente\\PedidosController', 'action' => 'cancelar'],
      ['method' => 'GET',    'path' => '/api/mis-pedidos/:id/factura', 'controller' => 'Cliente\\PedidosController', 'action' => 'factura'],
      ['method' => 'POST',   'path' => '/api/inventario/update',    'controller' => 'Api\\StockController', 'action' => 'update'],
      ['method' => 'POST',   'path' => '/api/inventario/ajustar',    'controller' => 'Api\\StockController', 'action' => 'ajustar'],
+     ['method' => 'POST',   'path' => '/api/inventario/eliminar',   'controller' => 'Api\\StockController', 'action' => 'destroy'],
 
-     // ========== API REPARTIDOR ==========
+      // ========== RUTAS API PERFIL CLIENTE ==========
+      ['method' => 'GET',    'path' => '/api/perfil',                   'controller' => 'Cliente\\PerfilApiController', 'action' => 'index'],
+      ['method' => 'POST',   'path' => '/api/perfil/actualizar',        'controller' => 'Cliente\\PerfilApiController', 'action' => 'actualizar'],
+
+      // ========== RUTAS API DIRECCIONES ==========
+      ['method' => 'GET',    'path' => '/api/direcciones',              'controller' => 'Cliente\\DireccionController', 'action' => 'index'],
+      ['method' => 'POST',   'path' => '/api/direcciones/crear',        'controller' => 'Cliente\\DireccionController', 'action' => 'crear'],
+      ['method' => 'POST',   'path' => '/api/direcciones/actualizar/{id}','controller' => 'Cliente\\DireccionController', 'action' => 'actualizar'],
+      ['method' => 'POST',   'path' => '/api/direcciones/eliminar/{id}', 'controller' => 'Cliente\\DireccionController', 'action' => 'eliminar'],
+      ['method' => 'POST',   'path' => '/api/direcciones/predeterminada/{id}','controller' => 'Cliente\\DireccionController', 'action' => 'setPredeterminada'],
+
+      // ========== RUTAS API TARJETAS ==========
+      ['method' => 'GET',    'path' => '/api/tarjetas',                 'controller' => 'Cliente\\TarjetaController', 'action' => 'index'],
+      ['method' => 'POST',   'path' => '/api/tarjetas/crear',           'controller' => 'Cliente\\TarjetaController', 'action' => 'crear'],
+      ['method' => 'POST',   'path' => '/api/tarjetas/actualizar/{id}', 'controller' => 'Cliente\\TarjetaController', 'action' => 'actualizar'],
+      ['method' => 'POST',   'path' => '/api/tarjetas/eliminar/{id}',   'controller' => 'Cliente\\TarjetaController', 'action' => 'eliminar'],
+      ['method' => 'POST',   'path' => '/api/tarjetas/predeterminada/{id}','controller' => 'Cliente\\TarjetaController', 'action' => 'setPredeterminada'],
+
+      // ========== API REPARTIDOR ==========
      ['method' => 'POST',   'path' => '/api/repartidor/auth/login',   'controller' => 'Api\\RepartidorAuthController', 'action' => 'login'],
      ['method' => 'POST',   'path' => '/api/repartidor/auth/logout',  'controller' => 'Api\\RepartidorAuthController', 'action' => 'logout'],
      ['method' => 'GET',    'path' => '/api/repartidor/auth/me',      'controller' => 'Api\\RepartidorAuthController', 'action' => 'me'],
@@ -96,6 +115,7 @@ return [
      ['method' => 'GET',    'path' => '/api/repartidor/dashboard/stats',         'controller' => 'Api\\RepartidorDashboardController', 'action' => 'stats'],
      ['method' => 'GET',    'path' => '/api/repartidor/dashboard/recent-orders', 'controller' => 'Api\\RepartidorDashboardController', 'action' => 'recentOrders'],
      ['method' => 'GET',    'path' => '/api/repartidor/dashboard/low-stock',     'controller' => 'Api\\RepartidorDashboardController', 'action' => 'lowStock'],
+     ['method' => 'GET',    'path' => '/api/repartidor/notificaciones',          'controller' => 'Api\\RepartidorDashboardController', 'action' => 'notificaciones'],
 
      ['method' => 'GET',    'path' => '/api/repartidor/clientes',      'controller' => 'Api\\RepartidorClientesController', 'action' => 'index'],
      ['method' => 'GET',    'path' => '/api/repartidor/clientes/{id}', 'controller' => 'Api\\RepartidorClientesController', 'action' => 'show'],
@@ -104,17 +124,25 @@ return [
      ['method' => 'GET',    'path' => '/api/repartidor/documentos/{repartidorId}','controller' => 'Api\\RepartidorDocumentosController', 'action' => 'index'],
      ['method' => 'GET',    'path' => '/api/repartidor/documentos',             'controller' => 'Api\\RepartidorDocumentosController', 'action' => 'index'],
      
-     // Página repartidor
-     ['method' => 'GET', 'path' => '/repartidor', 'controller' => 'RepartidorController', 'action' => 'index'],
-     ['method' => 'GET', 'path' => '/repartidor/registro', 'controller' => 'RepartidorController', 'action' => 'registro'],
+      // Página repartidor
+      ['method' => 'GET', 'path' => '/repartidor', 'controller' => 'RepartidorController', 'action' => 'index'],
+      ['method' => 'GET', 'path' => '/repartidor/dashboard', 'controller' => 'RepartidorController', 'action' => 'index'],
+      ['method' => 'GET', 'path' => '/repartidor/perfil', 'controller' => 'RepartidorController', 'action' => 'perfil'],
+      ['method' => 'GET', 'path' => '/repartidor/registro', 'controller' => 'RepartidorController', 'action' => 'registro'],
      ['method' => 'POST', 'path' => '/repartidor/registro', 'controller' => 'RepartidorAuthController', 'action' => 'registro'],
      ['method' => 'GET', 'path' => '/repartidor/login', 'controller' => 'RepartidorAuthController', 'action' => 'showLogin'],
      ['method' => 'POST', 'path' => '/repartidor/login', 'controller' => 'RepartidorAuthController', 'action' => 'login'],
       ['method' => 'GET', 'path' => '/repartidor/logout', 'controller' => 'RepartidorAuthController', 'action' => 'logout'],
       
       // Admin - Gestión de repartidores
+      ['method' => 'GET',    'path' => '/admin/repartidores',                           'controller' => 'Admin\\RepartidorController', 'action' => 'index'],
       ['method' => 'GET',    'path' => '/api/admin/repartidores/solicitudes',           'controller' => 'Api\\AdminRepartidorController', 'action' => 'solicitudes'],
       ['method' => 'POST',   'path' => '/api/admin/repartidores/solicitudes/aprobar',   'controller' => 'Api\\AdminRepartidorController', 'action' => 'aprobar'],
       ['method' => 'POST',   'path' => '/api/admin/repartidores/solicitudes/rechazar',  'controller' => 'Api\\AdminRepartidorController', 'action' => 'rechazar'],
       ['method' => 'GET',    'path' => '/api/admin/repartidores/estadisticas',          'controller' => 'Api\\AdminRepartidorController', 'action' => 'estadisticas'],
+      ['method' => 'GET',    'path' => '/api/admin/repartidores/activos',               'controller' => 'Api\\AdminRepartidorController', 'action' => 'activos'],
+      ['method' => 'POST',   'path' => '/api/admin/repartidores/suspender',             'controller' => 'Api\\AdminRepartidorController', 'action' => 'suspender'],
+      ['method' => 'POST',   'path' => '/api/admin/repartidores/activar',               'controller' => 'Api\\AdminRepartidorController', 'action' => 'activar'],
+      ['method' => 'POST',   'path' => '/api/admin/repartidores/documentos/revisar',    'controller' => 'Api\\AdminRepartidorController', 'action' => 'revisarDocumento'],
+      ['method' => 'GET',    'path' => '/api/admin/dashboard/stats',                    'controller' => 'Api\\AdminRepartidorController', 'action' => 'dashboardStats'],
   ];

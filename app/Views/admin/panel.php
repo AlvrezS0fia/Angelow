@@ -24,7 +24,15 @@ error_log(print_r($_SESSION, true));
 
     <!-- Leaflet CSS y JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/seguimiento-perfil.css">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.js"></script>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -76,6 +84,7 @@ error_log(print_r($_SESSION, true));
                 <li><a href="#orders" data-section="orders"><i class="fas fa-clipboard-list admin-menu-icon icon-orders"></i><span>Pedidos</span></a></li>
                 <li><a href="#customers" data-section="customers"><i class="fas fa-users admin-menu-icon icon-customers"></i><span>Clientes</span></a></li>
                 <li><a href="#delivery" data-section="delivery"><i class="fas fa-truck-fast admin-menu-icon icon-delivery"></i><span>Repartidores</span></a></li>
+                <li><a href="#seguimiento" data-section="seguimiento"><i class="fas fa-map-location-dot admin-menu-icon icon-seguimiento"></i><span>Seguimiento</span></a></li>
                 <li><a href="#analytics" data-section="analytics"><i class="fas fa-chart-line admin-menu-icon icon-analytics"></i><span>Analítica</span></a></li>
                 <li><a href="#settings" data-section="settings"><i class="fas fa-gear admin-menu-icon icon-settings"></i><span>Configuración</span></a></li>
             </ul>
@@ -311,10 +320,49 @@ error_log(print_r($_SESSION, true));
             <!-- SECCIÓN REPARTIDORES -->
             <section id="delivery-section" class="admin-section" style="display: none;">
                 <div class="section-header"><h2 class="section-title">Gestión de Repartidores</h2></div>
-                <div class="delivery-grid" id="deliveryGrid"></div>
-                <h3 class="section-title" style="margin: 30px 0 20px;">Listado General de Repartidores</h3>
+
+                <div class="metrics-grid" id="driverStats">
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div><div class="metric-value" id="driverPending">0</div><div class="metric-label">Pendientes</div></div>
+                            <div class="metric-icon metric-icon-pending"><i class="fas fa-clock"></i></div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div><div class="metric-value" id="driverActive">0</div><div class="metric-label">Activos</div></div>
+                            <div class="metric-icon metric-icon-revenue"><i class="fas fa-check-circle"></i></div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div><div class="metric-value" id="driverApproved">0</div><div class="metric-label">Aprobados</div></div>
+                            <div class="metric-icon metric-icon-favorites"><i class="fas fa-user-check"></i></div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <div><div class="metric-value" id="driverRejected">0</div><div class="metric-label">Rechazados</div></div>
+                            <div class="metric-icon metric-icon-users"><i class="fas fa-user-xmark"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="section-title" style="margin: 30px 0 16px; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-file-circle-exclamation" style="color: var(--warning);"></i>
+                    Solicitudes Pendientes
+                    <span id="pendingBadge" style="background: var(--warning); color: #fff; border-radius: 50px; padding: 2px 12px; font-size: 13px; font-weight: 700;"></span>
+                </h3>
+                <div id="solicitudesContainer">
+                    <div style="text-align:center; padding:40px; color:var(--text-secondary);">Cargando solicitudes...</div>
+                </div>
+
+                <h3 class="section-title" style="margin: 30px 0 16px; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-truck-fast" style="color: var(--primary);"></i>
+                    Repartidores Registrados
+                </h3>
                 <table class="admin-table">
-                    <thead><tr><th>ID</th><th>Foto</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Vehículo</th><th>Estado</th><th>Pedidos</th><th>Acciones</th></tr></thead>
+                    <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Vehículo</th><th>Placa</th><th>Estado</th><th>Entregas</th><th>Documentos</th></tr></thead>
                     <tbody id="deliveryTable"></tbody>
                 </table>
             </section>
@@ -419,6 +467,177 @@ error_log(print_r($_SESSION, true));
                 </div>
             </section>
 
+            <!-- SECCIÓN SEGUIMIENTO -->
+            <section id="seguimiento-section" class="admin-section" style="display: none;">
+                <div id="seguimientoSection" class="seg-main-content">
+                    <div class="seg-page-header">
+                        <h1 class="seg-page-title"><i class="fas fa-truck"></i> Rastreo de Pedidos</h1>
+                        <p class="seg-page-subtitle">Visualiza y gestiona la ubicación de las entregas en tiempo real</p>
+                    </div>
+                    <div class="seg-tracking-wrapper">
+                        <!-- MAP CONTAINER -->
+                        <div class="seg-map-container">
+                            <div id="segMap"></div>
+                            <div id="segMapSkeleton" class="seg-map-skeleton">
+                                <div class="seg-skeleton-shimmer"></div>
+                                <div class="seg-skeleton-content">
+                                    <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="seg-skeleton-logo">
+                                    <div class="seg-skeleton-text">Cargando mapa...</div>
+                                </div>
+                            </div>
+
+                            <!-- VENTANA FLOTANTE: Planificador de Ruta -->
+                            <div class="seg-controls-panel seg-collapsed" id="segControlsPanel">
+                                <button class="seg-controls-toggle-btn" id="segControlsToggle" title="Planificador de ruta">
+                                    <i class="fas fa-route"></i>
+                                </button>
+                                <div class="seg-panel-header">
+                                    <div class="seg-panel-title">
+                                        <i class="fas fa-route"></i>
+                                        <h3>Planificador de Ruta</h3>
+                                    </div>
+                                    <div class="seg-panel-actions">
+                                        <button class="seg-panel-action-btn" id="segLocateMe" title="Ubicar mi posición">
+                                            <i class="fas fa-crosshairs"></i>
+                                        </button>
+                                        <button class="seg-panel-close-btn" id="segClosePanel" title="Cerrar panel">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="seg-panel-content">
+                                    <div class="seg-input-group">
+                                        <div class="seg-input-header">
+                                            <label class="seg-input-label"><i class="fas fa-map-marker-alt"></i> Punto de Origen</label>
+                                            <button class="seg-input-action" id="segUseCurrentLocation">
+                                                <img src="<?= APP_URL ?>/assets/imagenes/general/flechas.png" alt="Ubicación" style="width:16px; height:16px; margin-right:4px;">
+                                                Usar mi ubicación
+                                            </button>
+                                        </div>
+                                        <div class="seg-input-wrapper">
+                                            <i class="seg-input-icon fas fa-circle"></i>
+                                            <input type="text" id="segStartAddress" class="seg-address-input" placeholder="Ubicación actual" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="seg-input-group">
+                                        <div class="seg-input-header">
+                                            <label class="seg-input-label"><i class="fas fa-flag-checkered"></i> Punto de Destino</label>
+                                            <span class="seg-input-label" style="color:var(--error);font-size:0.7rem;">*Requerido</span>
+                                        </div>
+                                        <div class="seg-input-wrapper" style="position:relative;">
+                                            <i class="seg-input-icon fas fa-map-pin"></i>
+                                            <input type="text" id="segEndAddress" class="seg-address-input" placeholder="Ingresa dirección de entrega">
+                                            <div id="segAddressSuggestions" class="seg-autocomplete-dropdown" style="display:none;"></div>
+                                        </div>
+                                        <div class="seg-address-suggestions">
+                                            <div class="seg-suggestion" data-address="Carrera 15 #88-64, Medellín">
+                                                <i class="fas fa-home"></i><span>Oficina Principal</span>
+                                            </div>
+                                            <div class="seg-suggestion" data-address="Calle 100 #15-20, Medellín">
+                                                <i class="fas fa-store"></i><span>Tienda Angelow</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="seg-route-actions">
+                                        <button id="segCalculateRoute" class="seg-btn seg-btn-primary">
+                                            <i class="fas fa-route"></i> Calcular Ruta
+                                        </button>
+                                        <div class="seg-secondary-actions">
+                                            <button id="segClearRoute" class="seg-btn seg-btn-secondary" disabled>
+                                                <i class="fas fa-times"></i> Limpiar
+                                            </button>
+                                            <button id="segSaveRoute" class="seg-btn seg-btn-outline" disabled>
+                                                <i class="fas fa-bookmark"></i> Guardar
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="seg-route-info-card">
+                                        <div class="seg-info-card-header">
+                                            <h4><i class="fas fa-info-circle"></i> Información de Ruta</h4>
+                                        </div>
+                                        <div class="seg-info-grid">
+                                            <div class="seg-info-item seg-highlighted">
+                                                <div class="seg-info-icon"><i class="fas fa-road"></i></div>
+                                                <div class="seg-info-details">
+                                                    <span class="seg-info-label">Distancia</span>
+                                                    <span class="seg-info-value" id="segRouteDistance">--</span>
+                                                </div>
+                                            </div>
+                                            <div class="seg-info-item seg-highlighted">
+                                                <div class="seg-info-icon"><i class="fas fa-clock"></i></div>
+                                                <div class="seg-info-details">
+                                                    <span class="seg-info-label">Tiempo</span>
+                                                    <span class="seg-info-value" id="segRouteTime">--</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Status Panel -->
+                            <div class="seg-status-panel">
+                                <div class="seg-status-header">
+                                    <div class="seg-status-title">
+                                        <div class="seg-status-indicator-container">
+                                            <div class="seg-status-indicator seg-pulse seg-status-waiting"></div>
+                                            <span id="segStatusTitle">Estado: Esperando</span>
+                                        </div>
+                                        <button class="seg-status-refresh" id="segRefreshStatus"><i class="fas fa-sync-alt"></i></button>
+                                    </div>
+                                    <div class="seg-status-meta"><span class="seg-status-time" id="segStatusTime">Actualizado: ahora</span></div>
+                                </div>
+                                <div class="seg-status-content">
+                                    <div class="seg-status-message"><i class="fas fa-info-circle"></i><p id="segStatusMessage">Ingresa una dirección para comenzar</p></div>
+                                    <div class="seg-detail-grid">
+                                        <div class="seg-detail-item"><i class="fas fa-user"></i><div><span class="seg-detail-label">Repartidor</span><span class="seg-detail-value" id="segDeliveryPerson">Asignando...</span></div></div>
+                                        <div class="seg-detail-item"><i class="fas fa-phone"></i><div><span class="seg-detail-label">Contacto</span><span class="seg-detail-value" id="segDeliveryContact">---</span></div></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- GPS Indicator -->
+                            <div class="seg-gps-indicator">
+                                <div class="seg-gps-icon"><i class="fas fa-satellite"></i></div>
+                                <div class="seg-gps-text"><span class="seg-gps-status">GPS Activo</span><span class="seg-gps-accuracy">Precisión: 15m</span></div>
+                            </div>
+
+                            <!-- Layer Switcher -->
+                            <div class="seg-layer-switcher" id="segLayerSwitcher">
+                                <button class="seg-layer-btn seg-active" data-layer="street" title="Mapa callejero"><i class="fas fa-map"></i></button>
+                                <button class="seg-layer-btn" data-layer="satellite" title="Vista satélite"><i class="fas fa-globe"></i></button>
+                                <button class="seg-layer-btn" data-layer="dark" title="Modo oscuro"><i class="fas fa-moon"></i></button>
+                            </div>
+
+                            <!-- Notificación de entrega completada -->
+                            <div id="segLiveNotification" class="seg-notification" style="display:none">
+                                <div class="seg-notification-content">
+                                    <i class="fas fa-check-circle" style="font-size:1.5rem;"></i>
+                                    <div>
+                                        <strong>¡Pedido Entregado!</strong>
+                                        <div style="font-size:0.85rem;opacity:0.9;">El pedido ha sido entregado exitosamente</div>
+                                    </div>
+                                    <button class="seg-notification-close" onclick="this.parentElement.parentElement.style.display='none'">×</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TRACKING PANEL (derecha) -->
+                        <div class="seg-tracking-container">
+                            <div class="seg-tracking-header">
+                                <div class="seg-header-main"><h2><i class="fas fa-box-open"></i> Seguimiento</h2><div class="seg-order-status-badge seg-status-active"><i class="fas fa-circle"></i> Activo</div></div>
+                                <div class="seg-header-secondary"><div class="seg-order-meta"><div class="seg-meta-item"><span class="seg-meta-label">Pedido</span><span class="seg-meta-value" id="segOrderNumber">001234</span></div><div class="seg-meta-item"><span class="seg-meta-label">Fecha</span><span class="seg-meta-value" id="segOrderDate">Hoy, 14:30</span></div></div><button class="seg-header-action" id="segShareTracking"><i class="fas fa-share-alt"></i></button></div>
+                            </div>
+                            <div class="seg-tracking-content">
+                                <div class="seg-progress-timeline"><div class="seg-timeline-header"><h3><i class="fas fa-history"></i> Progreso</h3><div class="seg-timeline-progress"><div class="seg-progress-bar"><div class="seg-progress-fill" style="width: 0%"></div></div><span class="seg-progress-text">0%</span></div></div><div class="seg-timeline-steps"><div class="seg-step"><div class="seg-step-icon"><i class="fas fa-clipboard-check"></i></div><div class="seg-step-content"><h4>Confirmado</h4><span class="seg-step-time">--:--</span></div></div><div class="seg-step"><div class="seg-step-icon"><i class="fas fa-warehouse"></i></div><div class="seg-step-content"><h4>Preparado</h4><span class="seg-step-time">--:--</span></div></div><div class="seg-step"><div class="seg-step-icon"><i class="fas fa-shipping-fast"></i></div><div class="seg-step-content"><h4>En Camino</h4><span class="seg-step-time">--:--</span></div></div><div class="seg-step"><div class="seg-step-icon"><i class="fas fa-home"></i></div><div class="seg-step-content"><h4>Entregado</h4><span class="seg-step-time">--:--</span></div></div></div></div>
+                                <div class="seg-driver-card"><div class="seg-card-header"><h3><i class="fas fa-user-circle"></i> Repartidor</h3></div><div class="seg-card-content"><div class="seg-driver-profile"><div class="seg-driver-avatar"><img src="https://ui-avatars.com/api/?name=Carlos+Rodriguez&background=5E9DE6&color=fff"></div><div class="seg-driver-info"><h4 id="segDriverName">-</h4><div class="seg-driver-rating"><div class="seg-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div></div></div></div><div class="seg-driver-contact"><button class="seg-contact-btn seg-call-btn"><i class="fas fa-phone"></i></button><button class="seg-contact-btn seg-message-btn"><i class="fas fa-comment"></i></button><button class="seg-contact-btn seg-location-btn"><i class="fas fa-map-marker-alt"></i></button></div></div></div>
+                                <div class="seg-estimate-card"><div class="seg-card-header"><h3><i class="fas fa-clock"></i> Estimación</h3></div><div class="seg-card-content"><div class="seg-estimate-main"><div class="seg-estimate-time"><span class="seg-time-value" id="segEstimatedTime">--</span><span class="seg-time-unit" style="font-size:1rem;font-weight:600;opacity:0.8;">min</span></div></div><div class="seg-estimate-details"><div class="seg-est-detail"><i class="fas fa-road"></i><span><strong id="segEstimatedDistance">--</strong></span></div><div class="seg-est-detail"><i class="fas fa-traffic-light"></i><span>Normal</span></div></div></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
         </main>
     </div>
 
@@ -479,56 +698,6 @@ error_log(print_r($_SESSION, true));
         </div>
     </div>
 
-    <!-- MODAL PARA REPARTIDORES -->
-    <div class="delivery-modal-overlay" id="deliveryModal">
-        <div class="delivery-modal-container">
-            <div class="delivery-modal-header">
-                <h2 id="deliveryModalTitle">Agregar Nuevo Repartidor</h2>
-                <button class="delivery-modal-close">×</button>
-            </div>
-            <div class="delivery-modal-body">
-                <div class="delivery-avatar-upload">
-                    <div class="delivery-avatar-preview" id="deliveryAvatarPreview">👤</div>
-                    <label class="delivery-avatar-upload-btn"><input type="file" id="deliveryAvatar" accept="image/*" style="display: none;">📷 Subir foto</label>
-                </div>
-
-                <h3 class="modal-section-title">👤 Información Personal</h3>
-                <div class="delivery-form-row">
-                    <div class="delivery-form-group"><label class="required">Nombre Completo</label><input type="text" id="deliveryName" placeholder="Ej: Juan Pérez"></div>
-                    <div class="delivery-form-group"><label class="required">Email</label><input type="email" id="deliveryEmail" placeholder="ejemplo@angelow.com"></div>
-                </div>
-                <div class="delivery-form-row">
-                    <div class="delivery-form-group"><label class="required">Teléfono</label><input type="tel" id="deliveryPhone" placeholder="3001234567"></div>
-                    <div class="delivery-form-group"><label class="required">Tipo Documento</label><select id="deliveryIdType"><option value="CC">Cédula de Ciudadanía</option><option value="CE">Cédula de Extranjería</option><option value="TI">Tarjeta de Identidad</option><option value="PAS">Pasaporte</option></select></div>
-                </div>
-                <div class="delivery-form-row">
-                    <div class="delivery-form-group"><label class="required">Número Documento</label><input type="text" id="deliveryIdNumber" placeholder="1234567890"></div>
-                    <div class="delivery-form-group"><label>Fecha Nacimiento</label><input type="date" id="deliveryBirthDate"></div>
-                </div>
-                <div class="delivery-form-group"><label>Dirección</label><input type="text" id="deliveryAddress" placeholder="Calle 123 #45-67, Ciudad"></div>
-                <div class="delivery-form-group"><label>Tipo de Sangre</label><select id="deliveryBloodType"><option value="">Seleccionar</option><option value="A+">A+</option><option value="A-">A-</option><option value="B+">B+</option><option value="B-">B-</option><option value="O+">O+</option><option value="O-">O-</option><option value="AB+">AB+</option><option value="AB-">AB-</option></select></div>
-
-                <h3 class="modal-section-title">🚚 Información Laboral</h3>
-                <div class="delivery-form-row">
-                    <div class="delivery-form-group"><label class="required">Vehículo</label><select id="deliveryVehicle"><option value="">Seleccionar</option><option value="Moto">Moto</option><option value="Carro">Carro</option><option value="Bicicleta">Bicicleta</option><option value="Camión">Camión</option></select></div>
-                    <div class="delivery-form-group"><label>Placa</label><input type="text" id="deliveryLicensePlate" placeholder="ABC-123"></div>
-                </div>
-                <div class="delivery-form-row">
-                    <div class="delivery-form-group"><label>Número de Licencia</label><input type="text" id="deliveryLicenseNumber" placeholder="LIC-2025-001"></div>
-                    <div class="delivery-form-group"><label class="required">Estado</label><select id="deliveryStatus"><option value="active">Activo</option><option value="inactive">Inactivo</option><option value="on-route">En ruta</option></select></div>
-                </div>
-
-                <h3 class="modal-section-title">📞 Contacto de Emergencia</h3>
-                <div class="delivery-form-group"><label>Contacto de Emergencia</label><input type="text" id="deliveryEmergencyContact" placeholder="Nombre y teléfono"></div>
-                <div class="delivery-form-group"><label>Notas adicionales</label><textarea id="deliveryNotes" rows="3" placeholder="Información relevante..."></textarea></div>
-            </div>
-            <div class="delivery-modal-footer">
-                <button class="btn btn-secondary" onclick="closeDeliveryModal()">Cancelar</button>
-                <button class="btn btn-primary" onclick="saveDeliveryDriver()" id="deliveryModalSaveBtn">Agregar Repartidor</button>
-            </div>
-        </div>
-    </div>
-
     <!-- MODAL PARA CATEGORÍAS -->
     <div class="category-modal-overlay" id="categoryModal">
         <div class="category-modal-container">
@@ -552,5 +721,6 @@ error_log(print_r($_SESSION, true));
     </div>
 
     <script src="<?= APP_URL ?>/assets/js/panel.js"></script>
+    <script src="<?= APP_URL ?>/assets/js/seguimiento-perfil.js"></script>
 </body>
 </html>

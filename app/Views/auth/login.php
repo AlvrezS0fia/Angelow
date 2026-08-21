@@ -23,6 +23,7 @@ $client_id = $_ENV['GOOGLE_CLIENT_ID'] ?? '518631585090-vel52de86h7lk3uetco3dc3s
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/login.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/back-button.css">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -36,9 +37,11 @@ $client_id = $_ENV['GOOGLE_CLIENT_ID'] ?? '518631585090-vel52de86h7lk3uetco3dc3s
             <span>PEDIDOS</span>
         </div>
     </a>
-    <a href="<?= APP_URL ?>/" class="back-to-home">
-        <i class="fas fa-arrow-left"></i>
-        Volver al inicio
+    <a href="<?= APP_URL ?>/" class="btn-back-header">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Volver
     </a>
 </header>
 
