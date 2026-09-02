@@ -1,8 +1,15 @@
 <?php
 // Ya no se necesita session_start() porque lo hace el front controller
-// Si ya está logueado, redirigir a la tienda
+// Si ya está logueado, redirigir según el rol
 if (isset($_SESSION['user'])) {
-    header('Location: ' . APP_URL . '/');
+    $rol = $_SESSION['user']['rol'] ?? 'cliente';
+    if ($rol === 'administrador') {
+        header('Location: ' . APP_URL . '/admin');
+    } elseif ($rol === 'repartidor') {
+        header('Location: ' . APP_URL . '/repartidor/dashboard');
+    } else {
+        header('Location: ' . APP_URL . '/');
+    }
     exit();
 }
 // Configuración de Google (se puede mover a config/app.php si se desea)

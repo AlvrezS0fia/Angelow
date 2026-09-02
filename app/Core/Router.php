@@ -6,7 +6,6 @@ class Router {
 
     public function add($method, $path, $controller, $action) {
         $regex = preg_replace('/\{(\w+)\}/', '(?P<$1>[^/]+)', $path);
-        $regex = preg_replace('/:(\w+)/', '(?P<$1>[^/]+)', $regex);
         $regex = '#^' . $regex . '$#';
         $this->routes[] = [
             'method' => strtoupper($method),
@@ -28,6 +27,7 @@ class Router {
             $path = substr($path, strlen($publicPath));
         }
         $path = $path ?: '/';
+        $path = rtrim($path, '/') ?: '/';
 
         foreach ($this->routes as $route) {
             if ($route['method'] !== $requestMethod) continue;

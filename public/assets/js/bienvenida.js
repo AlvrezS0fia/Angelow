@@ -701,13 +701,16 @@ function loadUser() {
 
 function updateUserUI() {
   const loginLink = document.getElementById('loginLink');
-  const trackOrderLink = document.getElementById('trackOrderLink');
   const dropdownMenu = document.getElementById('dropdownMenu');
   const existingInventario = document.getElementById('inventarioLink');
   if (existingInventario) existingInventario.remove();
 
+  const serRepartidorMenu = document.getElementById('serRepartidorMenu');
+  const openFavoritesFromMenu = document.getElementById('openFavoritesFromMenu');
+
   if (currentUser) {
     const isAdmin = currentUser.rol === 'administrador';
+    const isRepartidor = currentUser.rol === 'repartidor';
     if (isAdmin) {
       loginLink.textContent = 'Administración';
       loginLink.href = APP_URL + '/admin';
@@ -716,12 +719,21 @@ function updateUserUI() {
       inventarioLink.className = 'dropdown-item';
       inventarioLink.id = 'inventarioLink';
       inventarioLink.textContent = 'Inventario';
-      dropdownMenu.insertBefore(inventarioLink, trackOrderLink);
+      loginLink.after(inventarioLink);
+    } else if (isRepartidor) {
+      loginLink.textContent = 'Mi panel de repartidor';
+      loginLink.href = APP_URL + '/repartidor/dashboard';
     } else {
       loginLink.textContent = 'Mi cuenta';
       loginLink.href = APP_URL + '/perfil';
     }
     loginLink.onclick = null;
+    if (serRepartidorMenu) serRepartidorMenu.style.display = 'none';
+    if (isAdmin || isRepartidor) {
+      if (openFavoritesFromMenu) openFavoritesFromMenu.style.display = 'none';
+    } else {
+      if (openFavoritesFromMenu) openFavoritesFromMenu.style.display = '';
+    }
     const existingLogout = document.querySelector('.dropdown-item.logout-item');
     if (existingLogout) existingLogout.remove();
     const logoutItem = document.createElement('a');
@@ -731,6 +743,8 @@ function updateUserUI() {
     logoutItem.onclick = (e) => { e.preventDefault(); logout(); };
     dropdownMenu.appendChild(logoutItem);
   } else {
+    if (serRepartidorMenu) serRepartidorMenu.style.display = '';
+    if (openFavoritesFromMenu) openFavoritesFromMenu.style.display = '';
     loginLink.textContent = 'Iniciar sesión';
     loginLink.href = '#';
     loginLink.onclick = (e) => {
@@ -968,7 +982,7 @@ function getNewProducts() {
 }
 
 function renderNewProductsGrid() {
-  const container = document.getElementById("newProductsRevealed");
+  const container = document.getElementById("dynamicOffersGrid") || document.getElementById("newProductsRevealed");
   if (!container) return;
   const newProducts = getNewProducts();
   if (!newProducts.length) {
@@ -991,7 +1005,7 @@ function renderNewProductsGrid() {
 }
 
 function initScratchCard() {
-  canvas = document.getElementById("scratchCanvas");
+  canvas = document.getElementById("scratchCanvas") || document.getElementById("scratchSurface");
   if (!canvas) return;
   ctx = canvas.getContext("2d");
   const w = canvas.width, h = canvas.height;

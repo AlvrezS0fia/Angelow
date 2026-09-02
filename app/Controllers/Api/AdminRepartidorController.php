@@ -9,431 +9,454 @@ class AdminRepartidorController extends Controller
     private function requireAdmin()
     {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
-            $this->json(['success' => false, 'message' => 'No autorizado'], 401);
+            $this->json(['error' => 'No autorizado'], 403);
+            return false;
         }
-        return $_SESSION['user']['id'];
+        return true;
     }
 
-    private function json($data, $code = 200)
+    private function jsonOut($data, $code = 200)
     {
         if (ob_get_length()) ob_clean();
         http_response_code($code);
-        header('Content-Type: application/json');
+        header('Content-Type: application/json; charset=utf-8');
         echo json_encode($data, JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    private function notificar($usuarioId, $tipo, $titulo, $mensaje, $enlace = null, $datosAdicionales = null)
+    public function solicitudes()
+    {
+        if (!$this->requireAdmin()) return;
+
+        $estado = $_GET['estado'] ?? 'pendiente';
+        $perPage = (int) ($_GET['per_page'] ?? 50);
+        $page = (int) ($_GET['page'] ?? 1);
+        $offset = max(0, ($page - 1) * $perPage);
+
+        $where = "WHERE s.estado = :estado";
+        $params = [':estado' => $estado];
+
+        if ($estado === 'pendiente') {
+            $where = "WHERE s.estado IN ('pendiente')";
+            $params = [];
+        } elseif ($estado !== 'todas' && $estado !== 'all') {
+            $where = "WHERE s.estado = :estado";
+            $params = [':estado' => $estado];
+        } else {
+            $where = "";
+            $params = [];
+        }
+
+        $totalStmt = Database::query("SELECT COUNT(*) FROM solicitudes_repartidores s $where", $params);
+        $total = (int) $totalStmt->fetchColumn();
+
+        $sql = "SELECT s.*
+                FROM solicitudes_repartidores s
+                $where
+                ORDER BY 
+                    CASE s.estado WHEN 'pendiente' THEN 0 ELSE 1 END,
+                    s.fecha_solicitud DESC
+                LIMIT :limit OFFSET :offset";
+        $stmt = Database::getInstance()->getConnection()->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v, \PDO::PARAM_STR);
+        }
+        $stmt->bindValue(':limit', $perPage, \PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+        $stmt->execute();
+        $solicitudes = $stmt->fetchAll();
+
+        foreach ($solicitudes as &$sol) {
+            $sol['documentos'] = $this->getDocumentos($sol['id']);
+            $sol['vehiculo'] = $this->getVehiculo($sol['usuario_id']);
+        }
+        unset($sol);
+
+        $this->jsonOut([
+            'success' => true,
+            'solicitudes' => $solicitudes,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_pages' => max(1, ceil($total / $perPage)),
+        ]);
+    }
+
+    private function getDocumentos($solicitudId)
     {
         try {
-            Database::query(
-                "INSERT INTO notificaciones (usuario_id, tipo, titulo, mensaje, enlace, datos_adicionales, leida, fecha_envio) VALUES (?, ?, ?, ?, ?, ?, 0, NOW())",
-                [$usuarioId, $tipo, $titulo, $mensaje, $enlace, $datosAdicionales ? json_encode($datosAdicionales) : null]
+            $stmt = Database::query(
+                "SELECT * FROM documentos WHERE solicitud_id = ? ORDER BY fecha_subida DESC",
+                [$solicitudId]
             );
+            return $stmt->fetchAll();
         } catch (\Exception $e) {
+            return [];
         }
     }
 
-    private function historial($repartidorId, $solicitudId, $adminId, $accion, $estadoNuevo, $motivo = null, $observaciones = null)
+    private function getVehiculo($usuarioId)
     {
         try {
-            Database::query(
-                "INSERT INTO historial_repartidores (repartidor_id, solicitud_id, administrador_id, accion, estado_nuevo, motivo, observaciones, fecha_accion) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())",
-                [$repartidorId, $solicitudId, $adminId, $accion, $estadoNuevo, $motivo, $observaciones]
+            $stmt = Database::query(
+                "SELECT * FROM vehiculos_repartidores WHERE repartidor_id = ? AND activo = 1 ORDER BY id DESC LIMIT 1",
+                [$usuarioId]
             );
+            return $stmt->fetch();
         } catch (\Exception $e) {
+            return null;
         }
     }
 
-    private function asignarPermisos($repartidorId, $adminId)
+    public function aprobar()
     {
-        $permisos = [
+        if (!$this->requireAdmin()) return;
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        $id = (int) ($data['id'] ?? 0);
+        $observaciones = $data['observaciones'] ?? null;
+        $adminId = $_SESSION['user']['id'] ?? null;
+
+        if (!$id) {
+            $this->jsonOut(['success' => false, 'message' => 'ID de solicitud requerido'], 400);
+        }
+
+        $stmt = Database::query("SELECT * FROM solicitudes_repartidores WHERE id = ?", [$id]);
+        $solicitud = $stmt->fetch();
+
+        if (!$solicitud) {
+            $this->jsonOut(['success' => false, 'message' => 'Solicitud no encontrada'], 404);
+        }
+
+        $usuarioId = (int) $solicitud['usuario_id'];
+
+        try {
+            Database::getInstance()->getConnection()->beginTransaction();
+
+            Database::query(
+                "UPDATE usuarios SET estado = 'activo', apellido = ?, cedula = ?, tipo_documento = ?, fecha_aprobacion = NOW(), aprobado_por = ?, motivo_suspension = NULL, fecha_suspension = NULL WHERE id = ?",
+                [
+                    $solicitud['apellidos'],
+                    $solicitud['numero_documento'],
+                    $solicitud['tipo_documento'],
+                    $adminId,
+                    $usuarioId
+                ]
+            );
+
+            Database::query(
+                "UPDATE solicitudes_repartidores SET estado = 'aprobada', administrador_id = ?, observaciones = COALESCE(?, observaciones), fecha_respuesta = NOW() WHERE id = ?",
+                [$adminId, $observaciones, $id]
+            );
+
+            Database::query(
+                "UPDATE documentos SET estado = 'aprobado', revisado_por = ?, fecha_revision = NOW() WHERE repartidor_id = ? AND estado IN ('pendiente')",
+                [$adminId, $usuarioId]
+            );
+
+            $this->grantDefaultPermissions($usuarioId, $adminId);
+
+            Database::query(
+                "INSERT INTO historial_repartidores (repartidor_id, solicitud_id, administrador_id, estado_anterior, estado_nuevo, accion, observaciones) VALUES (?, ?, ?, 'pendiente', 'activo', 'aprobacion', ?)",
+                [$usuarioId, $id, $adminId, $observaciones]
+            );
+
+            try {
+                Database::query(
+                    "INSERT INTO notificaciones (usuario_id, tipo, titulo, mensaje, enlace, leida, fecha_envio) VALUES (?, 'aprobacion_repartidor', '¡Solicitud aprobada!', 'Tu solicitud para ser repartidor fue aprobada. Ya puedes iniciar sesión y gestionar entregas.', '/repartidor/dashboard', 0, NOW())",
+                    [$usuarioId]
+                );
+            } catch (\Exception $e) {
+            }
+
+            Database::getInstance()->getConnection()->commit();
+
+            $this->jsonOut(['success' => true, 'message' => 'Repartidor aprobado correctamente. Ya puede iniciar sesión.']);
+        } catch (\Exception $e) {
+            Database::getInstance()->getConnection()->rollBack();
+            error_log("AdminRepartidor::aprobar ERROR - " . $e->getMessage());
+            $this->jsonOut(['success' => false, 'message' => 'Error al aprobar la solicitud: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function rechazar()
+    {
+        if (!$this->requireAdmin()) return;
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        $id = (int) ($data['id'] ?? 0);
+        $motivo = $data['motivo'] ?? $data['observaciones'] ?? null;
+        $adminId = $_SESSION['user']['id'] ?? null;
+
+        if (!$id) {
+            $this->jsonOut(['success' => false, 'message' => 'ID de solicitud requerido'], 400);
+        }
+
+        $stmt = Database::query("SELECT * FROM solicitudes_repartidores WHERE id = ?", [$id]);
+        $solicitud = $stmt->fetch();
+
+        if (!$solicitud) {
+            $this->jsonOut(['success' => false, 'message' => 'Solicitud no encontrada'], 404);
+        }
+
+        $usuarioId = (int) $solicitud['usuario_id'];
+
+        try {
+            Database::getInstance()->getConnection()->beginTransaction();
+
+            Database::query(
+                "UPDATE solicitudes_repartidores SET estado = 'rechazada', administrador_id = ?, motivo_rechazo = ?, observaciones = COALESCE(?, observaciones), fecha_respuesta = NOW() WHERE id = ?",
+                [$adminId, $motivo, $motivo, $id]
+            );
+
+            Database::query(
+                "UPDATE usuarios SET estado = 'inactivo', motivo_suspension = ?, fecha_suspension = NOW() WHERE id = ?",
+                [$motivo, $usuarioId]
+            );
+
+            Database::query(
+                "INSERT INTO historial_repartidores (repartidor_id, solicitud_id, administrador_id, estado_anterior, estado_nuevo, accion, motivo, observaciones) VALUES (?, ?, ?, 'pendiente', 'inactivo', 'rechazo', ?, ?)",
+                [$usuarioId, $id, $adminId, $motivo, $motivo]
+            );
+
+            try {
+                Database::query(
+                    "INSERT INTO notificaciones (usuario_id, tipo, titulo, mensaje, enlace, leida, fecha_envio) VALUES (?, 'rechazo_repartidor', 'Solicitud rechazada', 'Tu solicitud para ser repartidor fue rechazada. Contacta al administrador para más información.', '/repartidor/login', 0, NOW())",
+                    [$usuarioId]
+                );
+            } catch (\Exception $e) {
+            }
+
+            Database::getInstance()->getConnection()->commit();
+
+            $this->jsonOut(['success' => true, 'message' => 'Solicitud rechazada correctamente.']);
+        } catch (\Exception $e) {
+            Database::getInstance()->getConnection()->rollBack();
+            error_log("AdminRepartidor::rechazar ERROR - " . $e->getMessage());
+            $this->jsonOut(['success' => false, 'message' => 'Error al rechazar la solicitud: ' . $e->getMessage()], 500);
+        }
+    }
+
+    private function grantDefaultPermissions($usuarioId, $adminId = null)
+    {
+        $permissions = [
             'ver_dashboard', 'ver_pedidos', 'aceptar_pedidos', 'actualizar_pedido',
             'marcar_recogido', 'marcar_en_camino', 'marcar_entregado',
             'ver_historial', 'ver_documentos', 'actualizar_perfil'
         ];
-        foreach ($permisos as $permiso) {
+        foreach ($permissions as $permiso) {
             try {
                 Database::query(
-                    "INSERT INTO permisos_repartidores (repartidor_id, permiso, permitido, otorgado_por, fecha_otorgado) VALUES (?, ?, 1, ?, NOW()) ON DUPLICATE KEY UPDATE permitido = 1, otorgado_por = VALUES(otorgado_por), fecha_actualizacion = NOW()",
-                    [$repartidorId, $permiso, $adminId]
+                    "INSERT INTO permisos_repartidores (repartidor_id, permiso, permitido, otorgado_por)
+                     VALUES (?, ?, 1, ?)
+                     ON DUPLICATE KEY UPDATE permitido = 1, otorgado_por = VALUES(otorgado_por)",
+                    [$usuarioId, $permiso, $adminId]
                 );
             } catch (\Exception $e) {
             }
         }
     }
 
-    private function revocarPermisos($repartidorId)
+    public function suspender()
     {
-        try {
-            Database::query(
-                "UPDATE permisos_repartidores SET permitido = 0, fecha_actualizacion = NOW() WHERE repartidor_id = ?",
-                [$repartidorId]
-            );
-        } catch (\Exception $e) {
-        }
-    }
-
-    private function restaurarPermisos($repartidorId)
-    {
-        try {
-            Database::query(
-                "UPDATE permisos_repartidores SET permitido = 1, fecha_actualizacion = NOW() WHERE repartidor_id = ?",
-                [$repartidorId]
-            );
-        } catch (\Exception $e) {
-        }
-    }
-
-    public function solicitudes()
-    {
-        $this->requireAdmin();
-
-        $estado = $_GET['estado'] ?? 'pendiente';
-        
-        $solicitudes = Database::query("
-            SELECT s.*, 
-                   s.nombres as nombre, 
-                   s.apellidos as apellido,
-                   COALESCE(u.email, s.email) as email, 
-                   COALESCE(u.cedula, s.cedula) as cedula,
-                   u.telefono as telefono,
-                   u.estado as usuario_estado
-            FROM solicitudes_repartidores s 
-            LEFT JOIN usuarios u ON s.usuario_id = u.id 
-            WHERE s.estado = ? 
-            ORDER BY s.fecha_solicitud DESC
-        ", [$estado])->fetchAll();
-
-        foreach ($solicitudes as &$s) {
-            $docs = Database::query(
-                "SELECT * FROM documentos WHERE repartidor_id = ? ORDER BY fecha_subida DESC",
-                [$s['usuario_id']]
-            )->fetchAll();
-            $s['documentos'] = $docs;
-        }
-
-        $this->json(['success' => true, 'solicitudes' => $solicitudes]);
-    }
-
-    public function aprobar()
-    {
-        $adminId = $this->requireAdmin();
+        if (!$this->requireAdmin()) return;
 
         $data = json_decode(file_get_contents('php://input'), true);
-        $id = $data['id'] ?? 0;
-        $observaciones = trim($data['observaciones'] ?? '');
+        $id = (int) ($data['id'] ?? 0);
+        $motivo = $data['motivo'] ?? null;
+        $adminId = $_SESSION['user']['id'] ?? null;
 
         if (!$id) {
-            $this->json(['success' => false, 'message' => 'ID de solicitud requerido'], 400);
+            $this->jsonOut(['success' => false, 'message' => 'ID de repartidor requerido'], 400);
         }
 
-        $solicitud = Database::query("SELECT * FROM solicitudes_repartidores WHERE id = ? AND estado = 'pendiente'", [$id])->fetch();
-        if (!$solicitud) {
-            $this->json(['success' => false, 'message' => 'Solicitud no encontrada o ya procesada'], 404);
-        }
+        try {
+            Database::query(
+                "UPDATE usuarios SET estado = 'suspendido', motivo_suspension = ?, fecha_suspension = NOW() WHERE id = ? AND rol = 'repartidor'",
+                [$motivo, $id]
+            );
 
-        $usuarioId = $solicitud['usuario_id'];
+            Database::query(
+                "INSERT INTO historial_repartidores (repartidor_id, administrador_id, estado_anterior, estado_nuevo, accion, motivo) VALUES (?, ?, 'activo', 'suspendido', 'suspension', ?)",
+                [$id, $adminId, $motivo]
+            );
 
-        Database::query("
-            UPDATE solicitudes_repartidores 
-            SET estado = 'aprobada', fecha_respuesta = NOW(), observaciones = ?, administrador_id = ? 
-            WHERE id = ? AND estado = 'pendiente'
-        ", [$observaciones, $adminId, $id]);
-
-        Database::query("UPDATE usuarios SET estado = 'activo', fecha_aprobacion = NOW(), aprobado_por = ? WHERE id = ?", [$adminId, $usuarioId]);
-
-        $this->asignarPermisos($usuarioId, $adminId);
-
-        $this->historial($usuarioId, $id, $adminId, 'aprobacion', 'aprobada', null, $observaciones ?: 'Solicitud aprobada');
-
-        $this->notificar(
-            $usuarioId,
-            'aprobacion_repartidor',
-            '¡Solicitud Aprobada!',
-            'Tu solicitud para ser repartidor ha sido aprobada. Ya puedes acceder a tu panel y comenzar a gestionar pedidos.',
-            '/repartidor/dashboard',
-            ['solicitud_id' => $id]
-        );
-
-        $solicitud = Database::query("SELECT * FROM solicitudes_repartidores WHERE id = ?", [$id])->fetch();
-        
-        if ($solicitud) {
-            $this->json([
-                'success' => true, 
-                'message' => 'Solicitud aprobada correctamente',
-                'solicitud' => $solicitud
-            ]);
-        } else {
-            $this->json(['success' => false, 'message' => 'Solicitud no encontrada'], 404);
+            $this->jsonOut(['success' => true, 'message' => 'Repartidor suspendido correctamente.']);
+        } catch (\Exception $e) {
+            error_log("AdminRepartidor::suspender ERROR - " . $e->getMessage());
+            $this->jsonOut(['success' => false, 'message' => 'Error al suspender: ' . $e->getMessage()], 500);
         }
     }
 
-    public function rechazar()
+    public function activar()
     {
-        $adminId = $this->requireAdmin();
+        if (!$this->requireAdmin()) return;
 
         $data = json_decode(file_get_contents('php://input'), true);
-        $id = $data['id'] ?? 0;
-        $observaciones = trim($data['observaciones'] ?? '');
-        $motivo = trim($data['motivo'] ?? $observaciones);
+        $id = (int) ($data['id'] ?? 0);
+        $adminId = $_SESSION['user']['id'] ?? null;
 
         if (!$id) {
-            $this->json(['success' => false, 'message' => 'ID de solicitud requerido'], 400);
+            $this->jsonOut(['success' => false, 'message' => 'ID de repartidor requerido'], 400);
         }
 
-        $solicitudData = Database::query("SELECT * FROM solicitudes_repartidores WHERE id = ? AND estado = 'pendiente'", [$id])->fetch();
-        if (!$solicitudData) {
-            $this->json(['success' => false, 'message' => 'Solicitud no encontrada o ya procesada'], 404);
-        }
+        try {
+            Database::query(
+                "UPDATE usuarios SET estado = 'activo', motivo_suspension = NULL, fecha_suspension = NULL WHERE id = ? AND rol = 'repartidor'",
+                [$id]
+            );
 
-        $usuarioId = $solicitudData['usuario_id'];
+            $this->grantDefaultPermissions($id, $adminId);
 
-        Database::query("
-            UPDATE solicitudes_repartidores 
-            SET estado = 'rechazada', fecha_respuesta = NOW(), observaciones = ?, motivo_rechazo = ?, administrador_id = ? 
-            WHERE id = ? AND estado = 'pendiente'
-        ", [$observaciones, $motivo, $adminId, $id]);
+            Database::query(
+                "INSERT INTO historial_repartidores (repartidor_id, administrador_id, estado_anterior, estado_nuevo, accion, observaciones) VALUES (?, ?, 'suspendido', 'activo', 'reactivacion', 'Repartidor reactivado por el administrador')",
+                [$id, $adminId]
+            );
 
-        Database::query("UPDATE usuarios SET estado = 'inactivo' WHERE id = ?", [$usuarioId]);
+            try {
+                Database::query(
+                    "INSERT INTO notificaciones (usuario_id, tipo, titulo, mensaje, enlace, leida, fecha_envio) VALUES (?, 'suspension_repartidor', 'Cuenta reactivada', 'Tu cuenta de repartidor fue reactivada. Ya puedes gestionar entregas.', '/repartidor/dashboard', 0, NOW())",
+                    [$id]
+                );
+            } catch (\Exception $e) {
+            }
 
-        $this->historial($usuarioId, $id, $adminId, 'rechazo', 'rechazada', $motivo, $observaciones);
-
-        $this->notificar(
-            $usuarioId,
-            'rechazo_repartidor',
-            'Solicitud Rechazada',
-            'Tu solicitud para ser repartidor ha sido rechazada.' . ($motivo ? ' Motivo: ' . $motivo : ''),
-            '/repartidor/dashboard',
-            ['solicitud_id' => $id, 'motivo' => $motivo]
-        );
-
-        $solicitud = Database::query("SELECT * FROM solicitudes_repartidores WHERE id = ?", [$id])->fetch();
-        
-        if ($solicitud) {
-            $this->json([
-                'success' => true, 
-                'message' => 'Solicitud rechazada',
-                'solicitud' => $solicitud
-            ]);
-        } else {
-            $this->json(['success' => false, 'message' => 'Solicitud no encontrada'], 404);
+            $this->jsonOut(['success' => true, 'message' => 'Repartidor reactivado correctamente.']);
+        } catch (\Exception $e) {
+            error_log("AdminRepartidor::activar ERROR - " . $e->getMessage());
+            $this->jsonOut(['success' => false, 'message' => 'Error al reactivar: ' . $e->getMessage()], 500);
         }
     }
 
     public function estadisticas()
     {
-        $this->requireAdmin();
+        if (!$this->requireAdmin()) return;
 
-        $pendientes = Database::query("SELECT COUNT(*) as count FROM solicitudes_repartidores WHERE estado = 'pendiente'")->fetch();
-        $aprobadas = Database::query("SELECT COUNT(*) as count FROM solicitudes_repartidores WHERE estado = 'aprobada'")->fetch();
-        $rechazadas = Database::query("SELECT COUNT(*) as count FROM solicitudes_repartidores WHERE estado = 'rechazada'")->fetch();
-        $activos = Database::query("SELECT COUNT(*) as count FROM usuarios WHERE rol = 'repartidor' AND estado = 'activo'")->fetch();
+        $stats = [];
 
-        $this->json([
-            'success' => true,
-            'pendientes' => (int)($pendientes['count'] ?? 0),
-            'aprobadas' => (int)($aprobadas['count'] ?? 0),
-            'rechazadas' => (int)($rechazadas['count'] ?? 0),
-            'activos' => (int)($activos['count'] ?? 0)
-        ]);
+        try {
+            $stmt = Database::query("SELECT COUNT(*) FROM solicitudes_repartidores WHERE estado = 'pendiente'");
+            $stats['pendientes'] = (int) $stmt->fetchColumn();
+        } catch (\Exception $e) {
+            $stats['pendientes'] = 0;
+        }
+
+        try {
+            $stmt = Database::query("SELECT COUNT(*) FROM usuarios WHERE rol = 'repartidor'");
+            $stats['total'] = (int) $stmt->fetchColumn();
+        } catch (\Exception $e) {
+            $stats['total'] = 0;
+        }
+
+        try {
+            $stmt = Database::query("SELECT COUNT(*) FROM usuarios WHERE rol = 'repartidor' AND estado = 'activo'");
+            $stats['activos'] = (int) $stmt->fetchColumn();
+        } catch (\Exception $e) {
+            $stats['activos'] = 0;
+        }
+
+        try {
+            $stmt = Database::query("SELECT COUNT(*) FROM usuarios WHERE rol = 'repartidor' AND estado = 'suspendido'");
+            $stats['suspendidos'] = (int) $stmt->fetchColumn();
+        } catch (\Exception $e) {
+            $stats['suspendidos'] = 0;
+        }
+
+        try {
+            $stmt = Database::query("SELECT COUNT(*) FROM solicitudes_repartidores WHERE estado = 'rechazada'");
+            $stats['rechazadas'] = (int) $stmt->fetchColumn();
+        } catch (\Exception $e) {
+            $stats['rechazadas'] = 0;
+        }
+
+        try {
+            $stmt = Database::query("SELECT COALESCE(SUM(total_entregas), 0) FROM usuarios WHERE rol = 'repartidor'");
+            $stats['total_entregas'] = (int) $stmt->fetchColumn();
+        } catch (\Exception $e) {
+            $stats['total_entregas'] = 0;
+        }
+
+        $this->jsonOut(['success' => true] + $stats);
     }
 
     public function activos()
     {
-        $this->requireAdmin();
+        if (!$this->requireAdmin()) return;
 
-        $drivers = Database::query("
-            SELECT u.id, u.nombre, u.apellido, u.email, u.telefono, u.cedula,
-                   u.tipo_documento, u.tipo_vehiculo, u.placa_vehiculo,
-                   u.numero_licencia, u.categoria_licencia,
-                   u.estado, u.total_entregas,
-                   u.ganancias_totales, u.calificacion_promedio, u.fecha_registro,
-                   u.en_linea, u.motivo_suspension, u.fecha_suspension,
-                   (SELECT COUNT(*) FROM pedidos WHERE repartidor_id = u.id AND estado = 'en_camino') as pedidos_activos,
-                   (SELECT COUNT(*) FROM historial_entregas WHERE repartidor_id = u.id AND DATE(fecha_entrega) = CURDATE()) as entregas_hoy
-            FROM usuarios u
-            WHERE u.rol = 'repartidor' AND u.estado IN ('activo', 'suspendido')
-            ORDER BY u.fecha_registro DESC
-        ")->fetchAll();
-
-        foreach ($drivers as &$d) {
-            $docs = Database::query(
-                "SELECT tipo, archivo_url, estado, fecha_subida, observaciones FROM documentos WHERE repartidor_id = ?",
-                [$d['id']]
-            )->fetchAll();
-            $d['documentos'] = $docs;
-        }
-
-        $this->json(['success' => true, 'drivers' => $drivers]);
-    }
-
-    public function suspender()
-    {
-        $adminId = $this->requireAdmin();
-        $data = json_decode(file_get_contents('php://input'), true);
-        $id = intval($data['id'] ?? 0);
-        $motivo = trim($data['motivo'] ?? '');
-
-        if (!$id) {
-            $this->json(['success' => false, 'message' => 'ID requerido'], 400);
-        }
-
-        $user = Database::query("SELECT id, nombre, apellido FROM usuarios WHERE id = ? AND rol = 'repartidor' AND estado = 'activo'", [$id])->fetch();
-        if (!$user) {
-            $this->json(['success' => false, 'message' => 'Repartidor no encontrado o ya suspendido'], 404);
-        }
-
-        Database::query("UPDATE usuarios SET estado = 'suspendido', motivo_suspension = ?, fecha_suspension = NOW() WHERE id = ? AND rol = 'repartidor'", [$motivo ?: null, $id]);
-
-        $this->revocarPermisos($id);
-
-        $this->historial($id, null, $adminId, 'suspension', 'suspendido', $motivo, $motivo ?: 'Cuenta suspendida por administrador');
-
-        $this->notificar(
-            $id,
-            'suspension_repartidor',
-            'Cuenta Suspendida',
-            'Tu cuenta como repartidor ha sido suspendida.' . ($motivo ? ' Motivo: ' . $motivo : '') . ' Contacta al administrador para más información.',
-            '/repartidor/dashboard',
-            ['motivo' => $motivo]
+        $stmt = Database::query(
+            "SELECT id, nombre, apellido, email, telefono, estado, tipo_vehiculo, placa_vehiculo, total_entregas, calificacion_promedio
+             FROM usuarios WHERE rol = 'repartidor' AND estado = 'activo'
+             ORDER BY nombre ASC"
         );
-
-        $this->json(['success' => true, 'message' => 'Repartidor suspendido correctamente']);
-    }
-
-    public function activar()
-    {
-        $adminId = $this->requireAdmin();
-        $data = json_decode(file_get_contents('php://input'), true);
-        $id = intval($data['id'] ?? 0);
-
-        if (!$id) {
-            $this->json(['success' => false, 'message' => 'ID requerido'], 400);
-        }
-
-        $user = Database::query("SELECT id, nombre, apellido FROM usuarios WHERE id = ? AND rol = 'repartidor' AND estado = 'suspendido'", [$id])->fetch();
-        if (!$user) {
-            $this->json(['success' => false, 'message' => 'Repartidor no encontrado o ya activo'], 404);
-        }
-
-        Database::query("UPDATE usuarios SET estado = 'activo', motivo_suspension = NULL, fecha_suspension = NULL WHERE id = ? AND rol = 'repartidor'", [$id]);
-
-        $this->restaurarPermisos($id);
-
-        $this->historial($id, null, $adminId, 'reactivacion', 'activo', null, 'Cuenta reactivada por administrador');
-
-        $this->notificar(
-            $id,
-            'aprobacion_repartidor',
-            'Cuenta Reactivada',
-            'Tu cuenta como repartidor ha sido reactivada. Ya puedes acceder a tu panel y gestionar pedidos.',
-            '/repartidor/dashboard',
-            null
-        );
-
-        $this->json(['success' => true, 'message' => 'Repartidor activado correctamente']);
+        $this->jsonOut(['success' => true, 'repartidores' => $stmt->fetchAll()]);
     }
 
     public function revisarDocumento()
     {
-        $adminId = $this->requireAdmin();
+        if (!$this->requireAdmin()) return;
+
         $data = json_decode(file_get_contents('php://input'), true);
-        $documentoId = intval($data['documento_id'] ?? 0);
-        $accion = $data['accion'] ?? '';
-        $observaciones = trim($data['observaciones'] ?? '');
+        $documentoId = (int) ($data['documento_id'] ?? 0);
+        $accion = $data['accion'] ?? null;
+        $observaciones = $data['observaciones'] ?? null;
+        $adminId = $_SESSION['user']['id'] ?? null;
 
         if (!$documentoId || !in_array($accion, ['aprobar', 'rechazar'])) {
-            $this->json(['success' => false, 'message' => 'Parámetros inválidos'], 400);
-        }
-
-        $doc = Database::query("SELECT * FROM documentos WHERE id = ?", [$documentoId])->fetch();
-        if (!$doc) {
-            $this->json(['success' => false, 'message' => 'Documento no encontrado'], 404);
+            $this->jsonOut(['success' => false, 'message' => 'Datos inválidos'], 400);
         }
 
         $nuevoEstado = $accion === 'aprobar' ? 'aprobado' : 'rechazado';
-        Database::query(
-            "UPDATE documentos SET estado = ?, observaciones = ?, revisado_por = ?, fecha_revision = NOW() WHERE id = ?",
-            [$nuevoEstado, $observaciones ?: null, $adminId, $documentoId]
-        );
 
-        $this->notificar(
-            $doc['repartidor_id'],
-            'documento_repartidor',
-            'Documento ' . ($accion === 'aprobar' ? 'Aprobado' : 'Rechazado'),
-            'Tu documento "' . str_replace('_', ' ', $doc['tipo']) . '" ha sido ' . ($accion === 'aprobar' ? 'aprobado' : 'rechazado') . '.' . ($observaciones ? ' Observaciones: ' . $observaciones : ''),
-            '/repartidor/dashboard',
-            ['documento_id' => $documentoId, 'accion' => $accion]
-        );
+        try {
+            Database::query(
+                "UPDATE documentos SET estado = ?, observaciones = COALESCE(?, observaciones), revisado_por = ?, fecha_revision = NOW() WHERE id = ?",
+                [$nuevoEstado, $observaciones, $adminId, $documentoId]
+            );
 
-        $this->json(['success' => true, 'message' => 'Documento ' . $nuevoEstado . ' correctamente']);
+            $this->jsonOut([
+                'success' => true,
+                'message' => $accion === 'aprobar' ? 'Documento aprobado' : 'Documento rechazado'
+            ]);
+        } catch (\Exception $e) {
+            error_log("AdminRepartidor::revisarDocumento ERROR - " . $e->getMessage());
+            $this->jsonOut(['success' => false, 'message' => 'Error al revisar el documento'], 500);
+        }
     }
 
     public function dashboardStats()
     {
-        $this->requireAdmin();
+        if (!$this->requireAdmin()) return;
 
-        $totalPedidos = Database::query("SELECT COUNT(*) as c FROM pedidos")->fetch()['c'] ?? 0;
-        $pendientes = Database::query("SELECT COUNT(*) as c FROM pedidos WHERE estado IN ('pendiente','confirmado','procesando','listo')")->fetch()['c'] ?? 0;
-        $favoritos = Database::query("SELECT COUNT(*) as c FROM favoritos")->fetch()['c'] ?? 0;
-        $ganancias = Database::query("SELECT COALESCE(SUM(total), 0) as g FROM pedidos WHERE estado = 'entregado'")->fetch()['g'] ?? 0;
-        $totalUsuarios = Database::query("SELECT COUNT(*) as c FROM usuarios")->fetch()['c'] ?? 0;
-        $solicitudesPendientes = Database::query("SELECT COUNT(*) as c FROM solicitudes_repartidores WHERE estado = 'pendiente'")->fetch()['c'] ?? 0;
-        $repartidoresActivos = Database::query("SELECT COUNT(*) as c FROM usuarios WHERE rol = 'repartidor' AND estado = 'activo'")->fetch()['c'] ?? 0;
-        $totalProductos = Database::query("SELECT COUNT(*) as c FROM productos")->fetch()['c'] ?? 0;
-        $stockBajo = Database::query("SELECT COUNT(*) as c FROM productos WHERE stock_total > 0 AND stock_total <= stock_minimo")->fetch()['c'] ?? 0;
-        $totalVariantes = Database::query("SELECT COALESCE(SUM(stock), 0) as s FROM variantes_producto")->fetch()['s'] ?? 0;
+        $stats = [];
 
-        $ventasMes = Database::query("SELECT COALESCE(SUM(total), 0) as g FROM pedidos WHERE estado = 'entregado' AND MONTH(fecha_pedido) = MONTH(NOW()) AND YEAR(fecha_pedido) = YEAR(NOW())")->fetch()['g'] ?? 0;
-        $pedidosMes = Database::query("SELECT COUNT(*) as c FROM pedidos WHERE MONTH(fecha_pedido) = MONTH(NOW()) AND YEAR(fecha_pedido) = YEAR(NOW())")->fetch()['c'] ?? 0;
-        $usuariosMes = Database::query("SELECT COUNT(*) as c FROM usuarios WHERE MONTH(fecha_registro) = MONTH(NOW()) AND YEAR(fecha_registro) = YEAR(NOW())")->fetch()['c'] ?? 0;
-
-        $ventasMesAnterior = Database::query("SELECT COALESCE(SUM(total), 0) as g FROM pedidos WHERE estado = 'entregado' AND MONTH(fecha_pedido) = MONTH(NOW() - INTERVAL 1 MONTH) AND YEAR(fecha_pedido) = YEAR(NOW() - INTERVAL 1 MONTH)")->fetch()['g'] ?? 0;
-
-        $ventasMensuales = [];
-        $meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-        for ($m = 1; $m <= 12; $m++) {
-            $v = Database::query("SELECT COALESCE(SUM(total), 0) as g FROM pedidos WHERE estado = 'entregado' AND MONTH(fecha_pedido) = ? AND YEAR(fecha_pedido) = YEAR(NOW())", [$m])->fetch()['g'] ?? 0;
-            $ventasMensuales[] = ['mes' => $meses[$m-1], 'total' => (float)$v];
+        try {
+            $stmt = Database::query("SELECT COUNT(*) FROM pedidos WHERE estado = 'pendiente'");
+            $stats['pedidos_pendientes'] = (int) $stmt->fetchColumn();
+        } catch (\Exception $e) {
+            $stats['pedidos_pendientes'] = 0;
         }
 
-        $topProductos = Database::query("
-            SELECT p.nombre, COALESCE(SUM(dp.cantidad), 0) as vendidos
-            FROM productos p
-            LEFT JOIN detalles_pedido dp ON p.id = dp.producto_id
-            LEFT JOIN pedidos ped ON dp.pedido_id = ped.id AND ped.estado = 'entregado'
-            GROUP BY p.id, p.nombre
-            HAVING vendidos > 0
-            ORDER BY vendidos DESC
-            LIMIT 5
-        ")->fetchAll();
+        try {
+            $stmt = Database::query("SELECT COUNT(*) FROM pedidos");
+            $stats['pedidos_totales'] = (int) $stmt->fetchColumn();
+        } catch (\Exception $e) {
+            $stats['pedidos_totales'] = 0;
+        }
 
-        $pedidosPorEstado = Database::query("
-            SELECT estado, COUNT(*) as total FROM pedidos GROUP BY estado
-        ")->fetchAll();
+        try {
+            $stmt = Database::query("SELECT COALESCE(SUM(total), 0) FROM pedidos WHERE estado NOT IN ('cancelado')");
+            $stats['ingresos'] = (float) $stmt->fetchColumn();
+        } catch (\Exception $e) {
+            $stats['ingresos'] = 0;
+        }
 
-        $porcentajeVentas = $ventasMesAnterior > 0 ? round((($ventasMes - $ventasMesAnterior) / $ventasMesAnterior) * 100) : 0;
+        try {
+            $stmt = Database::query("SELECT COUNT(*) FROM usuarios WHERE rol = 'repartidor' AND estado = 'activo'");
+            $stats['repartidores_activos'] = (int) $stmt->fetchColumn();
+        } catch (\Exception $e) {
+            $stats['repartidores_activos'] = 0;
+        }
 
-        $this->json([
-            'success' => true,
-            'totalPedidos' => (int)$totalPedidos,
-            'pendientes' => (int)$pendientes,
-            'favoritos' => (int)$favoritos,
-            'ganancias' => (float)$ganancias,
-            'totalUsuarios' => (int)$totalUsuarios,
-            'solicitudesPendientes' => (int)$solicitudesPendientes,
-            'repartidoresActivos' => (int)$repartidoresActivos,
-            'totalProductos' => (int)$totalProductos,
-            'stockBajo' => (int)$stockBajo,
-            'totalVariantes' => (int)$totalVariantes,
-            'ventasMes' => (float)$ventasMes,
-            'pedidosMes' => (int)$pedidosMes,
-            'usuariosMes' => (int)$usuariosMes,
-            'porcentajeVentas' => (int)$porcentajeVentas,
-            'ventasMensuales' => $ventasMensuales,
-            'topProductos' => $topProductos,
-            'pedidosPorEstado' => $pedidosPorEstado
-        ]);
+        $this->jsonOut(['success' => true] + $stats);
     }
 }

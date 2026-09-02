@@ -19,7 +19,8 @@ $user = $user ?? null;
 
 <script>
   (function() {
-    const phpUser = <?php echo json_encode($user); ?>;
+    const phpUser = <?php echo json_encode($user, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+    window.phpUser = phpUser || null;
     if (phpUser) {
       const localUser = localStorage.getItem('angelow_user');
       if (!localUser || JSON.stringify(JSON.parse(localUser)) !== JSON.stringify(phpUser)) {
@@ -57,7 +58,7 @@ $user = $user ?? null;
     <div class="icon-btn" id="contactBtn"><a href="<?= APP_URL ?>/contactenos"><img src="<?= APP_URL ?>/assets/imagenes/general/contactenos.png" alt="Contacto" style="width:24px;"></a></div>
     <div class="icon-btn" id="cartBtnHeader"><img src="<?= APP_URL ?>/assets/imagenes/general/carro.png" alt="Carrito" style="width:24px;"><span id="cartCount" class="badge" style="display:none"></span></div>
     <div class="icon-btn" id="favBtnHeader"><img src="<?= APP_URL ?>/assets/imagenes/general/favoritos.png" alt="Favoritos" style="width:24px;"><span id="favHeaderBadge" class="badge" style="display:none">0</span></div>
-    <div class="icon-btn" id="profileBtn"><img src="<?= APP_URL ?>/assets/imagenes/general/avatar.png" alt="Perfil" style="width:24px;"><div class="dropdown-menu" id="dropdownMenu"><a href="<?= APP_URL ?>/perfil" class="dropdown-item" id="loginLink">Mi perfil</a><a href="<?= APP_URL ?>/seguimiento" class="dropdown-item" id="trackOrderLink">Rastrea tu pedido</a><a href="#" class="dropdown-item" id="openFavoritesFromMenu"><span>Mis Favoritos</span><span id="favBadge" class="badge" style="position:static; margin-left:auto; display:none;">0</span></a><a href="<?= APP_URL ?>/repartidor/login" class="dropdown-item" id="serRepartidorMenu">Ser Repartidor</a></div></div>
+    <div class="icon-btn" id="profileBtn"><img src="<?= APP_URL ?>/assets/imagenes/general/avatar.png" alt="Perfil" style="width:24px;"><div class="dropdown-menu" id="dropdownMenu"><a href="<?= APP_URL ?>/perfil" class="dropdown-item" id="loginLink">Mi perfil</a><a href="#" class="dropdown-item" id="openFavoritesFromMenu"><span>Mis Favoritos</span><span id="favBadge" class="badge" style="position:static; margin-left:auto; display:none;">0</span></a><a href="<?= APP_URL ?>/repartidor/login" class="dropdown-item" id="serRepartidorMenu">Ser Repartidor</a></div></div>
   </div>
 </header>
 

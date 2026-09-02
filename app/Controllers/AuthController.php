@@ -43,18 +43,34 @@ class AuthController extends Controller {
             'id' => $user['id'],
             'email' => $user['email'],
             'nombre' => $user['nombre'],
-            'rol' => $user['rol'] ?? 'cliente'
+            'apellido' => $user['apellido'] ?? '',
+            'rol' => $user['rol'] ?? 'cliente',
+            'estado' => $user['estado'] ?? 'activo'
         ];
 
         // Redirección según el rol
-        $redirectUrl = ($_SESSION['user']['rol'] === 'administrador') ? '/admin' : '/';
+        $rol = $_SESSION['user']['rol'] ?? 'cliente';
+        $redirectUrl = '/';
+        if ($rol === 'administrador') {
+            $redirectUrl = '/admin';
+        } elseif ($rol === 'repartidor') {
+            if (($user['estado'] ?? '') === 'pendiente') {
+                $this->json([
+                    'success' => false,
+                    'message' => 'Tu solicitud está pendiente de aprobación por el administrador',
+                    'pending' => true,
+                    'redirect' => '/repartidor/dashboard'
+                ]);
+            }
+            $redirectUrl = '/repartidor/dashboard';
+        }
 
         $this->json([
             'success' => true,
             'message' => 'Login exitoso',
             'redirect' => $redirectUrl,
             'nombre' => $user['nombre'],
-            'rol' => $_SESSION['user']['rol']
+            'rol' => $rol
         ]);
     }
 
@@ -111,19 +127,25 @@ class AuthController extends Controller {
             $emailSent = false;
             $emailServicePath = __DIR__ . '/../Libraries/EmailService.php';
             
-            if (file_exists($emailServicePath)) {
-                require_once $emailServicePath;
-                if (class_exists('\App\Libraries\EmailService')) {
-                    $emailSent = \App\Libraries\EmailService::enviar($email, $nombre, 'bienvenida');
-                    
-                    if (!$emailSent) {
-                        error_log("No se pudo enviar correo de bienvenida a: $email");
+            try {
+                if (file_exists($emailServicePath)) {
+                    require_once $emailServicePath;
+                    if (class_exists('\App\Libraries\EmailService')) {
+                        $emailSent = \App\Libraries\EmailService::enviar($email, $nombre, 'bienvenida');
+                        
+                        if ($emailSent) {
+                            error_log("[EMAIL OK] Correo de bienvenida enviado a: $email");
+                        } else {
+                            error_log("[EMAIL FAIL] No se pudo enviar correo de bienvenida a: $email");
+                        }
+                    } else {
+                        error_log("[EMAIL ERROR] EmailService class not found after require");
                     }
                 } else {
-                    error_log("EmailService class not found");
+                    error_log("[EMAIL ERROR] EmailService.php no encontrado en: $emailServicePath");
                 }
-            } else {
-                error_log("EmailService.php no encontrado en: $emailServicePath");
+            } catch (\Throwable $e) {
+                error_log("[EMAIL EXCEPTION] Error al enviar correo de bienvenida: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
             }
             // ==============================================
             
@@ -182,12 +204,21 @@ class AuthController extends Controller {
             
             // Enviar correo de bienvenida si es registro nuevo
             if ($esNuevoRegistro) {
-                $emailServicePath = __DIR__ . '/../Libraries/EmailService.php';
-                if (file_exists($emailServicePath)) {
-                    require_once $emailServicePath;
-                    if (class_exists('\App\Libraries\EmailService')) {
-                        \App\Libraries\EmailService::enviar($email, $nombre, 'bienvenida');
+                try {
+                    $emailServicePath = __DIR__ . '/../Libraries/EmailService.php';
+                    if (file_exists($emailServicePath)) {
+                        require_once $emailServicePath;
+                        if (class_exists('\App\Libraries\EmailService')) {
+                            $emailSent = \App\Libraries\EmailService::enviar($email, $nombre, 'bienvenida');
+                            if ($emailSent) {
+                                error_log("[EMAIL OK] Correo de bienvenida (Google) enviado a: $email");
+                            } else {
+                                error_log("[EMAIL FAIL] No se pudo enviar correo de bienvenida (Google) a: $email");
+                            }
+                        }
                     }
+                } catch (\Throwable $e) {
+                    error_log("[EMAIL EXCEPTION] Error Google login email: " . $e->getMessage());
                 }
             }
 
@@ -232,11 +263,20 @@ class AuthController extends Controller {
         $emailSent = false;
         $emailServicePath = __DIR__ . '/../Libraries/EmailService.php';
         
-        if (file_exists($emailServicePath)) {
-            require_once $emailServicePath;
-            if (class_exists('\App\Libraries\EmailService')) {
-                $emailSent = \App\Libraries\EmailService::enviar($email, $user['nombre'], 'recuperacion', ['token' => $token]);
+        try {
+            if (file_exists($emailServicePath)) {
+                require_once $emailServicePath;
+                if (class_exists('\App\Libraries\EmailService')) {
+                    $emailSent = \App\Libraries\EmailService::enviar($email, $user['nombre'], 'recuperacion', ['token' => $token]);
+                    if ($emailSent) {
+                        error_log("[EMAIL OK] Correo de recuperacion enviado a: $email");
+                    } else {
+                        error_log("[EMAIL FAIL] No se pudo enviar correo de recuperacion a: $email");
+                    }
+                }
             }
+        } catch (\Throwable $e) {
+            error_log("[EMAIL EXCEPTION] Error al enviar correo de recuperacion: " . $e->getMessage());
         }
         // ==============================================
         

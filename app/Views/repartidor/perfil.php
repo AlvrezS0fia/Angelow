@@ -14,13 +14,14 @@ $user = $_SESSION['user'];
     <link rel="shortcut icon" href="<?= APP_URL ?>/assets/imagenes/general/favico.ico" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/tokens.css">
     <style>
         :root {
             --primary: #5E9DE6;
-            --primary-dark: #4A8AD4;
+            --primary-dark: #4A7FC4;
             --primary-light: #E8F2FC;
-            --success: #22C55E;
-            --success-dark: #16A34A;
+            --success: #10b981;
+            --success-dark: #0d9668;
             --warning: #F59E0B;
             --danger: #EF4444;
             --danger-dark: #DC2626;
@@ -744,6 +745,37 @@ $user = $_SESSION['user'];
         const userData = <?= json_encode($user) ?>;
         let token = localStorage.getItem('repartidor_token') || '';
 
+        async function refreshToken() {
+            try {
+                const res = await fetch(APP_URL + '/repartidor/refresh-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                if (data && data.token) {
+                    token = data.token;
+                    localStorage.setItem('repartidor_token', data.token);
+                    return true;
+                }
+            } catch (e) {
+            }
+            return false;
+        }
+
+        async function authHeaders() {
+            if (!token) {
+                await refreshToken();
+            }
+            const h = { 'Accept': 'application/json' };
+            if (token) h['Authorization'] = 'Bearer ' + token;
+            return h;
+        }
+
+        function handleNoAutorizado() {
+            localStorage.removeItem('repartidor_token');
+            window.location.href = APP_URL + '/repartidor/login';
+        }
+
         const DOC_TYPES = [
             { key: 'licencia_conduccion', label: 'Licencia de Conducci\u00f3n', icon: 'fa-id-card', color: 'azul' },
             { key: 'cedula', label: 'C\u00e9dula', icon: 'fa-file-alt', color: 'verde' },
@@ -918,11 +950,14 @@ $user = $_SESSION['user'];
         }
 
         async function loadDocuments() {
-            if (!token) return;
             try {
                 const res = await fetch(APP_URL + '/api/repartidor/documentos', {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                    headers: await authHeaders()
                 });
+                if (res.status === 401 || res.status === 403) {
+                    handleNoAutorizado();
+                    return;
+                }
                 if (!res.ok) return;
                 const data = await res.json();
                 if (data.success && Array.isArray(data.documentos)) {
@@ -973,10 +1008,15 @@ $user = $_SESSION['user'];
             try {
                 const res = await fetch(APP_URL + '/api/repartidor/documentos/subir', {
                     method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token },
+                    headers: await authHeaders(),
                     body: formData
                 });
                 const data = await res.json();
+
+                if (res.status === 401 || res.status === 403) {
+                    handleNoAutorizado();
+                    return;
+                }
 
                 if (data.success) {
                     mostrarToast({
@@ -1005,11 +1045,14 @@ $user = $_SESSION['user'];
         }
 
         async function loadProfileData() {
-            if (!token) return;
             try {
                 const res = await fetch(APP_URL + '/api/repartidor/auth/me', {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                    headers: await authHeaders()
                 });
+                if (res.status === 401 || res.status === 403) {
+                    handleNoAutorizado();
+                    return;
+                }
                 if (!res.ok) return;
                 const data = await res.json();
                 if (data.success && data.user) {
@@ -1038,12 +1081,8 @@ $user = $_SESSION['user'];
         document.addEventListener('DOMContentLoaded', async () => {
             populateProfile(userData);
 
-            if (token) {
-                await loadProfileData();
-                await loadDocuments();
-            } else {
-                window.location.href = APP_URL + '/repartidor/login';
-            }
+            await loadProfileData();
+            await loadDocuments();
         });
     </script>
 </body>

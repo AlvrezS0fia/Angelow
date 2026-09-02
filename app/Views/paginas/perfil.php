@@ -17,13 +17,10 @@ $user = $_SESSION['user'];
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>const APP_URL = '<?= APP_URL ?>';</script>
-    <script>const CURRENT_USER = <?= json_encode($user) ?>;</script>
+    <script>const CURRENT_USER = <?= json_encode($user, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/tokens.css">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/perfil.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.css" />
+    <?php require __DIR__ . '/../layouts/leaflet-css.php'; ?>
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/seguimiento-perfil.css">
 </head>
 <body>
@@ -148,7 +145,7 @@ $user = $_SESSION['user'];
                         </div>
                         <div class="form-group">
                             <label class="form-label">Fecha nacimiento *</label>
-                            <input type="date" class="form-input" id="fechaNacimiento" value="<?= $user['fecha_nacimiento'] ?? '' ?>" disabled>
+                            <input type="date" class="form-input" id="fechaNacimiento" value="<?= htmlspecialchars($user['fecha_nacimiento'] ?? '', ENT_QUOTES) ?>" disabled>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Teléfono *</label>
@@ -675,9 +672,7 @@ $user = $_SESSION['user'];
 </footer>
 
 <script src="<?= APP_URL ?>/assets/js/perfil.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.js"></script>
+<?php require __DIR__ . '/../layouts/leaflet-js.php'; ?>
 <script src="<?= APP_URL ?>/assets/js/seguimiento-perfil.js"></script>
 </body>
 </html>

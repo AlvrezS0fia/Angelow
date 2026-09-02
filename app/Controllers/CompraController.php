@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Models\PedidoModel;
+use App\Models\FacturaModel;
 
 class CompraController extends Controller
 {
@@ -10,6 +11,16 @@ class CompraController extends Controller
     {
         if (!isset($_SESSION['user'])) {
             $this->redirect('/auth/login');
+            return;
+        }
+
+        $rol = $_SESSION['user']['rol'] ?? 'cliente';
+        if ($rol === 'administrador') {
+            $this->redirect('/admin');
+            return;
+        }
+        if ($rol === 'repartidor') {
+            $this->redirect('/repartidor/dashboard');
             return;
         }
 
@@ -42,11 +53,25 @@ class CompraController extends Controller
         try {
             $resultado = $pedidoModel->crearPedido($data);
             error_log("PROCESAR-COMPRA: EXITO - ID={$resultado['id']} Numero={$resultado['numero_pedido']}");
+
+            $facturaId = null;
+            try {
+                $facturaModel = new FacturaModel();
+                $factura = $facturaModel->crearDesdePedido($resultado['id']);
+                if ($factura) {
+                    $facturaId = (int) $factura['id'];
+                    error_log("PROCESAR-COMPRA: Factura auto-creada para pedido {$resultado['id']}: ID={$facturaId}");
+                }
+            } catch (\Exception $e) {
+                error_log("PROCESAR-COMPRA: Error al crear factura - " . $e->getMessage());
+            }
+
             $this->json([
                 'success' => true,
                 'message' => 'Pedido guardado correctamente',
                 'pedido_id' => $resultado['id'],
-                'numero_pedido' => $resultado['numero_pedido']
+                'numero_pedido' => $resultado['numero_pedido'],
+                'factura_id' => $facturaId
             ]);
         } catch (\Exception $e) {
             error_log("PROCESAR-COMPRA: ERROR - " . $e->getMessage());

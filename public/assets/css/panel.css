@@ -3136,3 +3136,59 @@ input:checked+.slider:before {
         max-height: 95vh;
     }
 }
+
+
+/* ======================== FACTURACION ======================== */
+.icon-invoices {
+    background: linear-gradient(135deg, #5e9de6, #7fbbf2);
+    -webkit-text-fill-color: transparent;
+}
+
+#invoices-section .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+#invoices-section .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px var(--shadow);
+}
+
+#invoices-section .admin-table thead {
+    background: var(--bg-soft);
+}
+
+#invoices-section .admin-table th {
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border-light);
+}
+
+#invoices-section .admin-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+#invoices-section .admin-table tr:hover {
+    background: var(--bg-light);
+}
+
+#invoices-section .orders-filters {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}

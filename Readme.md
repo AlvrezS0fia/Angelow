@@ -360,6 +360,7 @@ El archivo `angelow.sql` contiene el schema completo. Las tablas principales inc
 | `politicas_env.css` | Políticas de envío |
 | `politicas_priv.css` | Políticas de privacidad |
 | `terminos.css` | Términos y condiciones |
+| `tokens.css` | Tokens de identidad visual compartidos (cliente/admin/repartidor) — se carga primero en perfil/panel/dashboard |
 
 ### JavaScript
 | Archivo | Funcionalidad |
@@ -406,11 +407,18 @@ El archivo `angelow.sql` contiene el schema completo. Las tablas principales inc
 | `SMTP_FROM_NAME` | Nombre remitente | `Angelow` |
 | `GOOGLE_CLIENT_ID` | Google OAuth Client ID | - |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret | - |
+| `JWT_SECRET` | Clave de firma HS256 de los tokens de repartidor | `angelow_jwt_secret_key_2026` |
+
+> ⚠️ **`JWT_SECRET`**: usa una clave aleatoria segura (ej: `php -r "echo base64_encode(random_bytes(32));"`).
+> Guarda el `.env` **fuera de Git** (ya está en `.gitignore`). Existe una plantilla en
+> `.env.example` con todos los valores documentados y sin secretos reales.
 
 ### Archivos de Configuración
 - `config/app.php` - Constantes de la aplicación (APP_NAME, APP_URL, TIMEZONE).
 - `config/database.php` - Constantes de conexión a base de datos.
 - `config/routes.php` - Definición de todas las rutas.
+- `.env.example` - Plantilla de variables de entorno (sin secretos reales).
+- `docs/` - Documentación técnica (arquitectura, estructura, seguridad, validaciones).
 
 ---
 
@@ -492,3 +500,124 @@ El archivo `angelow.sql` contiene el schema completo. Las tablas principales inc
 - Los emails transaccionales se envían mediante PHPMailer con soporte para imágenes incrustadas (CID).
 - El framework es propio (sin Laravel, Symfony, etc.) con autoload PSR-4 simple.
 - El archivo `public/index.php` es el punto de entrada único que despacha todas las rutas.
+
+---
+
+## Seguridad
+
+Auditoría y estado por capa. Detalle completo en [docs/SEGURIDAD.md](docs/SEGURIDAD.md).
+
+| Capa | Estado |
+|------|--------|
+| Hash de contraseñas (bcrypt vía `password_hash`) | ✅ IMPLEMENTADO |
+| SQL Injection | ✅ IMPLEMENTADO (PDO con sentencias preparadas) |
+| Autorización por rol (backend por método) | ✅ IMPLEMENTADO |
+| JWT (`JWT_SECRET` real en `.env`) | ✅ IMPLEMENTADO |
+| Subida de documentos (MIME real, límite, whitelist) | ✅ IMPLEMENTADO |
+| XSS en `json_encode` / atributos | ✅ IMPLEMENTADO |
+| CSRF | ❌ PENDIENTE |
+| Endpoint autenticado para documentos | ❌ PENDIENTE (recomendado) |
+| Cookies `SameSite`/`HttpOnly`/`Secure` | ❌ PENDIENTE |
+| Expiración de sesión | ❌ PENDIENTE |
+
+---
+
+## Pedidos, Facturación y Repartidores
+
+### Flujo de pedidos
+```
+Carrito → /procesar-compra (CompraController) → pedidos + detalle
+       → FacturaController / microservicio Flask → facturas
+       → Admin cambia estado → Repartidor entrega → entregado
+```
+- Creación/validación: `app/Controllers/CompraController.php`.
+- Consulta/estado: `Admin\PedidosController`, `Api\RepartidorPedidosController`.
+
+### Flujo de repartidores
+```
+Registro (RepartidorAuthController) → solicitud 'pendiente'
+       → Admin aprueba (AdminRepartidorController) → usuario 'activo'
+       → Dashboard repartidor (login JWT) → entregas
+       → Rechazo / Suspensión → 'inactivo' / 'suspendido'
+```
+
+### Facturación
+- Tablas `facturas`, `facturas_detalle`, `facturas_historial` (migración `002_add_facturas_table.sql`).
+- Microservicio Flask en `facturacion/` (puerto 5000, requiere su propio `.env` y
+  `requirements.txt`). Genera PDF (fpdf2) y envía email (smtplib) con la **misma** base
+  de datos de la app.
+- **Autenticación del microservicio**: los endpoints de `facturacion/routes/factura_routes.py`
+  exigen `Authorization: Bearer <FACTURA_API_SECRET>` (`require_api_key`). El secreto se
+  define **solo en `facturacion/.env`** (generado 64 hex) y se lee en `facturacion/config.py`.
+  Fail-closed si no está definido.
+
+### Identidad visual y mapa unificados
+- `public/assets/css/tokens.css`: tokens de diseño canónicos en ambos juegos de nombres
+  (inglés cliente/admin + español repartidor). Se carga primero en `perfil.php`,
+  `panel.php`, `dashboard.php` y `perfil.php` (repartidor).
+- Partials `app/Views/layouts/leaflet-css.php` y `leaflet-js.php`: fuente única del bloque
+  CDN de Leaflet, reutilizados en perfil/seguimiento/panel/dashboard (antes duplicado en 5 archivos).
+- Header de la tienda ya es condicional por rol (`bienvenida.js`): admin → `/admin`,
+  repartidor → `/repartidor`, cliente → `/perfil`.
+
+---
+
+## Tiempo real
+
+- **App Repartidor (Node.js Express + Socket.IO)**: `Repartidor/server.js` (puerto 3000)
+  permite entregas/seguimiento en tiempo real.
+- **Seguimiento en el sitio**: `SeguimientoController` + Leaflet/mapeo.
+- **Estado actual del seguimiento**: el mapa de cliente/admin usa una simulación en el
+  frontend; el backend real (`/api/mis-pedidos/:id/seguimiento`, `seguimiento_tiempo_real`)
+  aún no se consume en esas vistas. El repartidor sí usa datos reales (módulo "Rastrear
+  Pedido"). Hoy la BD no tiene coordenadas de destino (NULL) ni filas en
+  `seguimiento_tiempo_real`.
+
+---
+
+## Manejo de errores
+
+- Las APIs devuelven JSON con `success`/`error`/`message`.
+- `error_log()` para diagnóstico interno en las API.
+- El front controller devuelve `404 - Página no encontrada` para rutas inexistentes.
+
+> ⚠️ Algunos controladores exponen el mensaje de excepción PDO al usuario; recomendado
+> sustituirlo por mensajes genéricos (ver docs/SEGURIDAD.md).
+
+---
+
+## Pruebas
+
+- No existe un framework de pruebas configurado (PHPUnit/usería).
+- Verificación manual:
+  ```bash
+  # Comprobar sintaxis de los controladores modificados
+  php -l app/Controllers/Api/RepartidorDocumentosController.php
+  # Comprobar código de respuesta de rutas
+  curl -s -o /dev/null -w "%{http_code}" http://localhost/Angelow/login
+  ```
+- Después de tocar la BD, revisar `database/` (migraciones) y `angelow.sql`.
+
+---
+
+## Mantenimiento
+
+- **Núcleo** (`app/Core/`): cambios impactan todas las rutas → probar después de modificar.
+- **Rutas** (`config/routes.php`): añadir/editar aquí cualquier nueva URL.
+- **Base de datos**: usar migraciones incrementales; no dejar de sincronizar `angelow.sql`.
+- **Sesiones**: el directorio de sesión es `storage/sessions` (creado automáticamente).
+- **Microservicios**: `facturacion/` (Flask) y `Repartidor/` (Node) son aplicaciones
+  independientes; requieren arrancarse por su cuenta.
+- **Documentación**: ver `docs/ARQUITECTURA.md`, `docs/ESTRUCTURA.md`,
+  `docs/VALIDACIONES.md`, `docs/SEGURIDAD.md`.
+
+---
+
+## Referencia rápida de documentación
+
+| Documento | Contenido |
+|-----------|-----------|
+| [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Capas, flujo de datos, BD, roles, pedidos, facturación, repartidores |
+| [docs/ESTRUCTURA.md](docs/ESTRUCTURA.md) | Propósito de cada carpeta y archivo |
+| [docs/VALIDACIONES.md](docs/VALIDACIONES.md) | Formularios y sus validaciones frontend/backend |
+| [docs/SEGURIDAD.md](docs/SEGURIDAD.md) | Auditoría de seguridad, riesgos y correcciones |

@@ -21,17 +21,18 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
     <link rel="shortcut icon" href="<?= APP_URL ?>/assets/imagenes/general/favico.ico" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <?php require __DIR__ . '/../layouts/leaflet-css.php'; ?>
+    <?php require __DIR__ . '/../layouts/leaflet-js.php'; ?>
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/tokens.css">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/repartidor.css">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/repartidor-dashboard.css">
     <style>
         :root {
             --primary: #5E9DE6;
-            --primary-dark: #4A8AD4;
+            --primary-dark: #4A7FC4;
             --primary-light: #E8F2FC;
-            --success: #22C55E;
-            --success-dark: #16A34A;
+            --success: #10b981;
+            --success-dark: #0d9668;
             --warning: #F59E0B;
             --danger: #EF4444;
             --danger-dark: #DC2626;
@@ -79,6 +80,15 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
             display: flex;
             align-items: center;
             gap: 12px;
+        }
+        .logo-imagen {
+            width: 44px;
+            height: 44px;
+            object-fit: contain;
+            background: #fff;
+            border-radius: 10px;
+            padding: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
         .logo-circulo {
             width: 40px; height: 40px;
@@ -353,6 +363,11 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
         .estado-en-camino { background: #E0F2FE; color: #0369A1; }
         .estado-entregado { background: #DCFCE7; color: #166534; }
         .estado-cancelado { background: #FEE2E2; color: #991B1B; }
+        .estado-confirmado { background: var(--primary-light); color: var(--primary-dark); }
+        .estado-procesando { background: #E0E7FF; color: #3730A3; }
+        .estado-aceptado { background: #EDE9FE; color: #6D28D9; }
+        .estado-recogido { background: #E0F2FE; color: #0369A1; }
+        .estado-reembolsado { background: #F3F4F6; color: #374151; }
 
         .pedido-detalles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin-bottom: 10px; }
         .detalle-item { display: flex; flex-direction: column; gap: 1px; }
@@ -520,6 +535,160 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
             flex-shrink: 0;
         }
 
+        .btn-rastrear {
+            background: var(--success);
+            border-color: transparent;
+            color: #fff;
+            font-weight: 700;
+        }
+        .btn-rastrear:hover { background: var(--success-dark); }
+
+        /* ===== MÓDULO RASTREAR PEDIDO ===== */
+        .rastreo-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(17,24,39,0.55);
+            z-index: 1000;
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 24px 16px;
+            overflow-y: auto;
+        }
+        .rastreo-overlay.abierto { display: flex; }
+        .rastreo-modal {
+            background: #fff;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 1200px;
+            animation: rastreoIn .25s ease;
+        }
+        @keyframes rastreoIn { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+        .rastreo-cabecera {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--gray-200);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+        .rastreo-titulo { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 800; font-size: 18px; }
+        .rastreo-titulo i { font-size: 20px; }
+        .rastreo-cerrar {
+            background: rgba(255,255,255,0.18);
+            border: none; color: #fff;
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            font-size: 18px; cursor: pointer;
+            transition: var(--transition);
+        }
+        .rastreo-cerrar:hover { background: rgba(255,255,255,0.3); }
+        .rastreo-cuerpo { padding: 20px; }
+
+        .rastreo-buscador { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .rastreo-input {
+            flex: 1; min-width: 200px;
+            padding: 11px 14px;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+        }
+        .rastreo-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(94,157,230,0.15); }
+        .btn-buscar {
+            padding: 11px 20px;
+            background: var(--primary); color: #fff;
+            border: none; border-radius: var(--radius-sm);
+            font-weight: 600; font-size: 14px; font-family: 'Inter', sans-serif;
+            cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; gap: 7px;
+        }
+        .btn-buscar:hover { background: var(--primary-dark); }
+        .btn-buscar:disabled { opacity: .6; cursor: not-allowed; }
+
+        .rastreo-grid { display: grid; grid-template-columns: 320px 1fr; gap: 16px; }
+        .rastreo-panel-lista { border: 1px solid var(--gray-200); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; max-height: 520px; }
+        .rastreo-lista-titulo {
+            padding: 12px 16px; background: var(--gray-50);
+            border-bottom: 1px solid var(--gray-200);
+            font-weight: 700; font-size: 14px; color: var(--gray-700);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .rastreo-lista { overflow-y: auto; flex: 1; }
+        .rastreo-item {
+            padding: 13px 16px; border-bottom: 1px solid var(--gray-100);
+            cursor: pointer; transition: var(--transition);
+        }
+        .rastreo-item:hover { background: var(--primary-light); }
+        .rastreo-item.activo { background: var(--primary-light); border-left: 3px solid var(--primary); }
+        .rastreo-item-numero { font-weight: 700; font-size: 13px; color: var(--gray-800); display: flex; align-items: center; gap: 8px; }
+        .rastreo-item-estado { font-size: 12px; color: var(--gray-500); margin-top: 3px; }
+        .rastreo-vacio { padding: 24px 16px; text-align: center; color: var(--gray-400); font-size: 13px; }
+
+        .rastreo-panel-detalle { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+        .rastreo-detalle { border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 16px; }
+        .rastreo-detalle-titulo { font-weight: 700; font-size: 14px; color: var(--gray-700); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .rastreo-mapa { height: 280px; border-radius: var(--radius); border: 1px solid var(--gray-200); z-index: 1; overflow: hidden; }
+        .rastreo-mapa-nota { display: none; }
+        .rastreo-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        .rastreo-dato { background: var(--gray-50); border: 1px solid var(--gray-100); border-radius: 10px; padding: 10px 12px; }
+        .rastreo-dato-label { font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: .4px; }
+        .rastreo-dato-valor { font-size: 13px; font-weight: 600; color: var(--gray-800); margin-top: 3px; }
+        .rastreo-items { margin-top: 8px; }
+        .rastreo-item-linea { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--gray-100); font-size: 13px; color: var(--gray-600); }
+        .rastreo-item-linea:last-child { border-bottom: none; }
+        .rastreo-item-cant { color: var(--gray-400); }
+        .rastreo-total { margin-top: 10px; text-align: right; font-weight: 800; font-size: 16px; color: var(--gray-900); }
+        .rastreo-acciones { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+        .btn-estado {
+            padding: 10px 16px; border: none; border-radius: 10px;
+            font-weight: 700; font-size: 13px; font-family: 'Inter', sans-serif;
+            cursor: pointer; transition: var(--transition);
+            color: #fff; display: inline-flex; align-items: center; gap: 7px;
+        }
+        .btn-estado:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+        .btn-estado.recoger { background: var(--info); }
+        .btn-estado.camino { background: var(--warning); color: #1F2937; }
+        .btn-estado.entregar { background: var(--success); }
+        .btn-estado:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+        .rastreo-timeline { border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 16px; }
+        .ras-tl { position: relative; padding-left: 26px; }
+        .ras-tl:not(:last-child)::before {
+            content: ''; position: absolute; left: 7px; top: 18px; bottom: -4px;
+            width: 2px; background: var(--gray-200);
+        }
+        .ras-tl-item { position: relative; margin-bottom: 6px; }
+        .ras-tl-punto {
+            position: absolute; left: -22px; top: 2px;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: var(--gray-200); border: 3px solid var(--gray-300);
+        }
+        .ras-tl-item.done .ras-tl-punto { background: var(--success); border-color: var(--success); box-shadow: 0 0 0 4px rgba(34,197,94,.15); }
+        .ras-tl-item.activo .ras-tl-punto {
+            background: var(--warning); border-color: var(--warning);
+            box-shadow: 0 0 0 4px rgba(245,158,11,.25);
+            animation: pulse 2s ease infinite;
+        }
+        .ras-tl-etiqueta { font-size: 13px; font-weight: 600; color: var(--gray-600); }
+        .ras-tl-item.done .ras-tl-etiqueta { color: var(--success-dark); }
+        .ras-tl-item.activo .ras-tl-etiqueta { color: var(--warning); font-weight: 700; }
+        .ras-tl-hora { font-size: 11px; color: var(--gray-400); }
+
+        @media (max-width: 860px) {
+            .rastreo-grid { grid-template-columns: 1fr; }
+            .rastreo-modal { max-width: 100%; }
+        }
+        @media (max-width: 480px) {
+            .rastreo-buscador { flex-direction: column; }
+            .btn-buscar { width: 100%; justify-content: center; }
+            .rastreo-cabecera { flex-wrap: wrap; }
+        }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .6; } }
+
         @media (max-width: 1024px) {
             .grid-secciones { grid-template-columns: 1fr; }
         }
@@ -536,12 +705,48 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
 <body>
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- MÓDULO RASTREAR PEDIDO -->
+    <div class="rastreo-overlay" id="rastreoOverlay">
+        <div class="rastreo-modal">
+            <div class="rastreo-cabecera">
+                <div class="rastreo-titulo"><i class="fas fa-map-marked-alt"></i> Rastrear Pedido</div>
+                <button type="button" class="rastreo-cerrar" onclick="cerrarRastreo()" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="rastreo-cuerpo">
+                <div class="rastreo-buscador">
+                    <input type="text" class="rastreo-input" id="rastreoBuscar" placeholder="Ingresa el número de pedido (ej: ORD-2024-0002)" onkeydown="if(event.key==='Enter'){buscarPedido();}">
+                    <button type="button" class="btn-buscar" id="rastreoBtnBuscar" onclick="buscarPedido()">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+                <div class="rastreo-grid">
+                    <div class="rastreo-panel-lista">
+                        <div class="rastreo-lista-titulo"><i class="fas fa-truck"></i> Pedidos activos</div>
+                        <div class="rastreo-lista" id="rastreoLista">
+                            <div class="rastreo-vacio">Cargando pedidos...</div>
+                        </div>
+                    </div>
+                    <div class="rastreo-panel-detalle">
+                        <div class="rastreo-detalle" id="rastreoDetalle">
+                            <div class="rastreo-vacio">Selecciona un pedido o búscalo por número.</div>
+                        </div>
+                        <div class="rastreo-mapa" id="rastreoMapa"></div>
+                        <div class="rastreo-timeline" id="rastreoTimeline">
+                            <div class="rastreo-detalle-titulo"><i class="fas fa-history"></i> Progreso del pedido</div>
+                            <div class="rastreo-vacio">Sin pedido seleccionado.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <header class="header-repartidor">
         <div class="header-contenido">
             <div class="logo-area">
-                <div class="logo-circulo">
-                    <i class="fas fa-truck-fast logo-icono"></i>
-                </div>
+
+
+                <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="logo-imagen">
                 <div class="logo-texto">
                     <h1>ANGELOW</h1>
                     <p>Panel de Repartidor</p>
@@ -560,6 +765,9 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
                 <a href="<?= APP_URL ?>/" class="btn-header">
                     <i class="fas fa-store"></i> Tienda
                 </a>
+                <button type="button" class="btn-header btn-rastrear" onclick="abrirRastreo()">
+                    <i class="fas fa-map-marked-alt"></i> Rastrear Pedido
+                </button>
                 <button class="btn-header cerrar-sesion" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                 </button>
@@ -977,7 +1185,7 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
 
     <script>
         const APP_URL = '<?= APP_URL ?>';
-        const userData = <?= json_encode($user) ?>;
+        const userData = <?= json_encode($user, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         const userEstado = userData.estado || 'activo';
         let token = localStorage.getItem('repartidor_token') || '';
 
@@ -1079,13 +1287,59 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
             }
         }
 
+        async function refreshToken() {
+            try {
+                const res = await fetch(APP_URL + '/repartidor/refresh-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                if (data && data.token) {
+                    token = data.token;
+                    localStorage.setItem('repartidor_token', data.token);
+                    return true;
+                }
+            } catch (e) {
+            }
+            return false;
+        }
+
+        function apiErrorMensaje(status) {
+            if (status === 401) return 'Tu sesión no es válida o ha expirado';
+            if (status === 403) return 'No tienes permisos para realizar esta acción';
+            if (status === 404) return 'No encontramos lo que buscas';
+            if (status === 422) return 'Los datos enviados son inválidos';
+            if (status >= 500) return 'Ocurrió un error interno en el servidor';
+            return 'No fue posible completar la solicitud';
+        }
+
+        async function authHeaders() {
+            if (!token) {
+                await refreshToken();
+            }
+            const h = { 'Accept': 'application/json' };
+            if (token) h['Authorization'] = 'Bearer ' + token;
+            return h;
+        }
+
+        function handleNoAutorizado() {
+            localStorage.removeItem('repartidor_token');
+            window.location.href = APP_URL + '/repartidor/login';
+        }
+
         async function loadStats() {
-            if (!token) return;
             try {
                 const res = await fetch(APP_URL + '/api/repartidor/dashboard/stats', {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                    headers: await authHeaders()
                 });
-                if (!res.ok) return;
+                if (res.status === 401 || res.status === 403) {
+                    handleNoAutorizado();
+                    return;
+                }
+                if (!res.ok) {
+                    mostrarToast({ titulo: 'Error', mensaje: apiErrorMensaje(res.status), tipo: 'error', duracion: 3000 });
+                    return;
+                }
                 const data = await res.json();
                 if (data.today_earnings !== undefined) {
                     document.getElementById('statEarnings').textContent = formatearDinero(data.today_earnings);
@@ -1111,22 +1365,33 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
         }
 
         async function loadOrders() {
-            if (!token) return;
             try {
-                const res = await fetch(APP_URL + '/api/repartidor/pedidos', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) return;
-                const data = await res.json();
-                const allOrders = Array.isArray(data) ? data : [];
-                datosApp.todosLosPedidos = allOrders;
+                const headers = await authHeaders();
+                const [assignedRes, availableRes] = await Promise.all([
+                    fetch(APP_URL + '/api/repartidor/pedidos', { headers }),
+                    fetch(APP_URL + '/api/repartidor/pedidos?available=1', { headers })
+                ]);
 
-                const availableStatuses = ['pendiente', 'listo'];
-                const activeStatuses = ['asignado', 'en_camino'];
+                if (assignedRes.status === 401 || assignedRes.status === 403
+                    || availableRes.status === 401 || availableRes.status === 403) {
+                    handleNoAutorizado();
+                    return;
+                }
 
-                datosApp.pedidosDisponibles = allOrders.filter(p => availableStatuses.includes(p.status || p.estado));
-                datosApp.pedidosActivos = allOrders.filter(p => activeStatuses.includes(p.status || p.estado));
-                datosApp.historialEntregas = allOrders.filter(p => (p.status || p.estado) === 'entregado').slice(-10).reverse();
+                const assignedData = assignedRes.ok ? await assignedRes.json() : [];
+                const availableData = availableRes.ok ? await availableRes.json() : [];
+
+                const assignedOrders = Array.isArray(assignedData) ? assignedData : [];
+                const availableOrders = Array.isArray(availableData) ? availableData : [];
+
+                datosApp.todosLosPedidos = [...assignedOrders, ...availableOrders];
+
+                const availableStatuses = ['pendiente', 'confirmado', 'procesando', 'listo'];
+                const activeStatuses = ['asignado', 'aceptado', 'recogido', 'en_camino'];
+
+                datosApp.pedidosDisponibles = availableOrders.filter(p => availableStatuses.includes(p.status || p.estado));
+                datosApp.pedidosActivos = assignedOrders.filter(p => activeStatuses.includes(p.status || p.estado));
+                datosApp.historialEntregas = assignedOrders.filter(p => (p.status || p.estado) === 'entregado').slice(-10).reverse();
 
                 renderPedidosDisponibles();
                 renderPedidosActivos();
@@ -1337,15 +1602,10 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
         }
 
         async function updateOrderStatus(id, newStatus, successTitle, successMsg) {
-            if (!token) return;
             try {
                 const res = await fetch(APP_URL + '/api/repartidor/pedidos/' + id + '/estado', {
                     method: 'PUT',
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
+                    headers: await authHeaders(),
                     body: JSON.stringify({ status: newStatus })
                 });
                 const data = await res.json();
@@ -1354,10 +1614,14 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
                     await loadOrders();
                     await loadStats();
                 } else {
-                    mostrarToast({ titulo: 'Error', mensaje: data.message || 'No se pudo actualizar', tipo: 'error' });
+                    if (res.status === 401 || res.status === 403) {
+                        handleNoAutorizado();
+                        return;
+                    }
+                    mostrarToast({ titulo: 'Error', mensaje: data.message || apiErrorMensaje(res.status), tipo: 'error' });
                 }
             } catch (e) {
-                mostrarToast({ titulo: 'Error', mensaje: 'Error de conexión', tipo: 'error' });
+                mostrarToast({ titulo: 'Error', mensaje: 'No fue posible conectar con el servidor', tipo: 'error' });
             }
         }
 
@@ -1391,11 +1655,14 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
         }
 
         async function verNotificaciones() {
-            if (!token) return;
             try {
                 const res = await fetch(APP_URL + '/api/repartidor/notificaciones', {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                    headers: await authHeaders()
                 });
+                if (res.status === 401 || res.status === 403) {
+                    handleNoAutorizado();
+                    return;
+                }
                 if (!res.ok) {
                     mostrarToast({ titulo: 'Notificaciones', mensaje: 'No hay notificaciones nuevas', tipo: 'info' });
                     return;
@@ -1426,6 +1693,261 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
             window.location.href = APP_URL + '/repartidor/login';
         }
 
+        /* ============ MÓDULO RASTREAR PEDIDO ============ */
+        const ESTADO_LABEL = {
+            pendiente: 'Pendiente', confirmado: 'Confirmado', procesando: 'En preparación',
+            listo: 'Listo para recoger', asignado: 'Asignado', aceptado: 'Aceptado',
+            recogido: 'Recogido', en_camino: 'En camino', entregado: 'Entregado',
+            cancelado: 'Cancelado', reembolsado: 'Reembolsado'
+        };
+        let rastreoPedidos = [];
+        let rastreoMapa = null;
+        let rastreoMarcadores = [];
+
+        function abrirRastreo() {
+            document.getElementById('rastreoOverlay').classList.add('abierto');
+            cargarPedidosRastreo();
+        }
+
+        function cerrarRastreo() {
+            document.getElementById('rastreoOverlay').classList.remove('abierto');
+            limpiarMapaRastreo();
+        }
+
+        function limpiarMapaRastreo() {
+            if (rastreoMapa) {
+                rastreoMapa.remove();
+                rastreoMapa = null;
+            }
+            rastreoMarcadores = [];
+        }
+
+        function estadoChip(estado) {
+            const c = ESTADO_LABEL[estado] || estado;
+            const cls = (estado === 'en_camino') ? 'en-camino' : (estado || 'pendiente');
+            return `<span class="pedido-estado estado-${cls}"><i class="fas fa-circle" style="font-size:8px;margin-right:5px;"></i>${htmlspecialchars(c)}</span>`;
+        }
+
+        async function cargarPedidosRastreo() {
+            const lista = document.getElementById('rastreoLista');
+            lista.innerHTML = '<div class="rastreo-vacio">Cargando pedidos...</div>';
+            try {
+                const res = await fetch(APP_URL + '/api/repartidor/rastreo', { headers: await authHeaders() });
+                if (res.status === 401 || res.status === 403) { handleNoAutorizado(); return; }
+                const data = await res.json();
+                if (!data.success) {
+                    lista.innerHTML = '<div class="rastreo-vacio">' + htmlspecialchars(data.error || 'No fue posible cargar los pedidos.') + '</div>';
+                    return;
+                }
+                rastreoPedidos = data.pedidos || [];
+                renderListaRastreo();
+            } catch (e) {
+                lista.innerHTML = '<div class="rastreo-vacio">No fue posible cargar los pedidos.</div>';
+            }
+        }
+
+        function renderListaRastreo() {
+            const lista = document.getElementById('rastreoLista');
+            if (!rastreoPedidos.length) {
+                lista.innerHTML = '<div class="rastreo-vacio">No tienes pedidos activos.</div>';
+                return;
+            }
+            lista.innerHTML = rastreoPedidos.map(p => `
+                <div class="rastreo-item" data-id="${p.id}" onclick="seleccionarPedidoRastreo(${p.id})">
+                    <div class="rastreo-item-numero"><i class="fas fa-hashtag"></i> ${htmlspecialchars(p.numero_pedido)}</div>
+                    <div class="rastreo-item-estado">${ESTADO_LABEL[p.estado] || p.estado} • ${htmlspecialchars(p.cliente || '')}</div>
+                </div>
+            `).join('');
+        }
+
+        async function buscarPedido() {
+            const campo = document.getElementById('rastreoBuscar');
+            const numero = campo.value.trim();
+            const btn = document.getElementById('rastreoBtnBuscar');
+            if (!numero) {
+                mostrarToast({ titulo: 'Buscar pedido', mensaje: 'Ingresa un número de pedido para realizar la búsqueda.', tipo: 'warning', duracion: 3000 });
+                campo.focus();
+                return;
+            }
+            btn.disabled = true;
+            try {
+                const res = await fetch(APP_URL + '/api/repartidor/rastreo/buscar?numero=' + encodeURIComponent(numero), { headers: await authHeaders() });
+                if (res.status === 401 || res.status === 403) { handleNoAutorizado(); return; }
+                const data = await res.json();
+                if (!data.success) {
+                    const msg = res.status === 404 ? 'Pedido no encontrado.'
+                        : res.status === 403 ? 'No tienes permisos para consultar este pedido.'
+                        : res.status === 422 ? 'Ingresa un número de pedido para realizar la búsqueda.'
+                        : (data.error || 'No fue posible consultar el pedido. Inténtalo nuevamente.');
+                    mostrarToast({ titulo: 'Buscar pedido', mensaje: msg, tipo: 'error', duracion: 4000 });
+                    return;
+                }
+                mostrarPedidoRastreo(data.pedido);
+                campo.value = '';
+            } catch (e) {
+                mostrarToast({ titulo: 'Buscar pedido', mensaje: 'No fue posible consultar el pedido. Inténtalo nuevamente.', tipo: 'error', duracion: 4000 });
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function seleccionarPedidoRastreo(id) {
+            const p = rastreoPedidos.find(x => x.id === id);
+            if (p) mostrarPedidoRastreo(p);
+        }
+
+        function mostrarPedidoRastreo(p) {
+            document.querySelectorAll('.rastreo-item').forEach(el => el.classList.remove('activo'));
+            const el = document.querySelector(`.rastreo-item[data-id="${p.id}"]`);
+            if (el) el.classList.add('activo');
+
+            const detalle = document.getElementById('rastreoDetalle');
+            const items = (p.items || []).map(i =>
+                `<div class="rastreo-item-linea"><span>${htmlspecialchars(i.producto)} <span class="rastreo-item-cant">x${i.cantidad}</span></span><span>${formatearDinero(i.precio * i.cantidad)}</span></div>`
+            ).join('');
+
+            detalle.innerHTML = `
+                <div class="rastreo-detalle-titulo"><i class="fas fa-file-invoice"></i> Pedido ${htmlspecialchars(p.numero_pedido)}</div>
+                <div style="margin-bottom:12px;">${estadoChip(p.estado)}</div>
+                <div class="rastreo-datos">
+                    <div class="rastreo-dato"><div class="rastreo-dato-label">Fecha</div><div class="rastreo-dato-valor">${formatDate(p.fecha_pedido)}</div></div>
+                    <div class="rastreo-dato"><div class="rastreo-dato-label">Cliente</div><div class="rastreo-dato-valor">${htmlspecialchars(p.cliente || '-')}</div></div>
+                    <div class="rastreo-dato"><div class="rastreo-dato-label">Teléfono</div><div class="rastreo-dato-valor">${htmlspecialchars(p.telefono || '-')}</div></div>
+                    <div class="rastreo-dato"><div class="rastreo-dato-label">Dirección</div><div class="rastreo-dato-valor">${htmlspecialchars(p.direccion || '-')}</div></div>
+                    ${p.factura ? `<div class="rastreo-dato"><div class="rastreo-dato-label">Factura</div><div class="rastreo-dato-valor">${htmlspecialchars(p.factura.numero || '#'+p.factura.id)}</div></div>` : ''}
+                </div>
+                <div class="rastreo-items">${items || '<div class="rastreo-item-linea"><span>Sin productos</span></div>'}</div>
+                ${p.notas_cliente ? `<div style="font-size:12px;color:var(--gray-500);margin-top:10px;"><i class="fas fa-sticky-note"></i> ${htmlspecialchars(p.notas_cliente)}</div>` : ''}
+                <div class="rastreo-total">Total: ${formatearDinero(p.total)}</div>
+                <div class="rastreo-acciones">${botonesTransicion(p)}</div>
+            `;
+
+            actualizarMapaRastreo(p);
+            cargarTimelineRastreo(p.id);
+        }
+
+        function botonesTransicion(p) {
+            const s = p.estado;
+            const botones = [];
+            if (s === 'asignado') botones.push({ estado: 'aceptado', label: 'Aceptar pedido', cls: 'entregar', icono: 'fa-check' });
+            if (s === 'asignado' || s === 'aceptado') botones.push({ estado: 'recogido', label: 'Marcar como recogido', cls: 'recoger', icono: 'fa-box' });
+            if (s === 'recogido' || s === 'aceptado' || s === 'asignado') botones.push({ estado: 'en_camino', label: 'Marcar como en camino', cls: 'camino', icono: 'fa-truck' });
+            if (s === 'en_camino') botones.push({ estado: 'entregado', label: 'Marcar como entregado', cls: 'entregar', icono: 'fa-check-double' });
+            if (!botones.length) return '<span style="font-size:12px;color:var(--gray-400);">Sin acciones disponibles para este estado.</span>';
+            return botones.map(b =>
+                `<button type="button" class="btn-estado ${b.cls}" onclick="actualizarEstadoRastreo(${p.id}, '${b.estado}')"><i class="fas ${b.icono}"></i> ${b.label}</button>`
+            ).join('');
+        }
+
+        async function actualizarEstadoRastreo(id, estado) {
+            try {
+                const res = await fetch(APP_URL + '/api/repartidor/rastreo/' + id + '/estado', {
+                    method: 'PUT',
+                    headers: await authHeaders(),
+                    body: JSON.stringify({ estado: estado })
+                });
+                const data = await res.json();
+                if (res.status === 401 || res.status === 403) { handleNoAutorizado(); return; }
+                if (data.success) {
+                    mostrarToast({ titulo: 'Estado actualizado', mensaje: 'El pedido cambió a ' + (ESTADO_LABEL[estado] || estado) + '.', tipo: 'success' });
+                    mostrarPedidoRastreo(data.pedido);
+                    cargarPedidosRastreo();
+                } else {
+                    mostrarToast({ titulo: 'Error', mensaje: data.error || 'No fue posible actualizar el estado.', tipo: 'error' });
+                }
+            } catch (e) {
+                mostrarToast({ titulo: 'Error', mensaje: 'No fue posible conectar con el servidor.', tipo: 'error' });
+            }
+        }
+
+        async function cargarTimelineRastreo(id) {
+            const cont = document.getElementById('rastreoTimeline');
+            cont.innerHTML = '<div class="rastreo-detalle-titulo"><i class="fas fa-history"></i> Progreso del pedido</div><div class="rastreo-vacio">Cargando...</div>';
+            try {
+                const res = await fetch(APP_URL + '/api/repartidor/rastreo/' + id + '/historial', { headers: await authHeaders() });
+                if (res.status === 401 || res.status === 403) { handleNoAutorizado(); return; }
+                const data = await res.json();
+                if (!data.success) {
+                    cont.innerHTML = '<div class="rastreo-detalle-titulo"><i class="fas fa-history"></i> Progreso del pedido</div><div class="rastreo-vacio">' + htmlspecialchars(data.error || 'Sin información') + '</div>';
+                    return;
+                }
+                renderTimelineRastreo(data.timeline);
+            } catch (e) {
+                cont.innerHTML = '<div class="rastreo-detalle-titulo"><i class="fas fa-history"></i> Progreso del pedido</div><div class="rastreo-vacio">No fue posible cargar el historial.</div>';
+            }
+        }
+
+        function renderTimelineRastreo(timeline) {
+            const cont = document.getElementById('rastreoTimeline');
+            if (!timeline || !timeline.length) {
+                cont.innerHTML = '<div class="rastreo-detalle-titulo"><i class="fas fa-history"></i> Progreso del pedido</div><div class="rastreo-vacio">Sin historial.</div>';
+                return;
+            }
+            const ultimoCompleto = timeline.filter(t => t.completado).length;
+            cont.innerHTML = `
+                <div class="rastreo-detalle-titulo"><i class="fas fa-history"></i> Progreso del pedido</div>
+                <div class="ras-tl">
+                    ${timeline.map((t, i) => {
+                        const cls = t.completado ? 'done' : (i === ultimoCompleto && i === timeline.length - 1 ? 'activo' : '');
+                        return `<div class="ras-tl-item ${cls}">
+                            <div class="ras-tl-punto"></div>
+                            <div class="ras-tl-etiqueta">${t.completado ? '✓' : (cls === 'activo' ? '●' : '○')} ${htmlspecialchars(t.titulo)}</div>
+                            ${t.fecha ? `<div class="ras-tl-hora">${formatDateHora(t.fecha)}</div>` : ''}
+                        </div>`;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function formatDateHora(str) {
+            if (!str) return '';
+            try {
+                const d = new Date(str.replace(' ', 'T'));
+                return d.toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+            } catch (e) { return str; }
+        }
+
+        function actualizarMapaRastreo(p) {
+            const div = document.getElementById('rastreoMapa');
+            limpiarMapaRastreo();
+
+            const destino = p.destino && p.destino.latitud !== null && p.destino.longitud !== null
+                ? { lat: p.destino.latitud, lng: p.destino.longitud } : null;
+            const repartidor = p.repartidor_ubicacion && p.repartidor_ubicacion.latitud !== null
+                ? { lat: p.repartidor_ubicacion.latitud, lng: p.repartidor_ubicacion.longitud } : null;
+
+            if (!destino && !repartidor) {
+                div.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--gray-400);font-size:13px;padding:20px;">No hay coordenadas disponibles para este pedido. El mapa se mostrará cuando exista geolocalización del repartidor o del destino.</div>';
+                return;
+            }
+
+            if (typeof L === 'undefined') {
+                div.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--gray-400);font-size:13px;">El mapa no está disponible.</div>';
+                return;
+            }
+
+            rastreoMapa = L.map(div, { scrollWheelZoom: false }).setView([0, 0], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(rastreoMapa);
+
+            const bounds = [];
+            if (repartidor) {
+                L.marker([repartidor.lat, repartidor.lng], { icon: L.divIcon({ html: '<div style="font-size:22px;">🛵</div>', className: '' }) })
+                    .addTo(rastreoMapa)
+                    .bindPopup('<strong>Tu ubicación</strong><br>' + (p.numero_pedido || ''));
+                bounds.push([repartidor.lat, repartidor.lng]);
+            }
+            if (destino) {
+                L.marker([destino.lat, destino.lng], { icon: L.divIcon({ html: '<div style="font-size:22px;">📍</div>', className: '' }) })
+                    .addTo(rastreoMapa)
+                    .bindPopup('<strong>Destino</strong><br>' + htmlspecialchars(p.direccion || ''));
+                bounds.push([destino.lat, destino.lng]);
+            }
+            if (bounds.length) {
+                rastreoMapa.fitBounds(bounds, { padding: [40, 40] });
+            }
+        }
+        /* ============ FIN MÓDULO RASTREAR PEDIDO ============ */
+
         document.getElementById('searchInput').addEventListener('input', () => {
             renderPedidosDisponibles();
         });
@@ -1439,22 +1961,14 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
         document.addEventListener('DOMContentLoaded', async () => {
             if (userEstado !== 'activo') return;
 
-            if (token) {
+            await loadStats();
+            await loadOrders();
+
+            autoRefreshInterval = setInterval(async () => {
+                token = localStorage.getItem('repartidor_token') || token;
                 await loadStats();
                 await loadOrders();
-                autoRefreshInterval = setInterval(async () => {
-                    if (localStorage.getItem('repartidor_token')) {
-                        token = localStorage.getItem('repartidor_token');
-                        await loadStats();
-                        await loadOrders();
-                    } else {
-                        clearInterval(autoRefreshInterval);
-                        window.location.href = APP_URL + '/repartidor/login';
-                    }
-                }, 30000);
-            } else {
-                window.location.href = APP_URL + '/repartidor/login';
-            }
+            }, 30000);
         });
     </script>
 </body>

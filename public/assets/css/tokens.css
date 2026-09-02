@@ -1,0 +1,82 @@
+/* ============================================================================
+   ANGELOW — TOKENS COMPARTIDOS (Identidad visual unificada)
+   ----------------------------------------------------------------------------
+   Define los tokens de diseño canónicos de toda la aplicación en los DOS
+   juegos de nombres usados en el proyecto (inglés: cliente/admin, español:
+   repartidor). Se carga SIEMPRE primero en cada vista; los bloques `:root`
+   específicos de cada pantalla pueden sobrescribir valores puntuales después.
+   ============================================================================*/
+:root {
+  /* ---------------- Paleta canónica (inglés) ---------------- */
+  --primary: #5E9DE6;
+  --primary-dark: #4A7FC4;
+  --primary-light: #E8F2FC;
+  --accent: #7FBBF2;
+  --bg-light: #F8FBFE;
+  --bg-soft: #EDF4FC;
+  --text-dark: #1E3A8A;
+  --text-primary: #1E3A8A;
+  --text-secondary: #4B6A9B;
+  --white: #ffffff;
+  --bg-card: #ffffff;
+  --border-light: #E0E7F5;
+  --border-color: #E0E7F5;
+  --shadow: rgba(94, 157, 230, 0.12);
+  --shadow-hover: rgba(94, 157, 230, 0.25);
+  --success: #10b981;
+  --success-dark: #0d9668;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --danger: #ef4444;
+  --danger-dark: #dc2626;
+  --info: #3b82f6;
+  --badge: #F472B6;
+  --favorite: #FF6B6B;
+
+  /* ---------------- Aliases para el área REPARTIDOR (español) ---------------- */
+  --azul-principal: #5E9DE6;
+  --azul-oscuro: #4A7FC4;
+  --azul-claro: #7FBBF2;
+  --fondo-claro: #F8FBFE;
+  --fondo-suave: #EDF4FC;
+  --texto-oscuro: #1E3A8A;
+  --texto-secundario: #4B6A9B;
+  --blanco: #ffffff;
+  --sombra: rgba(94, 157, 230, 0.12);
+  --sombra-fuerte: rgba(94, 157, 230, 0.25);
+  --borde-suave: #E0E7F5;
+  --verde: #10b981;
+  --amarillo: #f59e0b;
+  --rojo: #ef4444;
+  --azul-info: #3b82f6;
+  --espaciado-chico: 4px;
+  --espaciado-mediano: 8px;
+  --espaciado-normal: 16px;
+  --espaciado-grande: 24px;
+  --espaciado-xl: 32px;
+  --espaciado-xxl: 40px;
+  --borde-chico: 8px;
+  --borde-mediano: 12px;
+  --borde-grande: 16px;
+  --borde-xl: 20px;
+  --borde-redondo: 9999px;
+
+  /* ---------------- Escala de grises + radio + sombra (dashboard repartidor) ---------------- */
+  --gray-50: #F9FAFB;
+  --gray-100: #F3F4F6;
+  --gray-200: #E5E7EB;
+  --gray-300: #D1D5DB;
+  --gray-400: #9CA3AF;
+  --gray-500: #6B7280;
+  --gray-600: #4B5563;
+  --gray-700: #374151;
+  --gray-800: #1F2937;
+  --gray-900: #111827;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --transition: all 0.2s ease;
+}

@@ -257,6 +257,7 @@
 
 // ======================== OFERTAS RELÁMPAGO PROFESIONALES ========================
 (function() {
+  const baseUrl = (typeof window.APP_URL === "string") ? window.APP_URL : "";
   const offersData = [
     { id: 1, productId: 1, name: "Conjunto deportivo", oldPrice: 129900, newPrice: 89900, discount: "31%", icon: "Moda", endTimeOffset: 2.5 * 3600 * 1000 },
     { id: 2, productId: 6, name: "Conjunto infantil", oldPrice: 119900, newPrice: 85900, discount: "28%", icon: "Niñas", endTimeOffset: 5 * 3600 * 1000 },

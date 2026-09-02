@@ -20,19 +20,26 @@ class EmailService {
     public static function enviar($destinatario, $nombre, $tipo = 'bienvenida', $datos_extra = []) {
         
         if (empty($destinatario) || empty($nombre)) {
-            error_log("EmailService: Destinatario o nombre vacío");
+            error_log("[EmailService] Destinatario o nombre vacío");
             return false;
+        }
+
+        // Verificar que $_ENV tiene configuración SMTP
+        if (empty($_ENV['SMTP_HOST']) || empty($_ENV['SMTP_USERNAME']) || empty($_ENV['SMTP_PASSWORD'])) {
+            error_log("[EmailService] FALTA configuración SMTP en .env - Host: " . ($_ENV['SMTP_HOST'] ?? 'VACIO') . ", Username: " . ($_ENV['SMTP_USERNAME'] ?? 'VACIO'));
         }
         
          // Configuración SMTP desde variables de entorno
          $smtpConfig = [
              'host' => $_ENV['SMTP_HOST'] ?? 'smtp.gmail.com',
              'username' => $_ENV['SMTP_USERNAME'] ?? 'angelow.contacto@gmail.com',
-             'password' => $_ENV['SMTP_PASSWORD'] ?? 'vncn qkjn upop iuey',
+             'password' => $_ENV['SMTP_PASSWORD'] ?? 'bhsc nmnw iwah claj',
              'port' => $_ENV['SMTP_PORT'] ?? 587,
              'from_email' => $_ENV['SMTP_FROM_EMAIL'] ?? 'angelow.contacto@gmail.com',
              'from_name' => $_ENV['SMTP_FROM_NAME'] ?? 'Angelow'
          ];
+
+        error_log("[EmailService] Iniciando envio SMTP - Host: {$smtpConfig['host']}:{$smtpConfig['port']}, Username: {$smtpConfig['username']}, Password length: " . strlen($smtpConfig['password']));
         
         $mail = new PHPMailer(true);
         
@@ -76,13 +83,13 @@ class EmailService {
                     // Incrustar la imagen con CID 'logo_angelow'
                     $mail->addEmbeddedImage($ruta, 'logo_angelow', basename($ruta));
                     $logoIncrustado = true;
-                    error_log("✅ Logo incrustado desde: " . $ruta);
+                    error_log("[EmailService] Logo incrustado desde: " . $ruta);
                     break;
                 }
             }
             
             if (!$logoIncrustado) {
-                error_log("⚠️ ADVERTENCIA: No se encontró el logo para incrustar. El correo se enviará sin logo.");
+                error_log("[EmailService] ADVERTENCIA: No se encontro el logo para incrustar. El correo se enviara sin logo.");
             }
             // ==============================================
             
@@ -94,14 +101,25 @@ class EmailService {
             
             // Enviar el correo
             $mail->send();
-            error_log("✅ Correo enviado exitosamente a: $destinatario - Tipo: $tipo");
+            error_log("[EmailService] OK - Correo enviado exitosamente a: $destinatario - Tipo: $tipo");
             return true;
             
         } catch (Exception $e) {
-            error_log("❌ Error PHPMailer: " . $mail->ErrorInfo);
+            $errorMsg = $e->getMessage();
+            error_log("[EmailService] ERROR PHPMailer: " . $errorMsg);
+            error_log("[EmailService] ErrorInfo: " . $mail->ErrorInfo);
+            
+            if (strpos($errorMsg, 'Username and Password not accepted') !== false) {
+                error_log("[EmailService] DIAGNOSTICO: Credenciales SMTP rechazadas. Verifica la App Password de Gmail.");
+            } elseif (strpos($errorMsg, 'Connection refused') !== false) {
+                error_log("[EmailService] DIAGNOSTICO: Conexion rechazada. Firewall o puerto bloqueado.");
+            } elseif (strpos($errorMsg, 'Could not connect') !== false) {
+                error_log("[EmailService] DIAGNOSTICO: No se pudo conectar. Verifica conexion a internet.");
+            }
+            
             return false;
         } catch (\Exception $e) {
-            error_log("❌ Error General en EmailService: " . $e->getMessage());
+            error_log("[EmailService] ERROR GENERAL: " . $e->getMessage() . " en " . $e->getFile() . ":" . $e->getLine());
             return false;
         }
     }
@@ -123,14 +141,14 @@ class EmailService {
         foreach ($rutasPlantilla as $ruta) {
             if (file_exists($ruta)) {
                 $html = file_get_contents($ruta);
-                error_log("✅ Plantilla encontrada en: " . $ruta);
+                error_log("[EmailService] Plantilla encontrada en: " . $ruta);
                 break;
             }
         }
         
         // Si no hay plantilla, usar texto plano
         if (empty($html)) {
-            error_log("⚠️ No se encontró plantilla para: $tipo");
+            error_log("[EmailService] No se encontro plantilla para: $tipo");
             return self::getPlainTextBody($tipo, $nombre, $datos_extra);
         }
         
@@ -165,6 +183,28 @@ class EmailService {
         $html = str_replace('{{factura_id}}', $datos_extra['factura_id'] ?? '', $html);
         $html = str_replace('{{monto}}', $datos_extra['monto'] ?? '0', $html);
         $html = str_replace('{{mensaje}}', $datos_extra['mensaje'] ?? '', $html);
+        
+        // Variables especificas de factura
+        $html = str_replace('{{numero_factura}}', $datos_extra['numero_factura'] ?? '', $html);
+        $html = str_replace('{{nombre_cliente}}', $datos_extra['nombre_cliente'] ?? $nombre, $html);
+        $html = str_replace('{{fecha_emision}}', $datos_extra['fecha_emision'] ?? date('d/m/Y'), $html);
+        $html = str_replace('{{estado_label}}', $datos_extra['estado_label'] ?? 'Pendiente', $html);
+        $html = str_replace('{{subtotal}}', $datos_extra['subtotal'] ?? '0', $html);
+        $html = str_replace('{{total}}', $datos_extra['total'] ?? '0', $html);
+        $html = str_replace('{{envio_text}}', $datos_extra['envio_text'] ?? 'Gratis', $html);
+        
+        // Fila de descuento condicional
+        $descuento = floatval($datos_extra['descuento'] ?? 0);
+        if ($descuento > 0) {
+            $descuentoRow = '<tr><td style="padding:6px 0;font-size:13px;color:#10b981;">Descuento</td><td style="padding:6px 0;font-size:13px;color:#10b981;text-align:right;">- COP $' . number_format($descuento) . '</td></tr>';
+        } else {
+            $descuentoRow = '';
+        }
+        $html = str_replace('{{descuento_row}}', $descuentoRow, $html);
+        
+        // Enlaces
+        $html = str_replace('{{link_ver_factura}}', $datos_extra['link_ver_factura'] ?? ($app_url . '/factura'), $html);
+        $html = str_replace('{{link_descargar_pdf}}', $datos_extra['link_descargar_pdf'] ?? ($app_url . '/factura'), $html);
         
         // NOTA: La imagen ya tiene src="cid:logo_angelow" en tu HTML
         // No es necesario reemplazar nada más para el logo
@@ -225,7 +265,7 @@ class EmailService {
             'bienvenida' => '¡Bienvenido a Angelow!',
             'recuperacion' => 'Recuperación de contraseña - Angelow',
             'notificacion' => 'Notificación - Angelow',
-            'factura' => 'Factura - Angelow'
+            'factura' => 'Factura de compra - Angelow'
         ];
         return $subjects[$tipo] ?? 'Notificación - Angelow';
     }

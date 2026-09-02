@@ -1,5 +1,17 @@
 <?php
-session_start();
+
+// Configurar directorio de sesiones dentro de la app (evita errores de
+// permisos intermitentes en C:\xampp\tmp y asegura escritura para el usuario web)
+$sessionDir = dirname(__DIR__) . '/storage/sessions';
+if (!is_dir($sessionDir)) {
+    @mkdir($sessionDir, 0777, true);
+}
+if (is_dir($sessionDir) && is_writable($sessionDir)) {
+    session_save_path($sessionDir);
+}
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    @session_start();
+}
 
 // Load environment variables
 require_once __DIR__ . '/../app/Core/Env.php';

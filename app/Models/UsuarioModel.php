@@ -86,7 +86,7 @@ class UsuarioModel {
     }
 
     public function getAll() {
-        $stmt = $this->db->query("SELECT id, nombre, email, telefono, rol, estado, fecha_registro FROM usuarios ORDER BY id DESC");
+        $stmt = $this->db->query("SELECT id, nombre, apellido, email, telefono, rol, estado, tipo_vehiculo, placa_vehiculo, total_entregas, calificacion_promedio, motivo_suspension, fecha_registro FROM usuarios ORDER BY id DESC");
         return $stmt->fetchAll();
     }
 

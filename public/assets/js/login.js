@@ -131,6 +131,129 @@ function hideMessage() {
     if (messageBox) messageBox.style.display = 'none';
 }
 
+// =============================================
+// ALERTA DE BIENVENIDA PROFESIONAL
+// =============================================
+function mostrarAlertaBienvenida(opts) {
+    const { nombre, esRepartidor, pending, rol, redirectUrl } = opts;
+    const primerNombre = (nombre || '').split(' ')[0];
+
+    let titulo, subtitulo, lista = [], botonTexto;
+
+    if (esRepartidor || pending) {
+        titulo = '¡Registro completado!';
+        subtitulo = primerNombre
+            ? `¡Bienvenido/a, ${primerNombre}!`
+            : 'Tu solicitud como repartidor fue recibida correctamente.';
+        lista = [
+            'Tu solicitud de repartidor fue recibida correctamente.',
+            'Un administrador revisará tu información y documentación.',
+            'Recibirás una notificación cuando tu cuenta sea aprobada.'
+        ];
+        botonTexto = 'Continuar';
+    } else if (rol === 'repartidor') {
+        titulo = `¡Hola de nuevo, ${primerNombre || ''}!`;
+        subtitulo = 'Bienvenido a tu panel de repartidor';
+        lista = [
+            'Ya puedes consultar tus pedidos disponibles y gestionar entregas.',
+            'Todos tus movimientos se registran en tiempo real.'
+        ];
+        botonTexto = 'Ir a mi Dashboard';
+    } else if (rol === 'administrador') {
+        titulo = `¡Hola de nuevo, ${primerNombre || 'Administrador'}!`;
+        subtitulo = 'Bienvenido al panel de administración';
+        lista = [
+            'Gestiona pedidos, repartidores e inventario desde un solo lugar.'
+        ];
+        botonTexto = 'Ir al Panel';
+    } else {
+        titulo = `¡Bienvenido/a, ${primerNombre || ''}!`;
+        subtitulo = 'Tu cuenta fue creada correctamente';
+        lista = [
+            'Ya puedes comenzar a utilizar la plataforma.',
+            'Disfruta de las mejores colecciones de ropa infantil.'
+        ];
+        botonTexto = 'Continuar';
+    }
+
+    const overlay = document.createElement('div');
+    overlay.id = 'welcomeOverlay';
+    overlay.style.cssText = `
+        position: fixed; inset: 0; z-index: 99999; background: rgba(15, 23, 42, 0.6);
+        display: flex; align-items: center; justify-content: center;
+        backdrop-filter: blur(4px); animation: welcomeFadeIn .25s ease;
+    `;
+
+    const iconos = esRepartidor || pending
+        ? '<i class="fas fa-user-clock" style="font-size:34px;color:#F59E0B;"></i>'
+        : '<i class="fas fa-check-circle" style="font-size:34px;color:#10b981;"></i>';
+
+    overlay.innerHTML = `
+        <div style="background:#fff;border-radius:24px;max-width:440px;width:92%;box-shadow:0 30px 90px rgba(0,0,0,.35);overflow:hidden;animation:welcomeSlideUp .35s ease;text-align:center;">
+            <div style="padding:36px 32px 24px;">
+                <div style="width:84px;height:84px;border-radius:50%;background:#F0F6FD;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;position:relative;">
+                    ${iconos}
+                    <span style="position:absolute;bottom:4px;right:4px;width:24px;height:24px;border-radius:50%;background:${esRepartidor || pending ? '#F59E0B' : '#10b981'};border:3px solid #fff;display:flex;align-items:center;justify-content:center;">
+                        <i class="fas ${esRepartidor || pending ? 'fa-hourglass-half' : 'fa-check'}" style="font-size:10px;color:#fff;"></i>
+                    </span>
+                </div>
+                <h2 style="font-size:24px;font-weight:800;color:#1E293B;margin:0 0 6px;font-family:'Inter',sans-serif;">${titulo}</h2>
+                <p style="font-size:15px;color:#64748B;margin:0 0 20px;font-family:'Inter',sans-serif;font-weight:500;">${subtitulo}</p>
+                <div style="text-align:left;background:#F8FAFC;border:1px solid #E8EDF5;border-radius:14px;padding:16px 20px;margin-bottom:22px;">
+                    ${lista.map(item => `
+                        <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;font-family:'Inter',sans-serif;">
+                            <span style="color:#5E9DE6;font-size:13px;line-height:20px;width:16px;text-align:center;margin-top:2px;"><i class="fas fa-circle-check"></i></span>
+                            <span style="font-size:13px;color:#475569;line-height:1.5;">${item}</span>
+                        </div>
+                    `).join('')}
+                    ${esRepartidor || pending ? `
+                        <div style="display:flex;align-items:center;gap:8px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:10px 14px;margin-top:6px;">
+                            <i class="fas fa-info-circle" style="color:#F59E0B;font-size:13px;"></i>
+                            <span style="font-size:12px;color:#92400E;font-weight:600;">Estado: Pendiente de aprobación</span>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+            <div style="padding:18px 32px 28px;border-top:1px solid #E8EDF5;background:#F8FAFC;">
+                <button id="welcomeContinueBtn" style="width:100%;padding:14px;border:none;border-radius:50px;background:linear-gradient(135deg,#5E9DE6,#4A8AD4);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 8px 20px rgba(94,157,230,.35);transition:transform .15s ease, box-shadow .15s ease;">
+                    ${botonTexto}
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#welcomeContinueBtn').addEventListener('click', () => {
+        overlay.remove();
+        if (redirectUrl) {
+            window.location.href = redirectUrl;
+        }
+    });
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            overlay.remove();
+            if (redirectUrl) window.location.href = redirectUrl;
+        }
+    });
+
+    const styleTag = document.createElement('style');
+    styleTag.textContent = `
+        @keyframes welcomeFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes welcomeSlideUp { from { opacity: 0; transform: translateY(24px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    `;
+    document.head.appendChild(styleTag);
+}
+
+function buildRedirectUrl(raw) {
+    if (!raw) return APP_URL + '/';
+    if (raw.startsWith('http')) return raw;
+    const cleanBase = APP_URL.replace(/\/$/, '');
+    const cleanRedirect = raw.replace(/^\//, '');
+    return cleanBase + '/' + cleanRedirect;
+}
+
 // LOGIN CON EMAIL - CORREGIDO (evita duplicar URL)
 window.handleEmailLogin = async function() {
     const email = document.getElementById('loginEmail').value.trim();
@@ -160,20 +283,17 @@ window.handleEmailLogin = async function() {
         
         if (data.success) {
             showMessage(data.message, 'success');
+            const redirectUrl = buildRedirectUrl(data.redirect);
             setTimeout(() => {
-                alert('¡Bienvenido a ANGELOW, ' + (data.nombre || '') + '!');
-                let redirectUrl = APP_URL + '/';
-                if (data.redirect) {
-                    if (data.redirect.startsWith('http')) {
-                        redirectUrl = data.redirect;
-                    } else {
-                        const cleanBase = APP_URL.replace(/\/$/, '');
-                        const cleanRedirect = data.redirect.replace(/^\//, '');
-                        redirectUrl = cleanBase + '/' + cleanRedirect;
-                    }
-                }
-                window.location.href = redirectUrl;
-            }, 1000);
+                showLoading('loginButton', false);
+                mostrarAlertaBienvenida({
+                    nombre: data.nombre || '',
+                    rol: data.rol || 'cliente',
+                    esRepartidor: data.rol === 'repartidor' || data.rol === 'vendedor',
+                    pending: data.pending,
+                    redirectUrl
+                });
+            }, 800);
         } else {
             showMessage(data.message);
             showLoading('loginButton', false);
@@ -243,9 +363,15 @@ window.handleEmailRegister = async function() {
         if (data.success) {
             showMessage(data.message, 'success');
             setTimeout(() => {
-                alert('¡Bienvenido a ANGELOW, ' + (data.nombre || '') + '!');
-                window.location.href = APP_URL + '/';
-            }, 1500);
+                showLoading('registerButton', false);
+                mostrarAlertaBienvenida({
+                    nombre: data.nombre || '',
+                    rol: 'cliente',
+                    esRepartidor: false,
+                    pending: false,
+                    redirectUrl: buildRedirectUrl(data.redirect || '/')
+                });
+            }, 800);
         } else {
             showMessage(data.message);
             showLoading('registerButton', false);

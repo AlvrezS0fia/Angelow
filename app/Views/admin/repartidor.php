@@ -199,6 +199,7 @@ $user = $_SESSION['user'];
                 <li><a href="<?= APP_URL ?>/admin/pedidos"><i class="fas fa-clipboard-list admin-menu-icon icon-orders"></i><span>Pedidos</span></a></li>
                 <li><a href="<?= APP_URL ?>/admin/usuarios"><i class="fas fa-users admin-menu-icon icon-customers"></i><span>Usuarios</span></a></li>
                 <li><a href="<?= APP_URL ?>/admin/repartidores" class="active"><i class="fas fa-truck-fast admin-menu-icon icon-delivery"></i><span>Repartidores</span></a></li>
+                <li><a href="<?= APP_URL ?>/admin"><i class="fas fa-shield-halved admin-menu-icon icon-settings"></i><span>Administración</span></a></li>
                 <li><a href="<?= APP_URL ?>/admin/inventario"><i class="fas fa-box admin-menu-icon icon-products"></i><span>Inventario</span></a></li>
             </ul>
         </nav>
@@ -564,7 +565,7 @@ $user = $_SESSION['user'];
             ]).querySelector('#modalConfirmBtn').onclick=async function(){
                 this.closest('div[style]').parentElement.remove();
                 try{
-                    await fetch(APP_URL+'/api/usuarios/'+id,{method:'DELETE'});
+                    await fetch(APP_URL+'/api/clientes/'+id,{method:'DELETE'});
                     showToast({title:'Eliminado',message:'Repartidor eliminado correctamente',type:'success'});
                     loadAll();
                 }catch(e){showToast({title:'Error',message:'No se pudo eliminar',type:'error'});}

@@ -605,4 +605,27 @@ class RepartidorAuthController extends Controller
             'user' => $_SESSION['user']
         ]);
     }
+
+    public function refreshToken()
+    {
+        if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'repartidor') {
+            $this->jsonResponse(['success' => false, 'message' => 'No autorizado'], 401);
+        }
+
+        $user = Database::query("SELECT * FROM usuarios WHERE id = ?", [$_SESSION['user']['id']])->fetch();
+
+        if (!$user || ($user['estado'] ?? '') !== 'activo') {
+            $this->jsonResponse(['success' => false, 'message' => 'Tu cuenta no está activa'], 403);
+        }
+
+        $token = JWTHelper::encode([
+            'sub' => $user['id'],
+            'email' => $user['email'],
+            'rol' => 'repartidor',
+            'iat' => time(),
+            'exp' => time() + (24 * 60 * 60),
+        ]);
+
+        $this->jsonResponse(['success' => true, 'token' => $token]);
+    }
 }

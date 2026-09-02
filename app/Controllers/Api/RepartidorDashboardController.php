@@ -10,14 +10,17 @@ class RepartidorDashboardController
     {
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
         $token = str_replace('Bearer ', '', $authHeader);
-        if (!$token) return null;
-        $payload = JWTHelper::decode($token);
-        if (!$payload) return null;
-        $userId = $payload['sub'] ?? null;
-        if (!$userId) return null;
-        $user = Database::query("SELECT id, rol, estado FROM usuarios WHERE id = ?", [$userId])->fetch();
-        if (!$user || $user['rol'] !== 'repartidor' || $user['estado'] !== 'activo') return null;
-        return $userId;
+        if ($token) {
+            $payload = JWTHelper::decode($token);
+            if ($payload && isset($payload['sub'])) {
+                return $payload['sub'];
+            }
+        }
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        if (isset($_SESSION['user']) && ($_SESSION['user']['rol'] ?? '') === 'repartidor') {
+            return $_SESSION['user']['id'];
+        }
+        return null;
     }
 
     private function json($data, $code = 200)
@@ -126,10 +129,37 @@ class RepartidorDashboardController
         }
 
         $notificaciones = Database::query(
-            "SELECT id, tipo, titulo, mensaje, enlace, leida, fecha_envio FROM notificaciones WHERE usuario_id = ? ORDER BY fecha_envio DESC LIMIT 20",
+            "SELECT id, titulo, mensaje, tipo, leida, fecha_envio
+             FROM notificaciones
+             WHERE usuario_id = ?
+             ORDER BY fecha_envio DESC
+             LIMIT 20",
             [$repartidorId]
         )->fetchAll();
 
-        $this->json(['success' => true, 'notificaciones' => $notificaciones]);
+        $resultado = array_map(function ($n) {
+            $titulo = $n['titulo'] ?? 'Notificación';
+            $mensaje = $n['mensaje'] ?? '';
+            if ($n['tipo'] === 'aprobacion_repartidor') {
+                $titulo = 'Solicitud aprobada';
+            } elseif ($n['tipo'] === 'rechazo_repartidor') {
+                $titulo = 'Solicitud rechazada';
+            } elseif ($n['tipo'] === 'suspension_repartidor') {
+                $titulo = 'Cuenta suspendida';
+            } elseif ($n['tipo'] === 'nuevo_pedido') {
+                $titulo = 'Nuevo pedido disponible';
+            } elseif ($n['tipo'] === 'solicitud_repartidor') {
+                $titulo = 'Solicitud';
+            }
+            return [
+                'id' => $n['id'],
+                'titulo' => $titulo,
+                'mensaje' => $mensaje,
+                'tipo' => $n['tipo'],
+                'fecha' => $n['fecha_envio'],
+            ];
+        }, $notificaciones);
+
+        $this->json(['success' => true, 'notificaciones' => $resultado]);
     }
 }

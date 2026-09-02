@@ -21,6 +21,16 @@ class PedidosController extends Controller
         }
         $usuarioId = (int) $_SESSION['user']['id'];
         $pedidos = $this->pedidoModel->getByUsuario($usuarioId);
+
+        // Adjuntar factura relacionada a cada pedido
+        foreach ($pedidos as &$pedido) {
+            $pedido['factura'] = Database::query(
+                "SELECT id, numero_factura, estado, total, fecha_emision FROM facturas WHERE pedido_id = ? ORDER BY id DESC LIMIT 1",
+                [$pedido['id']]
+            )->fetch();
+        }
+        unset($pedido);
+
         $this->json($pedidos);
     }
 
@@ -35,9 +45,14 @@ class PedidosController extends Controller
             return;
         }
         $items = $this->pedidoModel->getDetalles($pedidoId);
+        $factura = Database::query(
+            "SELECT * FROM facturas WHERE pedido_id = ? ORDER BY id DESC LIMIT 1",
+            [$pedidoId]
+        )->fetch();
         $this->json([
             'pedido' => $pedido,
-            'items' => $items
+            'items' => $items,
+            'factura' => $factura
         ]);
     }
 
@@ -52,9 +67,26 @@ class PedidosController extends Controller
             return;
         }
         $items = $this->pedidoModel->getDetalles($pedidoId);
+
+        // Buscar la factura real conectada al pedido
+        $factura = Database::query(
+            "SELECT * FROM facturas WHERE pedido_id = ? ORDER BY id DESC LIMIT 1",
+            [$pedidoId]
+        )->fetch();
+
+        $facturaDetalles = [];
+        if ($factura) {
+            $facturaDetalles = Database::query(
+                "SELECT * FROM facturas_detalle WHERE factura_id = ?",
+                [$factura['id']]
+            )->fetchAll();
+            $factura['detalles'] = $facturaDetalles;
+        }
+
         $this->json([
             'pedido' => $pedido,
             'items' => $items,
+            'factura' => $factura,
             'cliente' => [
                 'nombre' => $pedido['nombre_cliente'],
                 'email' => $pedido['email_cliente'],

@@ -15,7 +15,6 @@ $user = $_SESSION['user'];
   <link rel="shortcut icon" href="<?= APP_URL ?>/assets/imagenes/general/favico.ico" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/compra.css">
-  <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/back-button.css">
   <script>const APP_URL = '<?= APP_URL ?>';</script>
   <script>window.CURRENT_USER = <?= json_encode($user ?? null) ?>;</script>
   <script src="<?= APP_URL ?>/assets/js/compra.js" defer></script>
@@ -34,8 +33,8 @@ $user = $_SESSION['user'];
         <span class="brand-sub">FINALIZAR COMPRA</span>
       </div>
     </div>
-    <a href="<?= APP_URL ?>/" class="btn-back-header">
-      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+    <a href="<?= APP_URL ?>/" class="back-btn-header">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 12H5M12 19l-7-7 7-7"/>
       </svg>
       Volver
@@ -186,7 +185,7 @@ $user = $_SESSION['user'];
                 <h4>Envío Express</h4>
                 <p>1 día hábil con Coordinadora</p>
               </div>
-              <div class="shipping-price">Gratis</div>
+              <div class="shipping-price">15.000 COP</div>
             </div>
           </div>
         </div>
@@ -208,7 +207,7 @@ $user = $_SESSION['user'];
             <div class="payment-option selected" onclick="selectPayment(this, 'pse')">
               <div class="payment-header">
                 <input type="radio" name="payment" value="pse" checked>
-                <h4>Únigoe Valor / Botón de Pago</h4>
+                <h4>Único Valor / Botón de Pago</h4>
               </div>
               <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
                 Compra de forma segura con el medio de pago que prefieres.
@@ -393,6 +392,5 @@ $user = $_SESSION['user'];
       <p>&copy; <span id="currentYear"></span> ANGELOW. Todos los derechos reservados.</p>
     </div>
   </footer>
-  <script src="<?= APP_URL ?>/assets/js/compra.js"></script>
 </body>
 </html>

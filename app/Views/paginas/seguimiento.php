@@ -17,11 +17,7 @@ $user = $_SESSION['user'];
   <link rel="icon" type="image/png" sizes="32x32" href="<?= APP_URL ?>/assets/imagenes/general/logos.png">
   <link rel="icon" type="image/png" sizes="16x16" href="<?= APP_URL ?>/assets/imagenes/general/favico.ico">
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.css" />
+  <?php require __DIR__ . '/../layouts/leaflet-css.php'; ?>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script>const APP_URL = '<?= APP_URL ?>';</script>
@@ -283,9 +279,7 @@ $user = $_SESSION['user'];
   </footer>
 
   <!-- SCRIPTS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.js"></script>
+  <?php require __DIR__ . '/../layouts/leaflet-js.php'; ?>
   <script src="<?= APP_URL ?>/assets/js/seguimiento.js"></script>
 </body>
 </html>

@@ -10,14 +10,17 @@ class RepartidorDocumentosController
     {
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
         $token = str_replace('Bearer ', '', $authHeader);
-        if (!$token) return null;
-        $payload = JWTHelper::decode($token);
-        if (!$payload) return null;
-        $userId = $payload['sub'] ?? null;
-        if (!$userId) return null;
-        $user = Database::query("SELECT id, rol, estado FROM usuarios WHERE id = ?", [$userId])->fetch();
-        if (!$user || $user['rol'] !== 'repartidor' || $user['estado'] !== 'activo') return null;
-        return $userId;
+        if ($token) {
+            $payload = JWTHelper::decode($token);
+            if ($payload && isset($payload['sub'])) {
+                return $payload['sub'];
+            }
+        }
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        if (isset($_SESSION['user']) && ($_SESSION['user']['rol'] ?? '') === 'repartidor') {
+            return $_SESSION['user']['id'];
+        }
+        return null;
     }
 
     private function json($data, $code = 200)
@@ -35,6 +38,17 @@ class RepartidorDocumentosController
         if (!$authRepartidorId) {
             $this->json(['error' => 'No autorizado'], 401);
             return;
+        }
+
+        // Un repartidor solo puede consultar SUS propios documentos (evita IDOR
+        // al enumerar otros repartidores). Si el rol es administrador, puede ver
+        // cualquier documento indicado en la URL.
+        if ($repartidorId && $repartidorId != $authRepartidorId) {
+            $esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'administrador';
+            if (!$esAdmin) {
+                $this->json(['error' => 'No autorizado'], 403);
+                return;
+            }
         }
 
         $id = $repartidorId ?: $authRepartidorId;
@@ -65,27 +79,57 @@ class RepartidorDocumentosController
             return;
         }
 
+        // Whitelist de tipos de documento permitidos para evitar path traversal
+        // y almacenamiento de archivos con nombre arbitrario.
+        $tiposPermitidos = [
+            'cedula',
+            'licencia_conduccion',
+            'tarjeta_profesional',
+            'tarjeta_propiedad',
+            'soat',
+            'tecnomecanica',
+        ];
         $tipo = $_POST['tipo'] ?? '';
+        if (!in_array($tipo, $tiposPermitidos, true) || $tipo === '') {
+            $this->json(['error' => 'Tipo de documento no válido'], 400);
+            return;
+        }
 
         if (!isset($_FILES['archivo']) || $_FILES['archivo']['error'] !== UPLOAD_ERR_OK) {
             $this->json(['error' => 'Archivo requerido'], 400);
             return;
         }
 
-        $allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-        $fileType = $_FILES['archivo']['type'];
-        if (!in_array($fileType, $allowedTypes)) {
-            $this->json(['error' => 'Solo PDF, JPG y PNG'], 400);
+        // Límite de tamaño (10 MB)
+        $maxBytes = 10 * 1024 * 1024;
+        if ($_FILES['archivo']['size'] > $maxBytes) {
+            $this->json(['error' => 'El archivo no debe superar 10 MB'], 400);
             return;
         }
 
-        $uploadDir = __DIR__ . '/../../../public/uploads/documentos/';
+        // Validación del contenido real mediante finfo (no confiar en el tipo
+        // enviado por el cliente, que puede ser falsificado).
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $detectedMime = $finfo->file($_FILES['archivo']['tmp_name']);
+        $mimeMap = [
+            'application/pdf' => 'pdf',
+            'image/jpeg'      => 'jpg',
+            'image/png'       => 'png',
+        ];
+        if (!isset($mimeMap[$detectedMime])) {
+            $this->json(['error' => 'Solo PDF, JPG y PNG'], 400);
+            return;
+        }
+        $ext = $mimeMap[$detectedMime];
+
+        $uploadDir = __DIR__ . '/../../../uploads/documentos/';
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }
 
-        $ext = pathinfo($_FILES['archivo']['name'], PATHINFO_EXTENSION);
-        $filename = $repartidorId . '_' . $tipo . '_' . time() . '.' . $ext;
+        // Nombre de archivo aleatorio (no adivinable): id_repartidor_tipo_hash.ext
+        $random = bin2hex(random_bytes(8));
+        $filename = $repartidorId . '_' . $tipo . '_' . $random . '.' . $ext;
         $destPath = $uploadDir . $filename;
 
         if (!move_uploaded_file($_FILES['archivo']['tmp_name'], $destPath)) {

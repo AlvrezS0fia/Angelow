@@ -5,7 +5,6 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
     exit();
 }
 $user = $_SESSION['user'];
-error_log(print_r($_SESSION, true));
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -15,6 +14,7 @@ error_log(print_r($_SESSION, true));
     <title>ANGELOW - Panel de Administración</title>
     <link rel="shortcut icon" href="<?= APP_URL ?>/assets/imagenes/general/favico.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/tokens.css">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/panel.css">
 
     <!-- Librerías externas -->
@@ -23,16 +23,9 @@ error_log(print_r($_SESSION, true));
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
     <!-- Leaflet CSS y JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.css">
+    <?php require __DIR__ . '/../layouts/leaflet-css.php'; ?>
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/seguimiento-perfil.css">
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.js"></script>
+    <?php require __DIR__ . '/../layouts/leaflet-js.php'; ?>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">

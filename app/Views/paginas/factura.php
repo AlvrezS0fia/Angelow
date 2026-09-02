@@ -16,6 +16,7 @@ $user = $_SESSION['user'];
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/factura.css">
   <script>const APP_URL = '<?= APP_URL ?>';</script>
+  <script>const FACTURA_ID = '<?= $factura_id ?? $_GET['id'] ?? '' ?>';</script>
 </head>
 <body>
 <div class="invoice-wrapper">
@@ -32,7 +33,7 @@ $user = $_SESSION['user'];
         </div>
       </div>
       <div class="invoice-badge" id="invoiceBadge">
-        PAGADA · FACTURA #<span id="facturaNumero"></span>
+        FACTURA #<span id="facturaNumero"></span>
       </div>
     </div>
 
@@ -59,7 +60,7 @@ $user = $_SESSION['user'];
         <h3>DETALLES DEL PAGO</h3>
         <div class="detail-row"><span class="detail-label">Fecha emisión:</span><span class="detail-value" id="fechaFactura"></span></div>
         <div class="detail-row"><span class="detail-label">Método de pago:</span><span class="detail-value" id="metodoPago">Mercado Pago · **** 4242</span></div>
-        <div class="detail-row"><span class="detail-label">Estado:</span><span class="status-badge">Pagado</span></div>
+        <div class="detail-row"><span class="detail-label">Estado:</span><span class="status-badge" id="estadoFacturaBadge">Cargando...</span></div>
       </div>
     </div>
 

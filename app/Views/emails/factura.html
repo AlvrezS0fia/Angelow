@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tu Factura Angelow</title>
+</head>
+
+<body style="margin:0;padding:0;background-color:#f8f9fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8f9fa;padding:32px 0;">
+  <tr>
+    <td align="center">
+
+      <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 6px 32px rgba(0,0,0,0.08);">
+
+        <!-- HEADER — LOGO -->
+        <tr>
+          <td style="background-color:#ffffff;padding:22px 36px;border-bottom:1px solid #e0e0e0;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="vertical-align:middle;">
+                  <div style="display:inline-block;vertical-align:middle;margin-right:12px;line-height:0;">
+                    <img src="cid:logo_angelow" alt="Angelow Logo" style="width:48px;height:48px;object-fit:contain;">
+                  </div>
+                  <span style="font-size:24px;font-weight:700;color:#111111;letter-spacing:-0.4px;vertical-align:middle;">Angelow</span>
+                </td>
+                <td align="right" style="vertical-align:middle;">
+                  <span style="background-color:#e2effa;color:#0060b4;font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;padding:5px 14px;border-radius:20px;border:1px solid #a0d2eb;">{{estado_label}}</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- HERO BANNER -->
+        <tr>
+          <td style="background:linear-gradient(150deg,#8eb7db 0%,#adc8eb 50%,#8eb7db 100%);padding:44px 40px 36px;text-align:center;">
+            <div style="display:inline-block;margin-bottom:20px;line-height:0;">
+              <img src="cid:logo_angelow" alt="Angelow" width="52" height="52" style="display:block;object-fit:contain;">
+            </div>
+            <h1 style="margin:0 0 8px;font-size:28px;font-weight:700;color:#111111;letter-spacing:-0.5px;line-height:1.25;">Tu factura de Angelow</h1>
+            <p style="margin:0 0 6px;font-size:15px;color:#555555;font-weight:400;">Factura <strong>{{numero_factura}}</strong></p>
+            <p style="margin:0;font-size:13px;color:#777;">Fecha de emision: {{fecha_emision}}</p>
+          </td>
+        </tr>
+
+        <!-- SALUDO -->
+        <tr>
+          <td style="padding:32px 40px 0;">
+            <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#0060b4;text-transform:uppercase;letter-spacing:1.2px;">Hola, {{nombre_cliente}}</p>
+            <p style="margin:0;font-size:15px;color:#333333;line-height:1.75;">
+              Tu factura <strong>{{numero_factura}}</strong> por un total de <strong style="color:#111111;">COP ${{total}}</strong> ha sido generada exitosamente.
+            </p>
+          </td>
+        </tr>
+
+        <!-- DETALLES FACTURA -->
+        <tr>
+          <td style="padding:28px 40px 0;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8fbfe;border-radius:14px;border:1px solid #e0e7f5;">
+              <tr>
+                <td style="padding:20px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td style="padding:6px 0;font-size:13px;color:#6b8cae;">Numero de factura</td>
+                      <td style="padding:6px 0;font-size:13px;color:#1e3a8a;font-weight:600;text-align:right;">{{numero_factura}}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px 0;font-size:13px;color:#6b8cae;">Estado</td>
+                      <td style="padding:6px 0;font-size:13px;color:#059669;font-weight:600;text-align:right;">{{estado_label}}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px 0;font-size:13px;color:#6b8cae;">Subtotal</td>
+                      <td style="padding:6px 0;font-size:13px;color:#1e3a8a;text-align:right;">COP ${{subtotal}}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:6px 0;font-size:13px;color:#6b8cae;">Envio</td>
+                      <td style="padding:6px 0;font-size:13px;color:#1e3a8a;text-align:right;">{{envio_text}}</td>
+                    </tr>
+                    {{descuento_row}}
+                    <tr>
+                      <td style="padding:12px 0 0;font-size:16px;font-weight:700;color:#1e3a8a;border-top:2px solid #7fbbf2;">Total</td>
+                      <td style="padding:12px 0 0;font-size:16px;font-weight:700;color:#1e3a8a;border-top:2px solid #7fbbf2;text-align:right;">COP ${{total}}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- BOTONES -->
+        <tr>
+          <td style="padding:28px 40px 0;text-align:center;">
+            <a href="{{link_ver_factura}}" style="display:inline-block;background:#5e9de6;color:#ffffff;padding:13px 32px;border-radius:50px;text-decoration:none;font-size:14px;font-weight:600;margin-right:12px;box-shadow:0 4px 12px rgba(94,157,230,0.3);">Ver factura</a>
+            <a href="{{link_descargar_pdf}}" style="display:inline-block;background:#ffffff;color:#5e9de6;padding:13px 32px;border-radius:50px;text-decoration:none;font-size:14px;font-weight:600;border:1px solid #5e9de6;">Descargar PDF</a>
+          </td>
+        </tr>
+
+        <!-- DIVISOR -->
+        <tr>
+          <td style="padding:32px 40px 0;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid #e0e0e0;font-size:0;"> </td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- FOOTER -->
+        <tr>
+          <td style="background-color:#f8f9fa;border-top:1px solid #e0e0e0;padding:28px 40px 24px;">
+            <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#111111;">Terminos y condiciones</p>
+            <p style="margin:0 0 10px;font-size:12px;color:#555555;line-height:1.7;">
+              Esta factura fue generada electronicamente. Para verificar tu factura ingresa a nuestra plataforma.
+            </p>
+            <p style="margin:0 0 18px;font-size:12px;color:#555555;line-height:1.7;">
+              La informacion personal sera utilizada para la gestion de pedidos y facturacion, conforme a la normativa colombiana de proteccion de datos personales (Ley 1581 de 2012).
+            </p>
+            <table cellpadding="0" cellspacing="0" border="0" style="width:100%;border-top:1px solid #e0e0e0;">
+              <tr>
+                <td align="left" style="padding:16px 0;">
+                  <a href="{{app_url}}/documentos/Terminos" style="color:#0060b4;text-decoration:none;font-size:11px;font-weight:600;margin-right:18px;">Terminos de servicio</a>
+                  <a href="{{app_url}}/documentos/Politicas_Priv" style="color:#0060b4;text-decoration:none;font-size:11px;font-weight:600;margin-right:18px;">Politica de privacidad</a>
+                  <a href="{{app_url}}/documentos/Politicas_Env" style="color:#0060b4;text-decoration:none;font-size:11px;font-weight:600;">Politica de envios</a>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:16px 0 0;text-align:center;font-size:11px;color:#777777;">
+              Angelow &copy; {{year}} — Todos los derechos reservados
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>
