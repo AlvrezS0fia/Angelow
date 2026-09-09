@@ -1814,7 +1814,6 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
                     <div class="rastreo-dato"><div class="rastreo-dato-label">Cliente</div><div class="rastreo-dato-valor">${htmlspecialchars(p.cliente || '-')}</div></div>
                     <div class="rastreo-dato"><div class="rastreo-dato-label">Teléfono</div><div class="rastreo-dato-valor">${htmlspecialchars(p.telefono || '-')}</div></div>
                     <div class="rastreo-dato"><div class="rastreo-dato-label">Dirección</div><div class="rastreo-dato-valor">${htmlspecialchars(p.direccion || '-')}</div></div>
-                    ${p.factura ? `<div class="rastreo-dato"><div class="rastreo-dato-label">Factura</div><div class="rastreo-dato-valor">${htmlspecialchars(p.factura.numero || '#'+p.factura.id)}</div></div>` : ''}
                 </div>
                 <div class="rastreo-items">${items || '<div class="rastreo-item-linea"><span>Sin productos</span></div>'}</div>
                 ${p.notas_cliente ? `<div style="font-size:12px;color:var(--gray-500);margin-top:10px;"><i class="fas fa-sticky-note"></i> ${htmlspecialchars(p.notas_cliente)}</div>` : ''}

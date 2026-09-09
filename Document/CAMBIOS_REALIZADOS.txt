@@ -24,7 +24,7 @@ Resumen de modificaciones organizadas por archivo y funcionalidad.
 - Esas coordenadas se envian como latitud_destino y longitud_destino en el payload.
 - Si el usuario denega la ubicacion, el pedido se guarda igual pero sin coordenadas.
 - Al completar la compra se limpia el carrito local y se llama a /api/carrito/vaciar.
-- No se rompio el flujo existente de generacion de factura, descuentos, envio ni pago.
+- No se rompio el flujo de compra, descuentos, envio ni pago.
 
 ----------------------------------------------------------------
 3. CarritoController.php (API carrito)

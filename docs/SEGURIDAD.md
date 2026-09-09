@@ -68,9 +68,9 @@ los modelos y controladores analizados:
 
 - `App\Core\Database::query($sql, $params)` (prepara y bindea).
 - Modelos: `UsuarioModel`, `PedidoModel`, `ProductoModel`, `CategoriaModel`,
-  `CarritoModel`, `DireccionModel`, `TarjetaModel`, `FacturaModel`.
+  `CarritoModel`, `DireccionModel`, `TarjetaModel`.
 - Controladores API: `RepartidorPedidosController`, `RepartidorClientesController`,
-  `AdminRepartidorController`, `FacturasController`, etc.
+  `AdminRepartidorController`, etc.
 
 Todos los valores de usuario se pasan como parámetros vinculados (prepared statements);
 los `LIMIT`/`OFFSET` se bindean con `PARAM_INT`. Se evita la concatenación de valores
@@ -329,21 +329,11 @@ Clasificación usada: CRÍTICA / ALTA / MEDIA / BAJA.
 
 ---
 
-## 16. Autenticación del API de Facturación Python (esta sesión)
+## 16. Eliminación de la facturación Python (esta sesión)
 
-- **Antes**: los 9 endpoints de `facturacion/routes/factura_routes.py` estaban **abiertos**
-  (sin autenticación) con CORS `*`. Un atacante podía listar/crear modificar facturas.
-- **Ahora**: se añadió el decorador `require_api_key` que exige
-  `Authorization: Bearer <FACTURA_API_SECRET>` (o `?api_key=`) en **todos** los endpoints
-  de datos. Sin coincidencia → **401**. Si falta el secreto configurado → **500 fail-closed**.
-- `FACTURA_API_SECRET` se genera (64 hex) y se guarda **solo en `facturacion/.env`**; se lee
-  en `facturacion/config.py`. No está hardcodeado en el código fuente.
-- `/api/health` queda abierto para monitoreo de disponibilidad.
-- **Observaciones / pendientes de seguridad**:
-  - El CORS `origins: *` sigue abierto; al operar como microservicio interno se recomienda
-    restringirlo al origen del panel (o a la IP/host del backend PHP).
-  - `facturacion/config.py` mantiene un `SMTP_PASSWORD` de **fallback literal en código**
-    (además del `.env`). Se recomienda eliminar el fallback y leer la credencial solo de `.env`.
+El microservicio de facturación Python (`facturacion/`) y toda la funcionalidad de
+facturas (controladores PHP, modelos, vistas, rutas, correos y tablas `facturas*`)
+fueron **eliminados del proyecto**. Ver `docs/ARQUITECTURA.md` §13.
 
 ## 17. Observaciones de la auditoría de seguimiento (cliente/admin)
 

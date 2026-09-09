@@ -19,7 +19,7 @@ $user = $_SESSION['user'];
     <script>const APP_URL = '<?= APP_URL ?>';</script>
     <script>const CURRENT_USER = <?= json_encode($user, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;</script>
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/tokens.css">
-    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/perfil.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/perfil.css?v=2">
     <?php require __DIR__ . '/../layouts/leaflet-css.php'; ?>
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/seguimiento-perfil.css">
 </head>
@@ -41,6 +41,13 @@ $user = $_SESSION['user'];
             <button class="btn-secondary" onclick="closeAlert()">CANCELAR</button>
             <button class="btn-danger" onclick="confirmDelete()">ELIMINAR</button>
         </div>
+    </div>
+</div>
+
+<!-- MODAL DE FACTURA -->
+<div class="order-modal-overlay" id="orderModal" style="display: none;">
+    <div class="order-modal-content" id="orderModalContent">
+        <!-- Contenido dinámico de la factura -->
     </div>
 </div>
 
@@ -77,8 +84,8 @@ $user = $_SESSION['user'];
             <span>Direcciones</span>
         </div>
         <div class="menu-item" data-section="pedidos">
-            <i class="fas fa-box-open"></i>
-            <span>Pedidos</span>
+            <i class="fas fa-file-invoice"></i>
+            <span>Mis Facturas</span>
         </div>
         <div class="menu-item" data-section="seguimientoSection">
             <i class="fas fa-truck"></i>
@@ -231,19 +238,19 @@ $user = $_SESSION['user'];
             </div>
         </div>
 
-        <!-- PEDIDOS -->
+        <!-- MIS FACTURAS -->
         <div class="profile-section" id="pedidos">
             <div class="profile-header">
-                <h1 class="profile-title"><i class="fas fa-box-open profile-title-icon"></i> Mis Pedidos</h1>
+                <h1 class="profile-title"><i class="fas fa-file-invoice profile-title-icon"></i> Mis Facturas</h1>
             </div>
             <div class="profile-card">
                 <div class="orders-list" id="ordersList"></div>
                 <div class="empty-state" id="emptyOrdersState">
                     <div class="empty-icon">
-                        <i class="fas fa-box-open"></i>
+                        <i class="fas fa-file-invoice"></i>
                     </div>
-                    <p class="empty-text">¡AÚN NO HAS REALIZADO NINGÚN PEDIDO!</p>
-                    <p class="empty-subtext">Cuando realices un pedido, aparecerá aquí</p>
+                    <p class="empty-text">¡AÚN NO TIENES FACTURAS!</p>
+                    <p class="empty-subtext">Cuando realices una compra, tu factura aparecerá aquí</p>
                     <button class="primary-btn" onclick="window.location.href='<?= APP_URL ?>/'"><i class="fas fa-compass"></i> EXPLORAR PRODUCTOS</button>
                 </div>
             </div>
@@ -671,7 +678,9 @@ $user = $_SESSION['user'];
     </div>
 </footer>
 
-<script src="<?= APP_URL ?>/assets/js/perfil.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="<?= APP_URL ?>/assets/js/perfil.js?v=5"></script>
 <?php require __DIR__ . '/../layouts/leaflet-js.php'; ?>
 <script src="<?= APP_URL ?>/assets/js/seguimiento-perfil.js"></script>
 </body>

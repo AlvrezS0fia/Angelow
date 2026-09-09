@@ -1,0 +1,8 @@
+.env
+*.db
+__pycache__/
+*.pyc
+logs/
+static/uploads/documentos/*.pdf
+static/uploads/documentos/*.jpg
+static/uploads/documentos/*.png

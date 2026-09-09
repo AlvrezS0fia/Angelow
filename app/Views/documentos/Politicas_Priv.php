@@ -77,7 +77,7 @@
             <ul>
                 <li>Nombre completo y documento de identidad</li>
                 <li>Correo electrónico y número de teléfono</li>
-                <li>Dirección de envío y facturación</li>
+                <li>Dirección de envío</li>
                 <li>Información de pago (procesada de forma segura por terceros)</li>
             </ul>
 

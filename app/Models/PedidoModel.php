@@ -29,17 +29,72 @@ class PedidoModel {
                 throw new \Exception("ID de usuario inválido. Debes iniciar sesión para hacer un pedido.");
             }
 
+            if (empty($data['productos']) || !is_array($data['productos'])) {
+                throw new \Exception("El pedido debe contener al menos un producto.");
+            }
+
+            // Obtener precios reales desde la BD y calcular subtotal real
+            $subtotalReal = 0;
+            $productosValidados = [];
+            $stmtPrice = $this->db->prepare("SELECT id, precio, nombre, stock_total FROM productos WHERE id = :id");
+
+            foreach ($data['productos'] as $producto) {
+                $pid = (int)($producto['producto_id'] ?? 0);
+                $cant = (int)($producto['cantidad'] ?? 0);
+
+                if ($pid <= 0) {
+                    throw new \Exception("ID de producto inválido.");
+                }
+                if ($cant <= 0) {
+                    throw new \Exception("La cantidad del producto debe ser mayor a 0.");
+                }
+
+                $stmtPrice->execute(['id' => $pid]);
+                $prod = $stmtPrice->fetch();
+
+                if (!$prod) {
+                    throw new \Exception("Producto ID {$pid} no encontrado en la base de datos.");
+                }
+                if ((int)$prod['stock_total'] < $cant) {
+                    throw new \Exception("Stock insuficiente para \"{$prod['nombre']}\": solicita {$cant} pero hay {$prod['stock_total']} unidades.");
+                }
+
+                $precioReal = (float)$prod['precio'];
+                $subtotalProducto = $precioReal * $cant;
+                $subtotalReal += $subtotalProducto;
+
+                $productosValidados[] = [
+                    'producto_id' => $pid,
+                    'nombre' => $prod['nombre'],
+                    'cantidad' => $cant,
+                    'precio_unitario' => $precioReal,
+                    'subtotal' => $subtotalProducto,
+                    'talla' => $producto['talla'] ?? 'Única',
+                    'color' => $producto['color'] ?? null,
+                    'imagen' => $producto['imagen'] ?? null,
+                ];
+            }
+
+            // Recalcular totals en el servidor
+            $costoEnvio = (float)($data['costo_envio'] ?? 0);
+            $descuento = (float)($data['descuento'] ?? 0);
+            if ($descuento > $subtotalReal) {
+                $descuento = $subtotalReal;
+            }
+            $totalReal = $subtotalReal - $descuento + $costoEnvio;
+            if ($totalReal < 0) $totalReal = 0;
+
             $sql = "INSERT INTO pedidos (
                 usuario_id, numero_pedido,
                 nombre_cliente, email_cliente, telefono_cliente, cedula_cliente,
-                direccion_envio, barrio, ciudad, departamento, destinatario, informacion_adicional,
+                direccion_envio, direccion_complementaria, barrio, ciudad, departamento, destinatario, informacion_adicional,
                 metodo_pago, metodo_envio, costo_envio, subtotal, descuento, total,
                 estado_pago, zona, prioridad,
                 latitud_destino, longitud_destino
             ) VALUES (
                 :usuario_id, :numero_pedido,
                 :nombre_cliente, :email_cliente, :telefono_cliente, :cedula_cliente,
-                :direccion_envio, :barrio, :ciudad, :departamento, :destinatario, :informacion_adicional,
+                :direccion_envio, :direccion_complementaria, :barrio, :ciudad, :departamento, :destinatario, :informacion_adicional,
                 :metodo_pago, :metodo_envio, :costo_envio, :subtotal, :descuento, :total,
                 :estado_pago, :zona, :prioridad,
                 :latitud_destino, :longitud_destino
@@ -54,6 +109,7 @@ class PedidoModel {
                 'telefono_cliente' => $data['telefono_cliente'],
                 'cedula_cliente' => $data['cedula_cliente'] ?? null,
                 'direccion_envio' => $data['direccion_envio'],
+                'direccion_complementaria' => $data['direccion_complementaria'] ?? null,
                 'barrio' => $data['barrio'] ?? null,
                 'ciudad' => $data['ciudad'],
                 'departamento' => $data['departamento'],
@@ -61,10 +117,10 @@ class PedidoModel {
                 'informacion_adicional' => $data['informacion_adicional'] ?? null,
                 'metodo_pago' => $data['metodo_pago'],
                 'metodo_envio' => $data['metodo_envio'],
-                'costo_envio' => $data['costo_envio'],
-                'subtotal' => $data['subtotal'],
-                'descuento' => $data['descuento'],
-                'total' => $data['total'],
+                'costo_envio' => $costoEnvio,
+                'subtotal' => $subtotalReal,
+                'descuento' => $descuento,
+                'total' => $totalReal,
                 'estado_pago' => 'procesando',
                 'zona' => 'centro',
                 'prioridad' => 'normal',
@@ -74,37 +130,26 @@ class PedidoModel {
 
             $pedidoId = (int) $this->db->lastInsertId();
 
-            if (!empty($data['productos']) && is_array($data['productos'])) {
-                $sqlDetalle = "INSERT INTO detalles_pedido (
-                    pedido_id, producto_id, nombre_producto, cantidad, precio_unitario, subtotal, talla, color, imagen_url
-                ) VALUES (
-                    :pedido_id, :producto_id, :nombre_producto, :cantidad, :precio_unitario, :subtotal, :talla, :color, :imagen_url
-                )";
+            $sqlDetalle = "INSERT INTO detalles_pedido (
+                pedido_id, producto_id, nombre_producto, cantidad, precio_unitario, subtotal, talla, color, imagen_url
+            ) VALUES (
+                :pedido_id, :producto_id, :nombre_producto, :cantidad, :precio_unitario, :subtotal, :talla, :color, :imagen_url
+            )";
 
-                $stmtDetalle = $this->db->prepare($sqlDetalle);
+            $stmtDetalle = $this->db->prepare($sqlDetalle);
 
-                foreach ($data['productos'] as $producto) {
-                    $stmtDetalle->execute([
-                        'pedido_id' => $pedidoId,
-                        'producto_id' => $producto['producto_id'] ?? 0,
-                        'nombre_producto' => $producto['nombre'],
-                        'cantidad' => $producto['cantidad'],
-                        'precio_unitario' => $producto['precioUnitario'],
-                        'subtotal' => $producto['precioUnitario'] * $producto['cantidad'],
-                        'talla' => $producto['talla'] ?? 'Única',
-                        'color' => $producto['color'] ?? null,
-                        'imagen_url' => $producto['imagen'] ?? null
-                    ]);
-
-                    // Actualizar stock del producto
-                    if (!empty($producto['producto_id'])) {
-                        $stmtUpdate = $this->db->prepare("UPDATE productos SET stock_total = stock_total - :cantidad, total_vendidos = total_vendidos + :cantidad WHERE id = :id");
-                        $stmtUpdate->execute([
-                            'cantidad' => $producto['cantidad'],
-                            'id' => $producto['producto_id']
-                        ]);
-                    }
-                }
+            foreach ($productosValidados as $producto) {
+                $stmtDetalle->execute([
+                    'pedido_id' => $pedidoId,
+                    'producto_id' => $producto['producto_id'],
+                    'nombre_producto' => $producto['nombre'],
+                    'cantidad' => $producto['cantidad'],
+                    'precio_unitario' => $producto['precio_unitario'],
+                    'subtotal' => $producto['subtotal'],
+                    'talla' => $producto['talla'],
+                    'color' => $producto['color'],
+                    'imagen_url' => $producto['imagen']
+                ]);
             }
 
             $this->db->commit();
@@ -157,9 +202,39 @@ class PedidoModel {
         return $stmt->fetch();
     }
 
+    const ESTADOS_VALIDOS = ['pendiente', 'confirmado', 'procesando', 'listo', 'asignado', 'aceptado', 'recogido', 'en_camino', 'entregado', 'cancelado', 'reembolsado'];
+
     public function updateEstado($pedidoId, $estado) {
+        $estado = strtolower(trim($estado));
+        if (!in_array($estado, self::ESTADOS_VALIDOS)) {
+            throw new \Exception("Estado inválido: {$estado}. Estados permitidos: " . implode(', ', self::ESTADOS_VALIDOS));
+        }
         $sql = "UPDATE pedidos SET estado = :estado WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute(['estado' => $estado, 'id' => $pedidoId]);
+    }
+
+    public function getDetallesCompletos($pedidoId) {
+        $sql = "SELECT p.*, 
+                u.nombre as nombre_usuario, u.email as email_usuario, u.telefono as telefono_usuario,
+                u.cedula as cedula_usuario
+                FROM pedidos p
+                LEFT JOIN usuarios u ON p.usuario_id = u.id
+                WHERE p.id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id' => $pedidoId]);
+        $pedido = $stmt->fetch();
+
+        if (!$pedido) return null;
+
+        $sqlItems = "SELECT dp.*, pr.precio as precio_actual, pr.stock_total
+                     FROM detalles_pedido dp
+                     LEFT JOIN productos pr ON dp.producto_id = pr.id
+                     WHERE dp.pedido_id = :pedido_id";
+        $stmtItems = $this->db->prepare($sqlItems);
+        $stmtItems->execute(['pedido_id' => $pedidoId]);
+        $pedido['items'] = $stmtItems->fetchAll();
+
+        return $pedido;
     }
 }

@@ -609,7 +609,94 @@ function deleteAddressConfirmed(id) {
 }
 
 // ======================== PEDIDOS ========================
-function loadOrders() { renderOrders(); }
+function loadOrders() { 
+    if (currentUser) {
+        fetchOrdersFromAPI();
+    } else {
+        renderOrders(); 
+    }
+}
+
+async function fetchOrdersFromAPI() {
+    try {
+        const res = await fetch(`${APP_URL}/api/mis-pedidos`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) throw new Error('Error al cargar pedidos');
+        const data = await res.json();
+        if (Array.isArray(data)) {
+            orders = data;
+            renderOrders();
+        }
+    } catch (e) {
+        console.error('Error fetching orders:', e);
+        orders = [];
+        renderOrders();
+    }
+}
+
+function getStatusLabel(estado) {
+    const map = {
+        'pendiente': 'Pendiente',
+        'confirmada': 'Confirmada',
+        'cambio': 'Cambio',
+        'devolucion': 'Devolución',
+        'rechazada': 'Rechazada',
+        'confirmado': 'Confirmada',
+        'procesando': 'Pendiente',
+        'listo': 'Confirmada',
+        'asignado': 'Confirmada',
+        'aceptado': 'Confirmada',
+        'recogido': 'Confirmada',
+        'en_camino': 'Confirmada',
+        'entregado': 'Confirmada',
+        'cancelado': 'Rechazada',
+        'reembolsado': 'Rechazada'
+    };
+    return map[estado] || estado || 'Pendiente';
+}
+
+function getStatusClass(estado) {
+    const map = {
+        'pendiente': 'status-pending',
+        'confirmada': 'status-delivered',
+        'cambio': 'status-processing',
+        'devolucion': 'status-processing',
+        'rechazada': 'status-cancelled',
+        'confirmado': 'status-delivered',
+        'procesando': 'status-pending',
+        'listo': 'status-delivered',
+        'asignado': 'status-delivered',
+        'aceptado': 'status-delivered',
+        'recogido': 'status-delivered',
+        'en_camino': 'status-delivered',
+        'entregado': 'status-delivered',
+        'cancelado': 'status-cancelled',
+        'reembolsado': 'status-cancelled'
+    };
+    return map[estado] || 'status-pending';
+}
+
+function getStatusColor(estado) {
+    const map = {
+        'pendiente': '#f59e0b',
+        'confirmada': '#10b981',
+        'cambio': '#3b82f6',
+        'devolucion': '#8b5cf6',
+        'rechazada': '#ef4444',
+        'confirmado': '#10b981',
+        'procesando': '#f59e0b',
+        'listo': '#10b981',
+        'asignado': '#10b981',
+        'aceptado': '#10b981',
+        'recogido': '#10b981',
+        'en_camino': '#10b981',
+        'entregado': '#10b981',
+        'cancelado': '#ef4444',
+        'reembolsado': '#ef4444'
+    };
+    return map[estado] || '#6b7280';
+}
 
 function renderOrders() { 
     const ordersList = document.getElementById('ordersList'); 
@@ -625,162 +712,307 @@ function renderOrders() {
     if(emptyState) emptyState.style.display = 'none'; 
     if(ordersList) ordersList.style.display = 'flex'; 
     
-    ordersList.innerHTML = orders.map(order => `
-        <div class="order-card">
-            <div class="order-header">
-                <div>
-                    <div class="order-id">Pedido #${order.id || order.orderNumber}</div>
-                    <div class="order-date">${new Date(order.date).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
-                </div>
-                <div class="order-status ${order.status === 'delivered' ? 'status-delivered' : 'status-processing'}">
-                    ${order.status === 'delivered' ? 'Entregado' : 'En proceso'}
-                </div>
-            </div>
-            <div class="order-details">
-                <div class="order-detail-item">
-                    <div class="detail-label">Total</div>
-                    <div class="detail-value">COP $${order.total.toLocaleString()}</div>
-                </div>
-                <div class="order-detail-item">
-                    <div class="detail-label">Productos</div>
-                    <div class="detail-value">${order.items || order.products?.length || 0} artículos</div>
-                </div>
-            </div>
-            <div class="order-products">
-                ${order.products && order.products.length > 0 ? order.products.slice(0, 2).map(p => `
-                    <div class="order-product-item">
-                        <span>${p.nombre || p.name}</span>
-                        <span>${p.cantidad || p.quantity || 1} x COP $${(p.precioUnitario || p.precio || 0).toLocaleString()}</span>
+    ordersList.innerHTML = orders.map(order => {
+        let orderId = parseInt(order.pedido_id ?? order.id, 10);
+        if (Number.isNaN(orderId)) orderId = null;
+        const orderNumber = order.numero_pedido || `ORD-${orderId}`;
+        const fecha = order.fecha_pedido ? new Date(order.fecha_pedido) : new Date();
+        const estado = order.estado || 'pendiente';
+        const total = parseFloat(order.total) || 0;
+        const totalProductos = order.total_productos || 0;
+        
+        return `
+            <div class="order-card">
+                <div class="order-header">
+                    <div>
+                        <div class="order-id">Factura #${orderNumber}</div>
+                        <div class="order-date">${fecha.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                     </div>
-                `).join('') : ''}
-                ${order.products && order.products.length > 2 ? `<div class="order-product-item" style="color:var(--primary); font-weight:600;">+ ${order.products.length - 2} producto(s) más</div>` : ''}
+                    <div class="order-status ${getStatusClass(estado)}">
+                        ${getStatusLabel(estado)}
+                    </div>
+                </div>
+                <div class="order-details">
+                    <div class="order-detail-item">
+                        <div class="detail-label">Total</div>
+                        <div class="detail-value">COP $${total.toLocaleString()}</div>
+                    </div>
+                    <div class="order-detail-item">
+                        <div class="detail-label">Productos</div>
+                        <div class="detail-value">${totalProductos} artículos</div>
+                    </div>
+                </div>
+                ${orderId ? `<div class="order-actions">
+                    <button class="primary-btn" onclick="viewInvoice(${orderId})">VER FACTURA</button>
+                </div>` : ''}
             </div>
-            <div class="order-actions">
-                <button class="primary-btn" onclick="viewOrderDetails('${order.id || order.orderNumber}')">VER DETALLES</button>
-            </div>
-        </div>
-    `).join(''); 
+        `;
+    }).join(''); 
 }
 
-function viewOrderDetails(orderId) { 
-    const order = orders.find(o => (o.id || o.orderNumber) == orderId);
-    if (!order) {
-        showToast({title: "Error", message: "Pedido no encontrado", type: "error"});
-        return;
+async function viewInvoice(pedidoId) {
+    try {
+        const idNum = parseInt(pedidoId, 10);
+        if (!pedidoId || Number.isNaN(idNum)) {
+            console.error('viewInvoice: id de pedido inválido:', pedidoId);
+            showToast({title: "Error", message: "Id de pedido inválido", type: "error"});
+            return;
+        }
+        const url = `${APP_URL}/api/mis-pedidos/${idNum}`;
+        console.log('Cargando factura desde:', url);
+        const res = await fetch(url, {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status} - Factura no encontrada`);
+        const text = await res.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (parseError) {
+            console.error('El servidor no devolvió JSON válido:', text.slice(0, 200));
+            throw new Error('El servidor no devolvió una respuesta JSON válida');
+        }
+        
+        if (!data.pedido) {
+            showToast({title: "Error", message: "Factura no encontrada", type: "error"});
+            return;
+        }
+        
+        showInvoiceModal(data.pedido, data.items || []);
+    } catch (e) {
+        console.error('Error loading invoice:', e);
+        showToast({title: "Error", message: e.message || "No se pudo cargar la factura", type: "error"});
     }
-    
-    const existingModal = document.getElementById('orderModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    const totalItems = order.products ? order.products.reduce((sum, p) => sum + (p.cantidad || p.quantity || 1), 0) : (order.items || 0);
-    
-    const modalHTML = `
-        <div class="order-modal-overlay" id="orderModal">
-            <div class="order-modal">
-                <button class="order-modal-close" onclick="closeOrderModal()">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-                
-                <div class="order-modal-header">
-                    <div class="order-modal-header-left">
-                        <div class="order-modal-badge">Detalle del pedido</div>
-                        <h2>Pedido #${order.id || order.orderNumber}</h2>
-                    </div>
-                    <div class="order-modal-status ${order.status === 'delivered' ? 'status-delivered' : 'status-processing'}">
-                        ${order.status === 'delivered' ? 'Entregado' : 'En proceso'}
-                    </div>
-                </div>
-                
-                <div class="order-modal-info-grid">
-                    <div class="order-modal-info-item">
-                        <span class="order-modal-info-label">Fecha del pedido</span>
-                        <span class="order-modal-info-value">${new Date(order.date).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                    </div>
-                    <div class="order-modal-info-item">
-                        <span class="order-modal-info-label">Total</span>
-                        <span class="order-modal-info-value">COP $${order.total.toLocaleString()}</span>
-                    </div>
-                    <div class="order-modal-info-item">
-                        <span class="order-modal-info-label">Artículos</span>
-                        <span class="order-modal-info-value">${totalItems}</span>
-                    </div>
-                </div>
-                
-                <div class="order-modal-section">
-                    <h3 class="order-modal-section-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                        </svg>
-                        Productos
-                    </h3>
-                    <div class="order-modal-products">
-                        ${order.products && order.products.length > 0 ? order.products.map(p => `
-                            <div class="order-modal-product">
-                                <div class="order-modal-product-info">
-                                    <div class="order-modal-product-name">${p.nombre || p.name}</div>
-                                    <div class="order-modal-product-meta">
-                                        <span>Cantidad: ${p.cantidad || p.quantity || 1}</span>
-                                        <span>COP $${(p.precioUnitario || p.precio || 0).toLocaleString()}</span>
-                                        ${p.talla ? `<span>Talla: ${p.talla}</span>` : ''}
-                                        ${p.color ? `<span>Color: ${p.color}</span>` : ''}
-                                    </div>
-                                </div>
-                                <div class="order-modal-product-total">
-                                    COP $${((p.precioUnitario || p.precio || 0) * (p.cantidad || p.quantity || 1)).toLocaleString()}
-                                </div>
-                            </div>
-                        `).join('') : '<p class="order-modal-empty">No hay productos disponibles</p>'}
-                    </div>
-                </div>
-                
-                ${order.address ? `
-                <div class="order-modal-section">
-                    <h3 class="order-modal-section-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                            <circle cx="12" cy="10" r="3"></circle>
-                        </svg>
-                        Dirección de envío
-                    </h3>
-                    <div class="order-modal-address">
-                        <p class="order-modal-address-name">${order.address.recipient || order.address.destinatario || ''}</p>
-                        <p class="order-modal-address-line">${order.address.street || order.address.calle || ''}${order.address.additionalInfo ? ', ' + order.address.additionalInfo : ''}</p>
-                        <p class="order-modal-address-line">${order.address.neighborhood || order.address.barrio || ''}, ${order.address.municipality || order.address.municipio || ''}</p>
-                        <p class="order-modal-address-line">${order.address.department || ''}, ${order.address.country || 'Colombia'}</p>
-                    </div>
-                </div>
-                ` : ''}
-                
-                <div class="order-modal-footer">
-                    <button class="order-modal-btn-primary" onclick="closeOrderModal()">Cerrar</button>
+}
+
+function showInvoiceModal(pedido, items) {
+    const modal = document.getElementById('orderModal');
+    const container = document.getElementById('orderModalContent');
+    if (!modal || !container) return;
+
+    const logoUrl = APP_URL + '/assets/imagenes/general/logos.png';
+    const fecha = pedido.fecha_pedido ? new Date(pedido.fecha_pedido) : new Date();
+    const estado = pedido.estado || 'pendiente';
+    const envio = parseFloat(pedido.costo_envio) || 0;
+    const descuento = parseFloat(pedido.descuento) || 0;
+
+    const productosHtml = items.length > 0 ? items.map((item, index) => `
+        <tr style="border-bottom: 1px solid #e8edf5; ${index % 2 === 0 ? 'background: #fafbfc;' : 'background: #ffffff;'}">
+            <td style="padding: 14px 18px; color: #1f2937; font-weight: 600;">${item.nombre_producto || 'Producto'}</td>
+            <td style="padding: 14px 18px; text-align: center; color: #4b5563;">${item.talla || 'Única'}</td>
+            <td style="padding: 14px 18px; text-align: center; color: #4b5563;">${item.cantidad || 1}</td>
+            <td style="padding: 14px 18px; text-align: right; color: #4b5563;">COP $${parseFloat(item.precio_unitario || 0).toLocaleString()}</td>
+            <td style="padding: 14px 18px; text-align: right; color: #1e3a8a; font-weight: 700;">COP $${parseFloat(item.subtotal || 0).toLocaleString()}</td>
+        </tr>
+    `).join('') : '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #9ca3af;">No hay productos</td></tr>';
+
+    const fechaStr = fecha.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
+    const horaStr = fecha.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    const nombreCliente = pedido.nombre_cliente || pedido.nombre_usuario || 'Cliente';
+
+    container.innerHTML = `
+        <button onclick="closeOrderModal()" style="position: absolute; top: 16px; right: 16px; background: #f3f4f6; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #6b7280; z-index: 1;">&times;</button>
+
+        <!-- HEADER -->
+        <div style="text-align: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 25px; margin-bottom: 30px;">
+            <div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;">
+                <img src="${logoUrl}" alt="ANGELOW" style="height: 60px; width: auto;" onerror="this.style.display='none'">
+                <div>
+                    <h1 style="color: #1e3a8a; font-size: 32px; margin: 0; font-weight: 800; letter-spacing: -0.5px;">ANGELOW</h1>
+                    <span style="color: #4a6fa5; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; font-weight: 500;">Moda Infantil &middot; Calidad y Estilo</span>
                 </div>
             </div>
+            <div style="margin-top: 15px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; align-items: center;">
+                <span style="background: ${getStatusColor(estado)}; color: white; font-size: 14px; font-weight: 700; padding: 6px 25px; border-radius: 30px;">${getStatusLabel(estado).toUpperCase()}</span>
+            </div>
+            <div style="margin-top: 12px; color: #4a6fa5; font-size: 15px; font-weight: 600;">N&deg; ${pedido.numero_pedido || 'N/A'}</div>
+            <div style="color: #6b7280; font-size: 14px;">${fechaStr} &middot; ${horaStr}</div>
+        </div>
+        
+        <!-- MENSAJE DE GRACIAS -->
+        <div style="text-align: center; background: linear-gradient(135deg, #f0f4fa 0%, #e8edf5 100%); border-radius: 12px; padding: 14px; margin-bottom: 28px;">
+            <span style="color: #1e3a8a; font-size: 16px; font-weight: 600;">&iexcl;Gracias por tu compra, ${nombreCliente}!</span>
+        </div>
+        
+        <!-- DATOS CLIENTE Y ENV&Iacute;O -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 28px; background: #f8fafc; padding: 22px 28px; border-radius: 14px; border: 1px solid #e8edf5;">
+            <div>
+                <h3 style="color: #1e3a8a; font-size: 13px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; border-bottom: 2px solid #1e3a8a; padding-bottom: 6px;">Datos del Cliente</h3>
+                <p style="margin: 5px 0; color: #1f2937; font-weight: 700; font-size: 15px;">${nombreCliente}</p>
+                <p style="margin: 4px 0; color: #4b5563; font-size: 14px;">CC: ${pedido.cedula_cliente || pedido.cedula_usuario || 'N/A'}</p>
+                <p style="margin: 4px 0; color: #4b5563; font-size: 14px;">${pedido.telefono_cliente || pedido.telefono_usuario || 'N/A'}</p>
+                <p style="margin: 4px 0; color: #4b5563; font-size: 14px;">${pedido.email_cliente || pedido.email_usuario || 'N/A'}</p>
+            </div>
+            <div>
+                <h3 style="color: #1e3a8a; font-size: 13px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; border-bottom: 2px solid #1e3a8a; padding-bottom: 6px;">Datos de Env&iacute;o</h3>
+                <p style="margin: 5px 0; color: #1f2937; font-weight: 700; font-size: 15px;">${pedido.destinatario || nombreCliente}</p>
+                <p style="margin: 4px 0; color: #4b5563; font-size: 14px;">${pedido.direccion_envio || ''}${pedido.direccion_complementaria ? ', ' + pedido.direccion_complementaria : ''}</p>
+                <p style="margin: 4px 0; color: #4b5563; font-size: 14px;">${pedido.metodo_envio || ''}</p>
+                <p style="margin: 4px 0; color: #4b5563; font-size: 14px; font-weight: 600;">${envio > 0 ? 'COP $' + envio.toLocaleString() : 'Env&iacute;o Gratis'}</p>
+            </div>
+        </div>
+        
+        <!-- TABLA DE PRODUCTOS -->
+        <div style="margin-bottom: 25px; overflow-x: auto; border-radius: 14px; border: 1px solid #e8edf5;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <thead>
+                    <tr style="background: linear-gradient(135deg, #1e3a8a 0%, #2a4f9e 100%);">
+                        <th style="padding: 14px 18px; text-align: left; color: #ffffff; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Producto</th>
+                        <th style="padding: 14px 18px; text-align: center; color: #ffffff; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Talla</th>
+                        <th style="padding: 14px 18px; text-align: center; color: #ffffff; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Cant.</th>
+                        <th style="padding: 14px 18px; text-align: right; color: #ffffff; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Precio Unit.</th>
+                        <th style="padding: 14px 18px; text-align: right; color: #ffffff; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${productosHtml}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- TOTALES -->
+        <div style="display: flex; justify-content: flex-end; background: #f8fafc; border-radius: 14px; padding: 24px 30px; margin-bottom: 25px; border: 1px solid #e8edf5;">
+            <div style="width: 320px;">
+                <div style="display: flex; justify-content: space-between; padding: 6px 0; color: #4b5563; font-size: 15px;">
+                    <span>Subtotal</span>
+                    <span>COP $${parseFloat(pedido.subtotal || 0).toLocaleString()}</span>
+                </div>
+                ${descuento > 0 ? `
+                    <div style="display: flex; justify-content: space-between; padding: 6px 0; color: #10b981; font-size: 15px; font-weight: 600;">
+                        <span>Descuento</span>
+                        <span>- COP $${descuento.toLocaleString()}</span>
+                    </div>
+                ` : ''}
+                <div style="display: flex; justify-content: space-between; padding: 6px 0; color: #4b5563; font-size: 15px;">
+                    <span>Env&iacute;o</span>
+                    <span>${envio > 0 ? 'COP $' + envio.toLocaleString() : 'Gratis'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 14px 0 6px 0; border-top: 3px solid #1e3a8a; margin-top: 6px;">
+                    <span style="color: #1e3a8a; font-size: 20px; font-weight: 800;">TOTAL</span>
+                    <span style="color: #1e3a8a; font-size: 24px; font-weight: 900;">COP $${parseFloat(pedido.total || 0).toLocaleString()}</span>
+                </div>
+                <div style="text-align: right; margin-top: 8px; color: #6b7280; font-size: 13px; font-weight: 500;">${pedido.metodo_pago || 'No especificado'}</div>
+            </div>
+        </div>
+
+        <!-- FOOTER DE FACTURA -->
+        <div style="border-top: 2px solid #e8edf5; margin-top: 20px; padding-top: 20px; text-align: center; color: #6b7280; font-size: 13px;">
+            <p style="margin: 0; color: #1e3a8a; font-size: 16px; font-weight: 600;">Gracias por elegir ANGELOW</p>
+            <p style="margin: 5px 0 0 0; color: #4a6fa5;">Moda Infantil - Calidad y Estilo para tus peque&ntilde;os</p>
+            <p style="margin: 5px 0 0 0; font-size: 12px; color: #9ca3af;">info@angelow.com | +57 3135951664 | Medell&iacute;n, Colombia</p>
+            <p style="margin: 5px 0 0 0; font-size: 11px; color: #b0b8c8;">Pedido N&deg; ${pedido.numero_pedido || 'N/A'} | ${fechaStr}</p>
+        </div>
+        
+        <!-- BOT&Oacute;NES -->
+        <div style="display: flex; gap: 14px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
+            <button onclick="closeOrderModal()" style="background: #6b7280; color: white; border: none; padding: 15px 40px; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px rgba(107, 114, 128, 0.35); transition: all 0.3s ease;">
+                Cerrar
+            </button>
+            <button onclick="descargarFacturaPDF('${pedido.numero_pedido || 'N/A'}', this)" style="background: #10b981; color: white; border: none; padding: 15px 40px; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35); transition: all 0.3s ease;">
+                Descargar Factura PDF
+            </button>
         </div>
     `;
-    
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    modal.classList.add('active');
+    modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
-    setTimeout(() => {
-        const modal = document.getElementById('orderModal');
-        if (modal) modal.classList.add('active');
-    }, 10);
 }
 
 function closeOrderModal() {
     const modal = document.getElementById('orderModal');
     if (modal) {
         modal.classList.remove('active');
-        setTimeout(() => {
-            modal.remove();
-            document.body.style.overflow = '';
-        }, 300);
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
     }
+}
+
+function descargarFacturaPDF(numeroPedido, btn) {
+    const invoiceContent = document.getElementById('orderModalContent');
+    if (!invoiceContent) {
+        showToast({title: "Error", message: "No se pudo generar el PDF", type: "error"});
+        return;
+    }
+
+    showToast({title: "Generando PDF", message: "Por favor espere...", type: "info"});
+
+    btn = btn || event.target;
+    btn.disabled = true;
+    btn.textContent = 'Generando...';
+
+    const clone = invoiceContent.cloneNode(true);
+    clone.style.position = 'fixed';
+    clone.style.left = '-99999px';
+    clone.style.top = '0';
+    clone.style.maxHeight = 'none';
+    clone.style.overflow = 'visible';
+    clone.style.width = '900px';
+    clone.querySelectorAll('button').forEach(b => b.style.display = 'none');
+    document.body.appendChild(clone);
+
+    const capturable = clone;
+
+    const waitImages = () => Promise.all(
+        Array.from(capturable.querySelectorAll('img')).map(img => {
+            if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+            return new Promise(resolve => {
+                img.onload = resolve;
+                img.onerror = resolve;
+            });
+        })
+    );
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 10;
+    const contentWidth = pageWidth - (margin * 2);
+
+    waitImages().then(() => {
+        return html2canvas(capturable, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            windowWidth: 900,
+            width: capturable.scrollWidth,
+            height: capturable.scrollHeight
+        });
+    }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = contentWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        let heightLeft = imgHeight;
+        let position = margin;
+
+        doc.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+        heightLeft -= (pageHeight - margin * 2);
+
+        while (heightLeft > 0) {
+            position = -(pageHeight - margin * 2) + margin;
+            doc.addPage();
+            doc.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
+            heightLeft -= (pageHeight - margin * 2);
+        }
+
+        const safeName = (numeroPedido || 'Factura').replace(/[^a-zA-Z0-9\-]/g, '_');
+        doc.save('Factura_' + safeName + '.pdf');
+
+        btn.disabled = false;
+        btn.textContent = 'Descargar Factura PDF';
+        showToast({title: "PDF descargado", message: "Factura_" + safeName + ".pdf", type: "success"});
+    }).catch(err => {
+        console.error('Error generating PDF:', err);
+        btn.disabled = false;
+        btn.textContent = 'Descargar Factura PDF';
+        showToast({title: "Error", message: "No se pudo generar el PDF", type: "error"});
+    }).finally(() => {
+        if (capturable && capturable.parentNode) capturable.parentNode.removeChild(capturable);
+    });
 }
 
 // ======================== TARJETAS ========================

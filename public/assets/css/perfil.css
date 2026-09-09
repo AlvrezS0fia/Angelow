@@ -50,6 +50,37 @@ body {
   display: flex;
 }
 
+.order-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.order-modal-overlay.active {
+  display: flex;
+}
+
+.order-modal-content {
+  max-width: 900px;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(30, 58, 138, 0.15);
+  border: 1px solid #e8edf5;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 50px;
+}
+
 .alert-modal {
   background: var(--white);
   border-radius: 20px;
@@ -846,6 +877,11 @@ select.form-input {
 }
 
 .status-pending {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+}
+
+.status-cancelled {
   background: rgba(239, 68, 68, 0.1);
   color: var(--error);
 }

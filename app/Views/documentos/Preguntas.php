@@ -73,7 +73,7 @@
                         2. <strong>Elige</strong> la talla y cantidad de cada producto.<br>
                         3. <strong>Agrega</strong> los artículos al carrito de compra.<br>
                         4. <strong>Revisa</strong> tu pedido en el carrito y haz clic en "Finalizar compra".<br>
-                        5. <strong>Completa</strong> tus datos de envío y facturación.<br>
+                        5. <strong>Completa</strong> tus datos de envío.<br>
                         6. <strong>Selecciona</strong> tu método de pago preferido.<br>
                         7. <strong>Confirma</strong> tu pedido y recibirás un email de confirmación.
                         <br><br>
@@ -553,23 +553,6 @@
                         • Contacta a tu banco para verificar el estado de tu tarjeta<br>
                         • Intenta con otro método de pago<br>
                         • Si el problema persiste, contáctanos para ayudarte
-                    </div>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-question">
-                    <span>¿Emiten factura?</span>
-                    <span class="faq-icon">+</span>
-                </div>
-                <div class="faq-answer">
-                    <div class="faq-answer-content">
-                        ¡Por supuesto! Todos nuestros pedidos incluyen <strong>factura electrónica</strong>.
-                        <br><br>
-                        • La factura se envía automáticamente a tu correo electrónico una vez confirmado el pago.<br>
-                        • También puedes descargarla desde tu cuenta en la sección "Mis pedidos".<br>
-                        <br>
-                        Si necesitas que la factura sea a nombre de una empresa, asegúrate de indicar el <strong>NIT y razón social</strong> antes de confirmar tu compra.
                     </div>
                 </div>
             </div>

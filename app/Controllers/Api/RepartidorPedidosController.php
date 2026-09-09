@@ -230,7 +230,7 @@ class RepartidorPedidosController
             Database::query("SELECT 'asignado' FROM DUAL WHERE 'asignado' IN ('pendiente','asignado','confirmado')");
         } catch (\Exception $e) {
             try {
-                Database::query("ALTER TABLE pedidos MODIFY COLUMN estado ENUM('pendiente','asignado','confirmado','procesando','listo','en_camino','entregado','cancelado','reembolsado') DEFAULT 'pendiente'");
+                Database::query("ALTER TABLE pedidos MODIFY COLUMN estado ENUM('pendiente','confirmada','cambio','devolucion','rechazada') DEFAULT 'pendiente'");
             } catch (\Exception $e2) {}
         }
     }
@@ -246,7 +246,7 @@ class RepartidorPedidosController
         $data = json_decode(file_get_contents('php://input'), true);
         $newStatus = $data['status'] ?? '';
 
-        $validStatuses = ['pendiente', 'asignado', 'confirmado', 'procesando', 'listo', 'en_camino', 'entregado', 'cancelado'];
+        $validStatuses = ['pendiente', 'confirmada', 'cambio', 'devolucion', 'rechazada'];
         if (!in_array($newStatus, $validStatuses)) {
             $this->json(['error' => 'Estado inválido'], 400);
             return;

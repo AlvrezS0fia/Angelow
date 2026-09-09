@@ -3,10 +3,11 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\RateLimiter;
 use App\Models\UsuarioModel;
 
 class AuthController extends Controller {
-    private $usuarioModel;
+    private UsuarioModel $usuarioModel;
 
     public function __construct() {
         $this->usuarioModel = new UsuarioModel();
@@ -32,11 +33,20 @@ class AuthController extends Controller {
             return;
         }
 
+        $rlKey = 'login:' . ($_SERVER['REMOTE_ADDR'] ?? '') . ':' . strtolower(trim($email));
+        if (RateLimiter::tooMany($rlKey, 5, 900)) {
+            $this->json(['success' => false, 'message' => 'Demasiados intentos. Espera 15 minutos.'], 429);
+            return;
+        }
+
         $user = $this->usuarioModel->findByEmail($email);
+        // CAPA 7 ISO-OSI (Aplicación): verificación de hash bcrypt (password_verify).
         if (!$user || !password_verify($password, $user['password_hash'])) {
             $this->json(['success' => false, 'message' => 'Credenciales incorrectas']);
             return;
         }
+
+        RateLimiter::clear($rlKey);
 
         // Guardar en sesión
         $_SESSION['user'] = [
@@ -47,6 +57,10 @@ class AuthController extends Controller {
             'rol' => $user['rol'] ?? 'cliente',
             'estado' => $user['estado'] ?? 'activo'
         ];
+        $_SESSION['user_id'] = $user['id'];
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
 
         // Redirección según el rol
         $rol = $_SESSION['user']['rol'] ?? 'cliente';
@@ -90,6 +104,7 @@ class AuthController extends Controller {
             $this->json(['success' => false, 'message' => 'Email inválido']);
             return;
         }
+        // CAPA 7 ISO-OSI (Aplicación): política de contraseñas (validación de entrada).
         if (strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[0-9]/', $password) || !preg_match('/[^a-zA-Z0-9]/', $password)) {
             $this->json(['success' => false, 'message' => 'La contraseña no cumple los requisitos']);
             return;
@@ -120,10 +135,12 @@ class AuthController extends Controller {
                 'nombre' => $user['nombre'],
                 'rol' => $user['rol'] ?? 'cliente'
             ];
+            $_SESSION['user_id'] = $user['id'];
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
             
-            // ==============================================
             // ENVIAR CORREO DE BIENVENIDA (MÓDULO EXTERNO)
-            // ==============================================
             $emailSent = false;
             $emailServicePath = __DIR__ . '/../Libraries/EmailService.php';
             
@@ -228,6 +245,10 @@ class AuthController extends Controller {
                 'nombre' => $user['nombre'],
                 'rol' => $user['rol'] ?? 'cliente'
             ];
+            $_SESSION['user_id'] = $user['id'];
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
 
             // Redirección según rol
             $redirectUrl = ($_SESSION['user']['rol'] === 'administrador') ? '/admin?welcome=1' : '/?welcome=1';
@@ -246,7 +267,13 @@ class AuthController extends Controller {
             $this->json(['success' => false, 'message' => 'Email requerido']);
             return;
         }
-        
+
+        $rlKey = 'forgot:' . ($_SERVER['REMOTE_ADDR'] ?? '') . ':' . strtolower(trim($email));
+        if (RateLimiter::tooMany($rlKey, 3, 3600)) {
+            $this->json(['success' => false, 'message' => 'Demasiados intentos. Espera una hora.'], 429);
+            return;
+        }
+
         $user = $this->usuarioModel->findByEmail($email);
         if (!$user) {
             $this->json(['success' => false, 'message' => 'No existe cuenta con ese email']);
@@ -257,9 +284,7 @@ class AuthController extends Controller {
         $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
         $this->usuarioModel->setResetToken($email, $token, $expires);
         
-        // ==============================================
         // ENVIAR CORREO DE RECUPERACIÓN
-        // ==============================================
         $emailSent = false;
         $emailServicePath = __DIR__ . '/../Libraries/EmailService.php';
         

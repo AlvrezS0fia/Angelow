@@ -1,6 +1,6 @@
 # ANGELOW
 
-Tienda de moda infantil desarrollada con PHP 8+, MySQL y JavaScript vanilla. Cuenta con un frontend para clientes (catálogo, carrito, checkout, seguimiento) y un panel de administración para gestión de productos, pedidos, clientes, repartidores e inventario.
+Tienda de moda infantil desarrollada con PHP 8+, MySQL y JavaScript vanilla. Cuenta con un frontend para clientes (catálogo, carrito, checkout, seguimiento de pedidos, perfil) y paneles para administradores (productos, pedidos, clientes, repartidores, inventario) y repartidores (entregas, rastreo). Incluye un **microservicio Python (FastAPI)** para el registro de repartidores con sincronización automática a la base de datos principal.
 
 ## Tabla de Contenidos
 
@@ -8,17 +8,21 @@ Tienda de moda infantil desarrollada con PHP 8+, MySQL y JavaScript vanilla. Cue
 2. [Tecnologías](#tecnologías)
 3. [Estructura del Proyecto](#estructura-del-proyecto)
 4. [Arquitectura](#arquitectura)
-5. [Base de Datos](#base-de-datos)
-6. [Rutas](#rutas)
-7. [Controladores](#controladores)
-8. [Modelos](#modelos)
-9. [Vistas](#vistas)
-10. [Assets (CSS/JS)](#assets-cssjs)
-11. [Configuración](#configuración)
-12. [Requisitos](#requisitos)
-13. [Instalación](#instalación)
-14. [Uso](#uso)
-15. [Notas Técnicas](#notas-técnicas)
+5. [Capas de Seguridad (modelo ISO-OSI)](#capas-de-seguridad-modelo-iso-osi)
+6. [Base de Datos](#base-de-datos)
+7. [Rutas](#rutas)
+8. [Controladores](#controladores)
+9. [Modelos](#modelos)
+10. [Vistas](#vistas)
+11. [Assets (CSS/JS)](#assets-cssjs)
+12. [Menú de usuario por rol](#menú-de-usuario-por-rol)
+13. [Configuración](#configuración)
+14. [Requisitos](#requisitos)
+15. [Instalación](#instalación)
+16. [Uso](#uso)
+17. [Notas Técnicas](#notas-técnicas)
+18. [Mantenimiento](#mantenimiento)
+19. [Referencia de documentación](#referencia-de-documentación)
 
 ---
 
@@ -26,24 +30,33 @@ Tienda de moda infantil desarrollada con PHP 8+, MySQL y JavaScript vanilla. Cue
 
 ### Cliente
 - Catálogo de productos con filtros por categoría, búsqueda y detalle de producto.
-- Carrito de compras sincronizado con base de datos para usuarios e invitados.
+- Carrito de compras sincronizado con base de datos para usuarios e invitados (cookie `cart_session`).
 - Checkout con generación de pedido, cálculo de envío y soporte para Mercado Pago / PSE.
 - Seguimiento de pedidos en tiempo real.
 - Sistema de favoritos sincronizado.
-- Perfil de usuario con historial de pedidos y facturas.
+- Perfil de usuario con historial de pedidos, direcciones y tarjetas.
 - Autenticación por email y Google OAuth.
 - Recuperación y cambio de contraseña.
-- Página de contacto.
-- Modo invitado con carrito persistente por `cart_session` cookie.
-- Documentos legales: términos, políticas de privacidad, políticas de envío, políticas de devolución, preguntas frecuentes, guía de tallas.
+- Página de contacto y documentos legales (términos, políticas, preguntas frecuentes, guía de tallas).
 
 ### Administración
 - Dashboard con métricas: total pedidos, pendientes, favoritos, ganancias, usuarios.
 - Gestión de inventario (stock, ajustes, productos).
-- Gestión de pedidos (estados, detalles).
+- Gestión de pedidos (estados, detalles) y exportación a PDF.
 - Gestión de clientes (búsqueda, cambio de rol).
-- Gestión de repartidores.
+- Gestión de repartidores (solicitudes, aprobación, suspensión, documentos).
 - Mapa de pedidos con Leaflet para visualizar ubicaciones de entrega.
+
+### Repartidor
+- Login y dashboard propios (sesión PHP + token JWT para las APIs).
+- Listado de pedidos asignados y cambio de estado con transiciones validadas.
+- Módulo "Rastrear Pedido": búsqueda por número, mapa Leaflet e historial real.
+- Subida de documentos (cédula, licencia, SOAT, etc.) con validación de MIME real.
+- **Formulario de registro multi-paso** (microservicio FastAPI):
+  - 3 pasos: Datos Personales → Vehículo → Documentos.
+  - Validación frontend en tiempo real.
+  - Sincronización automática con MySQL (usuarios, solicitudes, documentos, vehículos).
+  - Modal de login integrado con conexión CORS al endpoint `/repartidor/login`.
 
 ---
 
@@ -51,16 +64,19 @@ Tienda de moda infantil desarrollada con PHP 8+, MySQL y JavaScript vanilla. Cue
 
 | Componente | Tecnología |
 |------------|------------|
-| Backend | PHP 8+ |
+| Backend | PHP 8+ (MVC propio, sin framework) |
 | Base de Datos | MySQL / MariaDB |
 | Frontend | JavaScript vanilla, CSS |
 | Email | PHPMailer (vía Composer) |
-| Iconos | Font Awesome 6 (CDN) |
+| Iconos | Font Awesome 6.4.0 (CDN) |
 | Gráficos | Chart.js (CDN) |
 | Mapas | Leaflet (CDN) |
 | PDF | jsPDF + jsPDF-AutoTable (CDN) |
-| Fuentes | Google Fonts (Inter) |
+| Tokens | JWT HS256 (`App\Core\JWTHelper`) |
+| Fuentes | Google Fonts (Inter / Quicksand) |
+| Microservicio | Python 3.10+, FastAPI, Uvicorn, SQLite (registro repartidores) |
 | Contenedores | Docker, Docker Compose |
+| Tiempo real | Node.js Express + Socket.IO (`Repartidor/`) |
 
 ---
 
@@ -68,119 +84,252 @@ Tienda de moda infantil desarrollada con PHP 8+, MySQL y JavaScript vanilla. Cue
 
 ```
 Angelow/
-├── .env                         # Variables de entorno
+├── .env                         # Variables de entorno (NO se sube a Git)
+├── .env.example                 # Plantilla de variables (sin secretos reales)
 ├── .htaccess                    # Rewrite rules Apache
-├── angelow.sql                  # Script de base de datos
-├── composer.json                # Dependencias PHP (PHPMailer)
-├── composer.lock
-├── config/
-│   ├── app.php                  # Configuración de la aplicación
-│   ├── database.php             # Configuración de base de datos
-│   └── routes.php               # Rutas de la aplicación
+├── angelow.sql                  # Script de la base de datos (referencia)
+├── composer.json                # Autoload PSR-4 (App\ → app/) + PHPMailer
 ├── docker-compose.yml           # Orquestación Docker
 ├── Dockerfile                   # Imagen Docker
-├── docker/
-│   ├── apache-vhost.conf
-│   └── entrypoint.sh
-├── Document/                    # Documentación adicional
+├── Document/                    # Notas de cambios y soluciones del equipo
+├── Repartidor/                  # App Node.js (Express + Socket.IO) — tiempo real de entregas
+├── repartidor-service/          # Microservicio Python (FastAPI) — registro de repartidores
+│   ├── main.py                  # Punto de entrada FastAPI
+│   ├── config.py                # Configuración del microservicio
+│   ├── database.py              # Conexión SQLite (sincronización con MySQL)
+│   ├── models/                  # Modelos SQLAlchemy (solicitud, vehículo, documentos)
+│   ├── patterns/                # Patrones GOF (Builder, Facade, Adapter, etc.)
+│   ├── routes/                  # Rutas FastAPI (registro)
+│   ├── schemas/                 # Pydantic schemas
+│   ├── services/                # Lógica de negocio
+│   ├── repositories/            # Acceso a datos
+│   ├── static/                  # CSS, JS, fuentes, imágenes del formulario
+│   └── templates/               # HTML del formulario multi-paso
+├── config/
+│   ├── app.php                  # Constantes de la aplicación
+│   ├── database.php             # Constantes de conexión a BD
+│   └── routes.php               # Tabla central de todas las rutas (web + API)
+├── database/                    # Migraciones SQL incrementales
+│   └── 999_drop_facturacion.sql # Limpieza de la funcionalidad de facturación eliminada
+├── app/                         # Núcleo PHP (MVC)
+│   ├── Controllers/
+│   │   ├── Api/                 # APIs REST (carrito, repartidor, admin, etc.)
+│   │   ├── Admin/               # Panel de administración
+│   │   ├── Cliente/             # APIs del cliente (pedidos, perfil, direcciones, tarjetas)
+│   │   ├── Procesar/            # Controladores legacy
+│   │   └── [Controladores principales]
+│   ├── Core/                    # Núcleo (Router, Controller, Database, Auth, JWTHelper, ...)
+│   ├── Helpers/                 # Helpers PHP
+│   ├── Libraries/               # EmailService (PHPMailer)
+│   ├── Models/                  # Modelos de datos (PDO con sentencias preparadas)
+│   └── Views/                   # Vistas PHP
+│       ├── layouts/             # Partials compartidos (Leaflet, etc.)
+│       ├── home/                # Página de inicio (bienvenida)
+│       ├── auth/                # Login, registro, recuperación de contraseña
+│       ├── admin/               # Panel admin (panel, inventario, repartidor)
+│       ├── repartidor/          # Login y dashboard del repartidor
+│       ├── paginas/             # Perfil, compra, seguimiento, contacto
+│       ├── documentos/          # Páginas legales
+│       ├── cargador/            # Página de precarga (carga fuentes, iconos y estilos)
+│       └── emails/              # Plantillas de correo transaccional
 ├── public/
-│   ├── index.php                # Punto de entrada
+│   ├── index.php                # Front controller (punto de entrada único)
 │   └── assets/
-│       ├── css/                 # Hojas de estilo
-│       ├── js/                  # Scripts frontend
-│       ├── imagenes/            # Imágenes del sitio
-│       │   ├── general/
-│       │   ├── ninos/
-│       │   ├── ninas/
-│       │   └── bebe/
-│       └── chatbot/
-│           └── botpress.js
-├── vendor/                      # Dependencias Composer
-└── app/
-    ├── Controllers/             # Controladores
-    │   ├── Api/                 # API REST
-    │   ├── Admin/               # Panel de administración
-    │   ├── Cliente/             # API de cliente
-    │   ├── Procesar/            # Controladores legacy (procesar)
-    │   └── [Controladores principales]
-    ├── Core/                    # Núcleo del framework
-    ├── Libraries/               # Librerías (EmailService)
-    ├── Models/                  # Modelos de datos
-    └── Views/                   # Vistas (PHP)
-        ├── layouts/
-        ├── home/
-        ├── auth/
-        ├── admin/
-        ├── paginas/
-        ├── repartidor/          # Vistas del panel de repartidor (login y dashboard)
-        ├── documentos/
-        └── emails/
-    ```
-    
-    ### Cambios en Estructura de Carpetas (Reorganización Repartidor)
-    - **Vistas movidas**: `app/Views/auth/login-repartidor.php` → `app/Views/repartidor/login.php`
-    - **Nuevo dashboard**: `app/Views/repartidor/dashboard.php` (reemplaza a `app/Views/paginas/repartidor.php`)
-    - **CSS organizado**:
-      - `public/assets/css/repartidor-login.css` - Estilos del login de repartidor
-      - `public/assets/css/repartidor-dashboard.css` - Estilos del dashboard de repartidor
-      - `public/assets/css/repartidor.css` - Estilos generales del panel repartidor
-    - **Proyecto Node.js movido**: El proyecto Node.js anterior de `/Repartidor` fue respaldado en `Document/Repartidor_NodeJS_Backup/` y eliminado de la raíz para evitar conflictos.
-    
-    ### Flujo de Navegación Repartidor
-    1. Usuario hace clic en icono de repartidor en la página principal → redirige a `/repartidor/login`
-    2. Login exitoso → redirige a `/repartidor` (dashboard)
-    3. Cierre de sesión → redirige a `/repartidor/login`
+│       ├── css/                 # Hojas de estilo (tokens.css = identidad compartida)
+│       ├── js/                  # Scripts frontend (bienvenida.js, panel.js, ...)
+│       ├── chatbot/botpress.js  # Integración de chatbot
+│       └── imagenes/            # Imágenes del sitio (general, ninos, ninas, bebe)
+├── storage/sessions/            # Sesiones PHP (writable)
+├── uploads/                     # Archivos subidos (documentos de repartidores)
+└── vendor/                      # Dependencias Composer
+```
+
+> **Nota**: la funcionalidad de **facturación** (microservicio Python `facturacion/`,
+> controladores/modelos PHP y tablas `facturas*`) fue **eliminada** del proyecto. Solo
+> permanece el enlace de menú **"Facturas"** para el cliente (ver [Menú de usuario](#menú-de-usuario-por-rol)).
 
 ---
 
 ## Arquitectura
 
-La aplicación usa un patrón MVC personalizado:
+### Modelo de capas (MVC propietario)
 
-- **Router** (`app/Core/Router.php`): Enruta solicitudes a controladores basándose en método HTTP y ruta.
-- **Controller** (`app/Core/Controller.php`): Clase base con métodos `view()`, `json()`, `redirect()`.
-- **Database** (`app/Core/Database.php`): Singleton PDO para conexión a MySQL.
-- **Env** (`app/Core/Env.php`): Carga variables desde `.env`.
+ANGELOW usa un **MVC propio** (no Laravel ni Symfony), con autoload PSR-4 simple
+(`App\` → `app/`). El flujo de una petición es:
+
+```
+Navegador (HTTP / AJAX)
+   │
+   ▼
+public/index.php  →  front controller
+   │  capa 5 ISO-OSI (Sesión): session_start + storage/sessions + cookie cart_session
+   │  carga .env, config, autoloader, helpers
+   ▼
+App\Core\Router (config/routes.php)
+   │  match método + ruta (soporta parámetros {id}) → controlador
+   ▼
+Controller (App\Controllers\*)
+   │  capa 7 ISO-OSI (Aplicación): valida entrada, autentica y autoriza por rol
+   ▼
+Model (App\Models\* → App\Core\Database::query)
+   │  capa 7 ISO-OSI (Aplicación): SQL parametrizado (PDO prepared statements)
+   ▼
+MySQL (angelow_db)
+```
+
+### Capas que SÍ existen
+- `Controller → Model → Database (PDO) → MySQL`.
+- `App\Core\Auth`: helper de sesión y autorización por rol.
+- `App\Core\JWTHelper`: tokens JWT (HS256) para las APIs de repartidor.
+- `App\Core\Controller`: métodos base `view()`, `json()`, `redirect()`.
+
+### Capas que NO existen (no se inventan en la documentación)
+- **Servicio/Repositorio/DAO** separado del Model: la lógica de negocio vive en los
+  controladores.
+- **Middleware global** de rutas: la autorización se repite método a método.
+- **ORM**: se usa PDO con consultas preparadas a mano.
+
+### Flujo por rol
+- **Cliente**: tienda → carrito → checkout → pedido → seguimiento.
+- **Administrador**: `/admin` → dashboard, pedidos, clientes, repartidores, inventario.
+- **Repartidor**: `/repartidor/login` → dashboard → entregas y rastreo.
+- La puerta de entrada del sitio es `/cargador` (precarga de fuentes, Font Awesome y
+  estilos), que carga `home/bienvenida.php`.
+
+### Microservicio de Registro de Repartidores (`repartidor-service/`)
+
+Microservicio independiente construido con **FastAPI** que maneja el formulario multi-paso
+de registro de repartidores. Implementa patrones de diseño GOF (Builder, Facade, Adapter,
+Singleton, Factory, Strategy, Chain of Responsibility, Observer, Template Method, Repository).
+
+**Flujo de datos:**
+```
+Frontend (registro.html → script.js)
+   │  POST /api/repartidor/registro (FormData multipart)
+   ▼
+FastAPI (main.py → routes/repartidor.py)
+   │  Builder → Facade → Repository → SQLite
+   ▼
+SQLite (repartidores.db)  ──sync──▶  MySQL (angelow_db)
+                                       │
+                                       ▼
+                           Angelow adapter → INSERT/UPDATE
+                           (solicitudes_repartidores, usuarios,
+                            documentos, vehiculos_repartidores)
+```
+
+**Puerto:** 8000 (`http://127.0.0.1:8000`)
+
+**Sincronización automática:** Cuando se registra un repartidor, el adapter
+(`patterns/structural/angelow_adapter.py`) inserta directamente en MySQL:
+- `usuarios` — datos personales del repartidor
+- `solicitudes_repartidores` — solicitud con tarjeta, SOAT, licencia, vencimientos
+- `documentos` — archivos subidos (SOAT, tarjeta, licencia)
+- `vehiculos_repartidores` — datos del vehículo
+
+**CORS habilitado:** Para requests del microservicio (puerto 8000) a ANGELOW (puerto 80),
+se agregaron headers CORS en `RepartidorAuthController::login()` y handler OPTIONS
+preflight en `public/index.php`.
+
+---
+
+## Capas de Seguridad (modelo ISO-OSI)
+
+Se mapea cada control de seguridad al **modelo de referencia ISO-OSI (ISO 7498)** según la
+capa en la que actúa. Los comentarios en el código usan la notación
+`// CAPA N ISO-OSI (Nombre): ...`.
+
+| Capa ISO-OSI | Nombre | Qué protege en ANGELOW | Dónde está en el código |
+|--------------|--------|------------------------|--------------------------|
+| **7** | Aplicación | Autenticación (login/registro), autorización por rol, validación de entrada, política de contraseñas, **SQL Injection**, subida de archivos (whitelist de tipos), JWT emisión/verificación | `app/Controllers/AuthController.php`, `app/Controllers/Api/RepartidorDocumentosController.php`, `app/Core/Auth.php`, `app/Core/Database.php`, `app/Core/JWTHelper.php` |
+| **6** | Presentación | Escape y codificación de salida (**XSS**), comparación de firmas en tiempo constante (`hash_equals`), JSON seguro dentro de `<script>` | `app/Views/home/bienvenida.php`, `app/Views/repartidor/dashboard.php`, `app/Views/paginas/perfil.php`, `app/Core/JWTHelper.php` |
+| **5** | Sesión | Gestión de sesiones PHP, directorio de sesiones, cookies (`cart_session`), autorización basada en sesión | `public/index.php`, `app/Core/Auth.php`, `config/database.php` |
+| **4** | Transporte | Cifrado en tránsito: SMTP **STARTTLS** (correo). HTTPS depende del servidor/Apache (pendiente forzarlo) | `app/Libraries/EmailService.php`, `.htaccess` |
+| **3** | Red | Firewall y rate limiting en el borde. **NO IMPLEMENTADO** para login/APIs (recomendación pendiente) | — |
+
+### Estado de los controles
+
+| Control | Capa ISO-OSI | Estado |
+|---------|--------------|--------|
+| Hash de contraseñas (bcrypt `password_hash`/`password_verify`) | 7 | ✅ IMPLEMENTADO |
+| Autorización por rol (backend, método a método) | 7 + 5 | ✅ IMPLEMENTADO |
+| SQL Injection (PDO con sentencias preparadas) | 7 | ✅ IMPLEMENTADO |
+| Subida de documentos (MIME real `finfo`, límite, whitelist) | 7 | ✅ IMPLEMENTADO |
+| XSS en `json_encode` / atributos (`JSON_HEX_*`, `htmlspecialchars`) | 6 | ✅ IMPLEMENTADO |
+| JWT HS256 (`JWT_SECRET` en `.env`) | 7 | ✅ IMPLEMENTADO |
+| Comparación de firmas en tiempo constante | 6 | ✅ IMPLEMENTADO (`hash_equals`) |
+| SMTP cifrado (STARTTLS) | 4 | ✅ IMPLEMENTADO |
+| CSRF (tokens en formularios/fetch) | 7 | ❌ PENDIENTE |
+| Cookies `SameSite`/`HttpOnly`/`Secure` | 5 | ❌ PENDIENTE |
+| Expiración y renovación de sesiones | 5 | ❌ PENDIENTE |
+| Endpoint autenticado para servir documentos | 7 | ❌ PENDIENTE |
+| Rate limiting en login/APIs | 3 | ❌ PENDIENTE |
+| HTTPS forzado | 4 | ❌ PENDIENTE (depende del servidor) |
+
+Detalle y auditoría completa: [`docs/SEGURIDAD.md`](docs/SEGURIDAD.md).
 
 ---
 
 ## Base de Datos
 
-El archivo `angelow.sql` contiene el schema completo. Las tablas principales incluyen:
+- Motor: **MySQL** `angelow_db`, charset `utf8mb4`, conexión con **PDO**.
+- Esquema de referencia: `angelow.sql`.
+- Migraciones incrementales en `database/` y `migrations/`.
+
+### Tablas principales
 
 | Tabla | Descripción |
 |-------|-------------|
-| `usuarios` | Usuarios del sistema (clientes, repartidores, administradores) |
+| `usuarios` | Usuarios (cliente / repartidor / administrador) y su estado |
 | `categorias` | Categorías y subcategorías de productos |
 | `productos` | Catálogo de productos |
 | `variantes_producto` | Variantes por talla y color |
-| `pedidos` | Pedidos realizados |
+| `pedidos` | Pedidos y sus estados de entrega |
 | `detalles_pedido` | Items de cada pedido |
-| `carrito` | Carrito de compras (usuarios e invitados) |
+| `carrito` | Carrito (usuarios e invitados) |
 | `favoritos` | Productos favoritos por usuario |
+| `direcciones` / `tarjetas` | Datos de envío y medios de pago del cliente |
+| `solicitudes_repartidores` / `documentos` | Flujo de aprobación y documentos de repartidores |
+| `vehiculos_repartidores` / `permisos_repartidores` / `historial_repartidores` | Gestión de repartidores |
+| `historial_pedidos_repartidor` / `historial_entregas` | Timeline real de entregas |
+| `seguimiento_tiempo_real` | Ubicaciones en vivo (hoy sin datos) |
+| `notificaciones` | Notificaciones por tipo (pedido, entrega, sistema, seguridad, ...) |
 | `logs_actividad` | Registro de actividad de usuarios |
+
+### Columnas agregadas (sincronización microservicio)
+
+| Tabla | Columna | Tipo | Descripción |
+|-------|---------|------|-------------|
+| `solicitudes_repartidores` | `tarjeta_propiedad` | VARCHAR(50) | Número de tarjeta de propiedad del vehículo |
+| `solicitudes_repartidores` | `soat_vencimiento` | DATE | Fecha de vencimiento del SOAT |
+| `solicitudes_repartidores` | `tecnomecanica_vencimiento` | DATE | Fecha de vencimiento del tecnomecánico |
+| `solicitudes_repartidores` | `vencimiento_licencia` | DATE | Fecha de vencimiento de la licencia de conducción |
+
+> Estas columnas se llenan automáticamente al sincronizar desde el microservicio.
 
 ---
 
 ## Rutas
 
+Tabla central: `config/routes.php`.
+
 ### Públicas
 | Método | Ruta | Controlador | Acción |
 |--------|------|-------------|--------|
-| GET | `/` | HomeController | index |
+| GET | `/` | HomeController | index (redirige a `/cargador`) |
+| GET | `/cargador` | CargadorController | index |
 | GET | `/auth/login` | AuthController | showLogin |
 | POST | `/auth/login` | AuthController | login |
 | POST | `/auth/register` | AuthController | register |
 | POST | `/auth/forgot-password` | AuthController | forgotPassword |
 | POST | `/auth/google` | AuthController | googleLogin |
 | GET | `/auth/logout` | AuthController | logout |
+| GET | `/auth/change-password` | AuthController | showChangePassword / changePassword |
+| GET | `/auth/reset-password` | AuthController | showResetForm / resetPassword |
 | GET | `/contactenos` | ContactoController | index |
 | POST | `/contacto/enviar` | ContactoController | enviar |
 | GET | `/seguimiento` | SeguimientoController | index |
-| GET | `/auth/change-password` | AuthController | showChangePassword |
-| POST | `/auth/change-password` | AuthController | changePassword |
-| GET | `/auth/reset-password` | AuthController | showResetForm |
-| POST | `/auth/reset-password` | AuthController | resetPassword |
+| GET | `/documentos/*` | DocumentoController | páginas legales |
 
 ### Cliente (requieren sesión)
 | Método | Ruta | Controlador | Acción |
@@ -188,201 +337,169 @@ El archivo `angelow.sql` contiene el schema completo. Las tablas principales inc
 | GET | `/perfil` | PerfilController | index |
 | GET | `/compra` | CompraController | index |
 | POST | `/procesar-compra` | CompraController | procesar |
-| GET | `/factura` | FacturaController | index |
-| GET | `/documentos/Pedidos_envios` | DocumentoController | pedidosEnvios |
-| GET | `/documentos/Politicas_devolucion` | DocumentoController | politicasDevolucion |
-| GET | `/documentos/Preguntas` | DocumentoController | preguntas |
-| GET | `/documentos/Guia_Tallas` | DocumentoController | guiaTallas |
-| GET | `/documentos/Terminos` | DocumentoController | terminos |
-| GET | `/documentos/Politicas_Priv` | DocumentoController | politicasPrivacidad |
-| GET | `/documentos/Politicas_Env` | DocumentoController | politicasEnv |
 
 ### Administración (requieren rol administrador)
 | Método | Ruta | Controlador | Acción |
 |--------|------|-------------|--------|
-| GET | `/admin` | Admin\\DashboardController | index |
-| GET | `/admin/pedidos` | Admin\\PedidosController | index |
-| GET | `/admin/usuarios` | Admin\\UsuariosController | index |
-| GET | `/admin/repartidores` | Admin\\RepartidorController | index |
-| GET | `/admin/inventario` | Admin\\InventarioController | index |
+| GET | `/admin` | Admin\DashboardController | index |
+| GET | `/admin/pedidos` | Admin\PedidosController | index |
+| GET | `/admin/usuarios` | Admin\UsuariosController | index |
+| GET | `/admin/repartidores` | Admin\RepartidorController | index |
+| GET | `/admin/inventario` | Admin\InventarioController | index |
 
-### API
+### Repartidor
 | Método | Ruta | Controlador | Acción |
 |--------|------|-------------|--------|
-| GET | `/api/carrito` | Api\\CarritoController | index |
-| POST | `/api/carrito/agregar` | Api\\CarritoController | agregar |
-| POST | `/api/carrito/actualizar` | Api\\CarritoController | actualizar |
-| DELETE | `/api/carrito/eliminar` | Api\\CarritoController | eliminar |
-| POST | `/api/carrito/sincronizar` | Api\\CarritoController | sincronizar |
-| POST | `/api/carrito/vaciar` | Api\\CarritoController | vaciar |
-| GET | `/api/favoritos` | Api\\FavoritoController | index |
-| POST | `/api/favoritos/agregar` | Api\\FavoritoController | agregar |
-| DELETE | `/api/favoritos/eliminar` | Api\\FavoritoController | eliminar |
-| GET | `/api/productos` | Api\\ProductsController | index |
-| POST | `/api/productos` | Api\\ProductsController | store |
-| PUT | `/api/productos` | Api\\ProductsController | update |
-| DELETE | `/api/productos` | Api\\ProductsController | destroy |
-| GET | `/api/categorias` | Api\\CategoriesController | index |
-| POST | `/api/categorias` | Api\\CategoriesController | store |
-| PUT | `/api/categorias` | Api\\CategoriesController | update |
-| DELETE | `/api/categorias` | Api\\CategoriesController | destroy |
-| GET | `/api/inventario` | Api\\StockController | index |
-| POST | `/api/inventario/update` | Api\\StockController | update |
-| POST | `/api/inventario/ajustar` | Api\\StockController | ajustar |
-| GET | `/api/clientes` | Admin\\ClientesController | index |
-| POST | `/api/clientes/buscar` | Admin\\ClientesController | buscar |
-| POST | `/api/clientes/rol` | Admin\\ClientesController | cambiarRol |
-| GET | `/api/pedidos` | Admin\\PedidosController | obtenerPedidos |
-| POST | `/api/pedidos/estado` | Admin\\PedidosController | updateStatus |
-| GET | `/api/mis-pedidos` | Cliente\\PedidosController | index |
-| GET | `/api/mis-pedidos/:id` | Cliente\\PedidosController | detalle |
-| POST | `/api/mis-pedidos/:id/cancelar` | Cliente\\PedidosController | cancelar |
-| GET | `/api/mis-pedidos/:id/factura` | Cliente\\PedidosController | factura |
+| GET | `/repartidor` `/repartidor/dashboard` | RepartidorController | index |
+| GET | `/repartidor/perfil` | RepartidorController | perfil |
+| GET | `/repartidor/registro` | RepartidorController | registro |
+| POST | `/repartidor/registro` | RepartidorAuthController | registro |
+| GET/POST | `/repartidor/login` | RepartidorAuthController | showLogin / login |
+| GET | `/repartidor/logout` | RepartidorAuthController | logout |
+| POST | `/repartidor/refresh-token` | RepartidorAuthController | refreshToken |
+
+### Microservicio (FastAPI, puerto 8000)
+| Método | Ruta | Función | Acción |
+|--------|------|---------|--------|
+| GET | `/` | `formulario()` | Formulario multi-paso de registro |
+| POST | `/api/repartidor/registro` | `registro()` | Registro completo de repartidor |
+| GET | `/health` | `health()` | Health check del microservicio |
+
+### CORS (OPTIONS preflight)
+
+### APIs principales
+| Ámbito | Rutas | Controlador |
+|--------|-------|-------------|
+| Carrito | `/api/carrito*` | Api\CarritoController |
+| Favoritos | `/api/favoritos*` | Api\FavoritoController |
+| Productos / Categorías | `/api/productos*`, `/api/categorias*` | Api\ProductsController, Api\CategoriesController |
+| Inventario | `/api/inventario*` | Api\StockController |
+| Pedidos cliente | `/api/mis-pedidos*` | Cliente\PedidosController |
+| Perfil / Direcciones / Tarjetas | `/api/perfil*`, `/api/direcciones*`, `/api/tarjetas*` | Cliente\*ApiController |
+| Repartidor (auth) | `/api/repartidor/auth/*` | Api\RepartidorAuthController |
+| Repartidor (pedidos, rastreo, dashboard, clientes, documentos) | `/api/repartidor/*` | Api\Repartidor*Controller |
+| Admin (repartidores, dashboard) | `/api/admin/*` | Api\AdminRepartidorController |
+| Clientes (admin) | `/api/clientes*` | Admin\ClientesController |
 
 ---
 
 ## Controladores
 
 ### Principales
-- **HomeController** (`app/Controllers/HomeController.php`) - Renderiza la página de inicio.
-- **AuthController** (`app/Controllers/AuthController.php`) - Login, registro, Google OAuth, recuperación/cambio de contraseña, logout.
-- **PerfilController** (`app/Controllers/PerfilController.php`) - Perfil del cliente (redirige a admin si es administrador).
-- **CompraController** (`app/Controllers/CompraController.php`) - Checkout y procesamiento de pedidos.
-- **FacturaController** (`app/Controllers/FacturaController.php`) - Vista de factura del pedido.
-- **SeguimientoController** (`app/Controllers/SeguimientoController.php`) - Pública, muestra seguimiento de pedidos.
-- **ContactoController** (`app/Controllers/ContactoController.php`) - Formulario y envío de contacto.
-- **DocumentoController** (`app/Controllers/DocumentoController.php`) - Páginas legales y de soporte.
-- **LogoutController** (`app/Controllers/LogoutController.php`) - Cierra sesión y redirige a login.
+- **HomeController** — Página de inicio (redirige a `/cargador`).
+- **CargadorController** — Precarga de fuentes, iconos y estilos de la home.
+- **AuthController** — Login, registro, Google OAuth, recuperación/cambio de contraseña, logout.
+- **PerfilController** — Perfil del cliente / enrutador por rol (`Auth::homeForRole()`).
+- **CompraController** — Checkout y procesamiento de pedidos.
+- **SeguimientoController** — Seguimiento público de pedidos.
+- **ContactoController** — Formulario y envío de contacto.
+- **DocumentoController** — Páginas legales.
 
 ### Administración
-- **Admin\DashboardController** - Dashboard con estadísticas.
-- **Admin\PedidosController** - Listado y actualización de estados de pedidos.
-- **Admin\ClientesController** - Listado, búsqueda y cambio de rol de clientes.
-- **Admin\RepartidorController** - Gestión de repartidores.
-- **Admin\InventarioController** - Gestión de inventario.
-- **Admin\SeguimientoControler** - (Vacío, placeholder).
+- **Admin\DashboardController**, **Admin\PedidosController**, **Admin\ClientesController**,
+  **Admin\RepartidorController**, **Admin\InventarioController**.
 
 ### Repartidor
-- **RepartidorAuthController** (`app/Controllers/RepartidorAuthController.php`) - Login, logout y obtención de datos del repartidor autenticado. Renderiza `repartidor/login.php`.
-- **RepartidorController** (`app/Controllers/RepartidorController.php`) - Dashboard del repartidor. Renderiza `repartidor/dashboard.php`. Protegido por rol `repartidor`.
+- **RepartidorAuthController** — Login/registro/logout/refresh-token.
+- **RepartidorController** — Dashboard y perfil (protegidos por rol `repartidor`).
 
-### Cliente (API)
-- **Cliente\PedidosController** - Listado, detalle, cancelación y factura de pedidos del cliente autenticado.
-
-### API
-- **Api\CarritoController** - CRUD y sincronización del carrito.
-- **Api\FavoritoController** - Gestión de favoritos.
-- **Api\StockController** - Consulta y ajuste de stock/inventario.
-- **Api\ProductsController** - CRUD de productos.
-- **Api\CategoriesController** - CRUD de categorías.
+### API / Cliente
+- **Api\\CarritoController**, **Api\FavoritoController**, **Api\StockController**,
+  **Api\ProductsController**, **Api\CategoriesController**.
+- **Cliente\PedidosController**, **Cliente\PerfilApiController**,
+  **Cliente\DireccionController**, **Cliente\TarjetaController**.
+- **Api\RepartidorAuthController**, **Api\RepartidorPedidosController**,
+  **Api\RepartidorRastreoController**, **Api\RepartidorSeguimientoController**,
+  **Api\RepartidorDashboardController**, **Api\RepartidorClientesController**,
+  **Api\RepartidorDocumentosController**.
+- **Api\AdminRepartidorController** — Solicitudes, aprobación, suspensión, documentos.
 
 ### Legacy (Procesar)
-- **Procesar/registrar.php** - Procesamiento de registro legacy.
-- **Procesar/login.php** - Procesamiento de login legacy.
-- **Procesar/recuperar_password.php** - Recuperación de contraseña legacy.
-- **Procesar/db.php** - Conexión PDO legacy.
-- **ProcesarGoogleController.php** - Procesamiento de login con Google legacy.
-- **DashboardController.php** - Dashboard legacy (HTML directo).
+- **Procesar/login.php**, **Procesar/registrar.php**, **Procesar/recuperar_password.php**,
+  **Procesar/db.php**, **ProcesarGoogleController.php**, **DashboardController.php**.
 
 ---
 
 ## Modelos
 
+Todos usan **PDO con sentencias preparadas** (capa 7 ISO-OSI, anti SQL Injection).
+
 | Modelo | Archivo | Descripción |
 |---------|---------|-------------|
-| UsuarioModel | `app/Models/UsuarioModel.php` | CRUD de usuarios, búsqueda, reset tokens, cambio de rol. |
-| PedidoModel | `app/Models/PedidoModel.php` | Creación de pedidos, consultas, actualización de estado, generación de número de pedido (ORD-YYYY-NNNN). |
-| CarritoModel | `app/Models/CarritoModel.php` | Gestión de carrito por usuario o sesión, merge de carrito invitado. |
-| Favorito | `app/Models/Favorito.php` | Gestión de favoritos por usuario. |
+| UsuarioModel | `app/Models/UsuarioModel.php` | CRUD de usuarios, búsqueda, reset tokens, cambio de rol |
+| PedidoModel | `app/Models/PedidoModel.php` | Creación de pedidos, estados, número ORD-YYYY-NNNN |
+| CarritoModel | `app/Models/CarritoModel.php` | Carrito por usuario o sesión, merge de carrito invitado |
+| Favorito | `app/Models/Favorito.php` | Gestión de favoritos |
 
 ---
 
 ## Vistas
 
-### Layouts
-- `layouts/main.php` - Layout principal (actualmente vacío).
-
-### Páginas Públicas/Cliente
-- `home/bienvenida.php` - Página de inicio con carrusel.
-- `auth/login.php` - Formulario de inicio de sesión.
-- `auth/register.php` - Formulario de registro.
-- `auth/olvide-password.php` - Solicitud de recuperación.
-- `auth/reset-password.php` - Formulario de nueva contraseña.
-- `auth/change-password.php` - Cambio de contraseña (logueado).
-- `paginas/compra.php` - Checkout.
-- `paginas/perfil.php` - Perfil del cliente.
-- `paginas/seguimiento.php` - Seguimiento de pedidos.
-- `paginas/factura.php` - Factura del pedido.
-- `paginas/contactenos.php` - Contacto.
-
-### Repartidor
-- `repartidor/login.php` - Login de repartidor (diseño acorde al sitio principal).
-- `repartidor/dashboard.php` - Dashboard de repartidor (estadísticas, pedidos, filtros, historial).
+### Páginas públicas / cliente
+- `home/bienvenida.php` — Inicio (cargada por el cargador).
+- `auth/*.php` — Login, registro, recuperación y cambio de contraseña.
+- `paginas/perfil.php` — Perfil del cliente (sidebar por secciones).
+- `paginas/compra.php` — Checkout.
+- `paginas/seguimiento.php` — Seguimiento de pedidos.
+- `paginas/contactenos.php` — Contacto.
 
 ### Administración
-- `admin/panel.php` - Panel de administración con dashboard, mapa Leaflet, gestión completa.
-- `admin/inventario.php` - Gestión de inventario.
-- `admin/repartidor.php` - Gestión de repartidores.
+- `admin/panel.php` — Dashboard con métricas, mapa Leaflet y gestión completa.
+- `admin/inventario.php` — Gestión de inventario (exporta PDF).
+- `admin/repartidor.php` — Gestión de repartidores.
 
-### Documentos
-- `documentos/Terminos.php`
-- `documentos/Politicas_Priv.php`
-- `documentos/Politicas_Env.php`
-- `documentos/Politicas_devolucion.php`
-- `documentos/Preguntas.php`
-- `documentos/Pedidos_envios.php`
-- `documentos/Guia_Tallas.php`
+### Repartidor
+- `repartidor/login.php` — Login del repartidor.
+- `repartidor/dashboard.php` — Dashboard (pedidos, "Rastrear Pedido", historial).
+- `repartidor/perfil.php` — Perfil del repartidor.
+- `repartidor/registro_repartidor.php` — Registro multi-paso del repartidor (legacy).
+- `repartidor-service/templates/registro.html` — Formulario multi-paso de registro (FastAPI).
+  - Incluye modal de login integrado (`loginModalOverlay`) con conexión al endpoint
+    `/repartidor/login` de ANGELOW (CORS habilitado).
+
+### Documentos y emails
+- `documentos/` — Términos, políticas, preguntas, guía de tallas.
+- `emails/` — Plantillas de bienvenida, recuperación y cambio de contraseña.
+- `layouts/` — Partials compartidos (Leaflet CSS/JS).
 
 ---
 
 ## Assets (CSS/JS)
 
-### CSS
-| Archivo | Página |
-|---------|--------|
-| `bienvenida.css` | Página de inicio |
-| `carrusel.css` | Carrusel de ofertas |
-| `login.css` | Login/Registro |
-| `compra.css` | Checkout |
-| `seguimiento.css` | Seguimiento de pedidos |
-| `perfil.css` | Perfil cliente |
-| `factura.css` | Factura |
-| `contactenos.css` | Contacto |
-| `repartidor.css` | Estilos generales del panel repartidor |
-| `repartidor-login.css` | Estilos del login de repartidor |
-| `repartidor-dashboard.css` | Estilos del dashboard de repartidor |
-| `panel.css` | Panel de administración |
-| `inventario.css` | Inventario admin |
-| `preguntas.css` | Preguntas frecuentes |
-| `guia_tallas.css` | Guía de tallas |
-| `pedidos_envios.css` | Pedidos y envíos |
-| `politicas_devolucion.css` | Políticas de devolución |
-| `politicas_env.css` | Políticas de envío |
-| `politicas_priv.css` | Políticas de privacidad |
-| `terminos.css` | Términos y condiciones |
-| `tokens.css` | Tokens de identidad visual compartidos (cliente/admin/repartidor) — se carga primero en perfil/panel/dashboard |
+### ANGELOW (PHP)
+- **CSS**: `tokens.css` (identidad visual compartida cliente/admin/repartidor), `bienvenida.css`,
+  `carrusel.css`, `login.css`, `compra.css`, `seguimiento.css`, `perfil.css`, `contactenos.css`,
+  `panel.css`, `inventario.css`, `repartidor.css`, `repartidor-login.css`,
+  `repartidor-dashboard.css` y los CSS de las páginas legales.
+- **JS**: `bienvenida.js` (home + menú de usuario por rol), `carrusel.js`, `login.js`,
+  `compra.js`, `seguimiento.js`, `seguimiento-perfil.js`, `perfil.js`, `contactenos.js`,
+  `panel.js`, `inventario.js`, `repartidor.js`, `chatbot/botpress.js`.
 
-### JavaScript
-| Archivo | Funcionalidad |
-|---------|---------------|
-| `bienvenida.js` | Lógica de la página de inicio (ofertas dinámicas, carrusel). |
-| `carrusel.js` | Carrusel de productos/ofertas. |
-| `login.js` | Validación y envío de login/registro. |
-| `compra.js` | Checkout, cálculo de envío, envío de pedido. |
-| `seguimiento.js` | Seguimiento de pedidos en tiempo real. |
-| `perfil.js` | Gestión del perfil de usuario. |
-| `factura.js` | Visualización y descarga de factura. |
-| `contactenos.js` | Formulario de contacto. |
-| `repartidor.js` | Funcionalidad de repartidor. |
-| `panel.js` | Lógica del panel de administración (dashboard, mapa, pedidos). |
-| `inventario.js` | Gestión de inventario. |
-| `preguntas.js` | Preguntas frecuentes. |
-| `guia_tallas.js` | Guía de tallas. |
-| `pedidos_envios.js` | Información de pedidos y envíos. |
-| `politicas_env.js` | Políticas de envío. |
-| `politicas_priv.js` | Políticas de privacidad. |
-| `terminos.js` | Términos y condiciones. |
-| `chatbot/botpress.js` | Integración con chatbot Botpress. |
+### Microservicio (FastAPI)
+- **CSS**: `repartidor-service/static/css/style.css` — Estilos del formulario multi-paso y modal de login.
+- **JS**: `repartidor-service/static/js/script.js` — Validación por pasos, envío FormData, modal de login.
+- **Fuentes**: Inter (Google Fonts).
+- **Iconos**: Font Awesome 6.4.0 (local en `static/vendor/font-awesome/`).
+
+---
+
+## Menú de usuario por rol
+
+El menú desplegable del icono de usuario (header) se construye dinámicamente en
+`public/assets/js/bienvenida.js` → `updateUserUI()`, según `currentUser.rol`:
+
+| Rol | Ítems del menú |
+|-----|----------------|
+| Cliente | Mi cuenta · Mis Favoritos · **Facturas** · Cerrar sesión |
+| Repartidor | Panel repartidor · Cerrar sesión |
+| Administrador | Administración · Inventario · Cerrar sesión |
+| Invitado | Mi perfil · Mis Favoritos · Ser Repartidor |
+
+> **Facturas (CLIENTE)**: enlace agregado entre "Mis Favoritos" y "Cerrar sesión", con el
+> icono de Font Awesome `fa-file-invoice` (misma clase `dropdown-item` y mismo estilo que
+> el resto). Actualmente apunta a `href="#"` a la espera de la URL definitiva. La
+> funcionalidad de facturación se eliminó del proyecto; este menú queda listo para cuando
+> se vuelva a habilitar.
 
 ---
 
@@ -393,210 +510,115 @@ El archivo `angelow.sql` contiene el schema completo. Las tablas principales inc
 |----------|-------------|---------|
 | `DB_HOST` | Host de la base de datos | `localhost` / `db` (Docker) |
 | `DB_NAME` | Nombre de la base de datos | `angelow_db` |
-| `DB_USER` | Usuario de la base de datos | `root` |
-| `DB_PASS` | Contraseña de la base de datos | `` |
+| `DB_USER` / `DB_PASS` | Usuario / contraseña de BD | `root` / — |
 | `DB_CHARSET` | Charset de la base de datos | `utf8mb4` |
-| `APP_NAME` | Nombre de la aplicación | `Angelow` |
-| `APP_URL` | URL base de la aplicación | `http://localhost/Angelow/public` |
-| `TIMEZONE` | Zona horaria | `America/Bogota` |
-| `SMTP_HOST` | Host SMTP | `smtp.gmail.com` |
-| `SMTP_USERNAME` | Usuario SMTP | - |
-| `SMTP_PASSWORD` | Contraseña SMTP | - |
-| `SMTP_PORT` | Puerto SMTP | `587` |
-| `SMTP_FROM_EMAIL` | Email remitente | - |
-| `SMTP_FROM_NAME` | Nombre remitente | `Angelow` |
-| `GOOGLE_CLIENT_ID` | Google OAuth Client ID | - |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret | - |
-| `JWT_SECRET` | Clave de firma HS256 de los tokens de repartidor | `angelow_jwt_secret_key_2026` |
+| `APP_NAME` / `APP_URL` / `TIMEZONE` | Aplicación | `Angelow` / `http://localhost/Angelow/public` / `America/Bogota` |
+| `SMTP_HOST` / `SMTP_USERNAME` / `SMTP_PASSWORD` / `SMTP_PORT` | Correo (STARTTLS) | `smtp.gmail.com` / — / — / `587` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth | — |
+| `JWT_SECRET` | Firma HS256 de tokens de repartidor | — (generar aleatorio) |
 
 > ⚠️ **`JWT_SECRET`**: usa una clave aleatoria segura (ej: `php -r "echo base64_encode(random_bytes(32));"`).
-> Guarda el `.env` **fuera de Git** (ya está en `.gitignore`). Existe una plantilla en
-> `.env.example` con todos los valores documentados y sin secretos reales.
-
-### Archivos de Configuración
-- `config/app.php` - Constantes de la aplicación (APP_NAME, APP_URL, TIMEZONE).
-- `config/database.php` - Constantes de conexión a base de datos.
-- `config/routes.php` - Definición de todas las rutas.
-- `.env.example` - Plantilla de variables de entorno (sin secretos reales).
-- `docs/` - Documentación técnica (arquitectura, estructura, seguridad, validaciones).
+> `.env` está en `.gitignore` y existe la plantilla `.env.example`.
 
 ---
 
 ## Requisitos
 
+### ANGELOW (PHP)
 - PHP 8.0+
 - MySQL 8.0+ / MariaDB
-- Composer (para PHPMailer)
-- Apache con mod_rewrite (o servidor compatible)
+- Composer (PHPMailer)
+- Apache con mod_rewrite (o servidor equivalente)
 - Extensiones PHP: PDO, PDO_MySQL, json, mbstring
+- Node.js (solo para la app de repartidor en tiempo real, opcional)
+
+### Microservicio (Python)
+- Python 3.10+
+- FastAPI, Uvicorn, SQLAlchemy, Pydantic
+- SQLite (para datos temporales del registro)
+- Conexión a MySQL `angelow_db` (para sincronización)
 
 ---
 
 ## Instalación
 
-### Opción 1: Docker (Recomendado)
+### Opción 1: Docker (recomendado)
+```bash
+git clone <repo-url> Angelow
+cd Angelow
+docker-compose up -d --build
+```
+Acceder a `http://localhost:8080`. La BD se inicializa desde `angelow.sql`.
 
-1. Clonar el repositorio:
-   ```bash
-   git clone <repo-url> Angelow
-   cd Angelow
-   ```
+### Opción 2: XAMPP/WAMP
+1. Copiar el proyecto a `C:\xampp\htdocs\Angelow`.
+2. Importar `angelow.sql` en MySQL.
+3. Configurar `.env` (o `config/database.php`).
+4. `composer install`.
+5. Apuntar el docroot a `public/` o usar el `.htaccess` incluido.
 
-2. Levantar los servicios:
-   ```bash
-   docker-compose up -d --build
-   ```
-
-3. Acceder a `http://localhost:8080`.
-
-4. La base de datos se inicializa automáticamente desde `angelow.sql`.
-
-### Opción 2: Instalación Local (XAMPP/WAMP)
-
-1. Clonar o copiar el proyecto en el directorio del servidor web (ej: `C:\xampp\htdocs\Angelow`).
-
-2. Importar el archivo `angelow.sql` en la base de datos MySQL.
-
-3. Configurar la conexión a la base de datos en `.env` o en `config/database.php`.
-
-4. Instalar dependencias PHP:
-   ```bash
-   composer install
-   ```
-
-5. Configurar el servidor web para que apunte a `public/` como documento raíz, o usar el `.htaccess` incluido.
-
-6. Asegurarse de que la carpeta `public/assets/` tenga permisos de lectura.
+### Microservicio de Registro (adicional)
+```bash
+cd repartidor-service
+pip install -r requirements.txt
+python main.py
+```
+Acceder a `http://127.0.0.1:8000` para el formulario de registro.
 
 ---
 
 ## Uso
 
-### Acceso al Sitio
-- **Tienda**: Ingresar a la raíz del sitio para ver el catálogo y página de inicio.
-- **Registro / Login**: Disponibles en el menú de usuario.
-- **Panel Admin**: Ruta `/admin` (acceso para rol administrador).
-- **Panel Repartidor**: Ruta `/repartidor/login` (acceso para rol repartidor). Una vez autenticado, redirige a `/repartidor`.
-- **Perfil Cliente**: Ruta `/perfil`.
-- **Seguimiento**: Ruta `/seguimiento`.
-- **Contacto**: Ruta `/contactenos`.
+- **Tienda**: raíz del sitio (rutas `/` y `/cargador`).
+- **Registro / Login**: menú de usuario del header.
+- **Panel Admin**: `/admin` (rol administrador).
+- **Panel Repartidor**: `/repartidor/login` → `/repartidor` (rol repartidor).
+- **Registro Repartidor (microservicio)**: `http://127.0.0.1:8000` (FastAPI).
+- **Perfil Cliente**: `/perfil`.
+- **Seguimiento**: `/seguimiento`.
+- **Contacto**: `/contactenos`.
 
-### Roles de Usuario
+### Roles
 | Rol | Acceso |
 |-----|--------|
-| `cliente` | Tienda, perfil, pedidos, seguimiento. |
-| `repartidor` | Panel de repartidor. |
-| `administrador` | Panel de administración completo. |
+| `cliente` | Tienda, perfil, pedidos, seguimiento, favoritos, facturas (enlace) |
+| `repartidor` | Panel de repartidor y entregas |
+| `administrador` | Panel de administración completo |
 
 ---
 
 ## Notas Técnicas
 
+### Panel Admin (`public/assets/js/panel.js`)
+- **Nombres y apellidos**: Las tarjetas de solicitud ahora muestran `s.nombres` y `s.apellidos`
+  en lugar de campos undefined.
+- **Datos del vehículo**: Se muestra "Tarjeta de propiedad", "Vence SOAT" y "Vence licencia"
+  con formato de fecha legible (`fmtFechaIso()`).
+- **Modales estilizados**: `aprobarSolicitud()` y `rechazarSolicitud()` usan modales inline
+  (`.modal-overlay`) con textarea para observaciones/motivo, en lugar de `confirm()`/`prompt()`
+  nativos del navegador.
+- **Suspender/Activar**: Se mantiene `confirm()` nativo por simplicidad.
+
+### Microservicio de Registro
+- **Formulario multi-paso**: 3 pasos (Datos Personales → Vehículo → Documentos) con validación
+  frontend en tiempo real.
+- **Modal de login**: Botón "Iniciar Sesión" en el sidebar que abre un modal conectado al
+  endpoint `/repartidor/login` de ANGELOW (CORS habilitado).
+- **Sincronización automática**: Al registrar un repartidor, se inserta en MySQL directamente
+  desde el microservicio (adaptador `angelow_adapter.py`).
+- **Documentos**: Los archivos subidos (SOAT, tarjeta, licencia) se almacenan tanto en SQLite
+  (referencia) como en MySQL (binario).
+
 - El carrito usa `localStorage` como respaldo si la API no está disponible.
+- El modo invitado usa la cookie `cart_session` para persistir el carrito.
 - Las imágenes de productos se cargan desde `public/assets/imagenes/`.
-- El panel usa Font Awesome 6 para la iconografía.
-- El mapa del panel utiliza Leaflet.
-- El modo invitado utiliza una cookie `cart_session` para persistir el carrito sin sesión.
-- Los emails transaccionales se envían mediante PHPMailer con soporte para imágenes incrustadas (CID).
-- El framework es propio (sin Laravel, Symfony, etc.) con autoload PSR-4 simple.
-- El archivo `public/index.php` es el punto de entrada único que despacha todas las rutas.
-
----
-
-## Seguridad
-
-Auditoría y estado por capa. Detalle completo en [docs/SEGURIDAD.md](docs/SEGURIDAD.md).
-
-| Capa | Estado |
-|------|--------|
-| Hash de contraseñas (bcrypt vía `password_hash`) | ✅ IMPLEMENTADO |
-| SQL Injection | ✅ IMPLEMENTADO (PDO con sentencias preparadas) |
-| Autorización por rol (backend por método) | ✅ IMPLEMENTADO |
-| JWT (`JWT_SECRET` real en `.env`) | ✅ IMPLEMENTADO |
-| Subida de documentos (MIME real, límite, whitelist) | ✅ IMPLEMENTADO |
-| XSS en `json_encode` / atributos | ✅ IMPLEMENTADO |
-| CSRF | ❌ PENDIENTE |
-| Endpoint autenticado para documentos | ❌ PENDIENTE (recomendado) |
-| Cookies `SameSite`/`HttpOnly`/`Secure` | ❌ PENDIENTE |
-| Expiración de sesión | ❌ PENDIENTE |
-
----
-
-## Pedidos, Facturación y Repartidores
-
-### Flujo de pedidos
-```
-Carrito → /procesar-compra (CompraController) → pedidos + detalle
-       → FacturaController / microservicio Flask → facturas
-       → Admin cambia estado → Repartidor entrega → entregado
-```
-- Creación/validación: `app/Controllers/CompraController.php`.
-- Consulta/estado: `Admin\PedidosController`, `Api\RepartidorPedidosController`.
-
-### Flujo de repartidores
-```
-Registro (RepartidorAuthController) → solicitud 'pendiente'
-       → Admin aprueba (AdminRepartidorController) → usuario 'activo'
-       → Dashboard repartidor (login JWT) → entregas
-       → Rechazo / Suspensión → 'inactivo' / 'suspendido'
-```
-
-### Facturación
-- Tablas `facturas`, `facturas_detalle`, `facturas_historial` (migración `002_add_facturas_table.sql`).
-- Microservicio Flask en `facturacion/` (puerto 5000, requiere su propio `.env` y
-  `requirements.txt`). Genera PDF (fpdf2) y envía email (smtplib) con la **misma** base
-  de datos de la app.
-- **Autenticación del microservicio**: los endpoints de `facturacion/routes/factura_routes.py`
-  exigen `Authorization: Bearer <FACTURA_API_SECRET>` (`require_api_key`). El secreto se
-  define **solo en `facturacion/.env`** (generado 64 hex) y se lee en `facturacion/config.py`.
-  Fail-closed si no está definido.
-
-### Identidad visual y mapa unificados
-- `public/assets/css/tokens.css`: tokens de diseño canónicos en ambos juegos de nombres
-  (inglés cliente/admin + español repartidor). Se carga primero en `perfil.php`,
-  `panel.php`, `dashboard.php` y `perfil.php` (repartidor).
-- Partials `app/Views/layouts/leaflet-css.php` y `leaflet-js.php`: fuente única del bloque
-  CDN de Leaflet, reutilizados en perfil/seguimiento/panel/dashboard (antes duplicado en 5 archivos).
-- Header de la tienda ya es condicional por rol (`bienvenida.js`): admin → `/admin`,
-  repartidor → `/repartidor`, cliente → `/perfil`.
-
----
-
-## Tiempo real
-
-- **App Repartidor (Node.js Express + Socket.IO)**: `Repartidor/server.js` (puerto 3000)
-  permite entregas/seguimiento en tiempo real.
-- **Seguimiento en el sitio**: `SeguimientoController` + Leaflet/mapeo.
-- **Estado actual del seguimiento**: el mapa de cliente/admin usa una simulación en el
-  frontend; el backend real (`/api/mis-pedidos/:id/seguimiento`, `seguimiento_tiempo_real`)
-  aún no se consume en esas vistas. El repartidor sí usa datos reales (módulo "Rastrear
-  Pedido"). Hoy la BD no tiene coordenadas de destino (NULL) ni filas en
-  `seguimiento_tiempo_real`.
-
----
-
-## Manejo de errores
-
-- Las APIs devuelven JSON con `success`/`error`/`message`.
-- `error_log()` para diagnóstico interno en las API.
-- El front controller devuelve `404 - Página no encontrada` para rutas inexistentes.
-
-> ⚠️ Algunos controladores exponen el mensaje de excepción PDO al usuario; recomendado
-> sustituirlo por mensajes genéricos (ver docs/SEGURIDAD.md).
-
----
-
-## Pruebas
-
-- No existe un framework de pruebas configurado (PHPUnit/usería).
-- Verificación manual:
-  ```bash
-  # Comprobar sintaxis de los controladores modificados
-  php -l app/Controllers/Api/RepartidorDocumentosController.php
-  # Comprobar código de respuesta de rutas
-  curl -s -o /dev/null -w "%{http_code}" http://localhost/Angelow/login
-  ```
-- Después de tocar la BD, revisar `database/` (migraciones) y `angelow.sql`.
+- Font Awesome 6.4.0, Chart.js, Leaflet y jsPDF se cargan por CDN.
+- El framework es propio; `public/index.php` es el punto de entrada único.
+- El mapa de seguimiento cliente/admin usa una simulación en el frontend; los datos reales
+  (`/api/mis-pedidos/:id/seguimiento`) aún no se consumen en esas vistas. El repartidor sí
+  usa datos reales (módulo "Rastrear Pedido").
+- La identidad visual compartida vive en `public/assets/css/tokens.css` y los CDN de
+  Leaflet están centralizados en `app/Views/layouts/leaflet-*.php`.
 
 ---
 
@@ -604,20 +626,24 @@ Registro (RepartidorAuthController) → solicitud 'pendiente'
 
 - **Núcleo** (`app/Core/`): cambios impactan todas las rutas → probar después de modificar.
 - **Rutas** (`config/routes.php`): añadir/editar aquí cualquier nueva URL.
-- **Base de datos**: usar migraciones incrementales; no dejar de sincronizar `angelow.sql`.
-- **Sesiones**: el directorio de sesión es `storage/sessions` (creado automáticamente).
-- **Microservicios**: `facturacion/` (Flask) y `Repartidor/` (Node) son aplicaciones
-  independientes; requieren arrancarse por su cuenta.
-- **Documentación**: ver `docs/ARQUITECTURA.md`, `docs/ESTRUCTURA.md`,
-  `docs/VALIDACIONES.md`, `docs/SEGURIDAD.md`.
+- **Base de datos**: usar migraciones incrementales; mantener sincronizado `angelow.sql`.
+- **Sesiones**: `storage/sessions` (se crea automáticamente).
+- **App de repartidor (Node)**: `Repartidor/` es una aplicación independiente (puerto 3000).
+- **Microservicio Python** (`repartidor-service/`): FastAPI en puerto 8000 con `reload=True`.
+  - Si se modifica `angelow_adapter.py`, reiniciar el microservicio.
+  - Los schemas de MySQL se actualizan en `angelow.sql` y `database/`.
+- **Anotaciones de seguridad**: el código lleva comentarios `// CAPA N ISO-OSI (...)`
+  señalando el control de seguridad en cada punto (ver sección
+  [Capas de Seguridad](#capas-de-seguridad-modelo-iso-osi)).
 
 ---
 
-## Referencia rápida de documentación
+## Referencia de documentación
 
 | Documento | Contenido |
 |-----------|-----------|
-| [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Capas, flujo de datos, BD, roles, pedidos, facturación, repartidores |
+| [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Capas, flujo de datos, BD, roles, pedidos, repartidores |
 | [docs/ESTRUCTURA.md](docs/ESTRUCTURA.md) | Propósito de cada carpeta y archivo |
 | [docs/VALIDACIONES.md](docs/VALIDACIONES.md) | Formularios y sus validaciones frontend/backend |
 | [docs/SEGURIDAD.md](docs/SEGURIDAD.md) | Auditoría de seguridad, riesgos y correcciones |
+| [repartidor-service/README.md](repartidor-service/README.md) | Documentación del microservicio Python (FastAPI) |

@@ -744,7 +744,7 @@ function submitForm() {
   formData.append('acepta_terminos', document.getElementById('acepta_terminos').checked ? '1' : '0');
   formData.append('acepta_privacidad', document.getElementById('acepta_privacidad').checked ? '1' : '0');
 
-  fetch('<?= APP_URL ?>/repartidor/registro', {
+  fetch('<?= APP_URL ?>/api/repartidor/registro', {
     method: 'POST',
     body: formData
   })

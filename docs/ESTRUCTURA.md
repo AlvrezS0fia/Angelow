@@ -33,13 +33,13 @@ renderizar vistas.
 | Carpeta | Contenido | Responsabilidad |
 |---------|-----------|-----------------|
 | `app/Core/` | `Router.php`, `Controller.php`, `Auth.php`, `Database.php`, `Model.php`, `Env.php`, `JWTHelper.php`, `Helpers.php` | Infraestructura base: enrutado, PDO, sesión/roles, JWT, entorno |
-| `app/Controllers/` | Controladores por módulo: `AuthController`, `HomeController`, `PerfilController`, `CompraController`, `FacturaController`, `ContactoController`, `RepartidorController`, `DocumentoController`, `LogoutController`, `SeguimientoController`, ... | Coordinan solicitudes y respuestas |
+| `app/Controllers/` | Controladores por módulo: `AuthController`, `HomeController`, `PerfilController`, `CompraController`, `ContactoController`, `RepartidorController`, `DocumentoController`, `LogoutController`, `SeguimientoController`, ... | Coordinan solicitudes y respuestas |
 | `app/Controllers/Admin/` | `DashboardController`, `PedidosController`, `UsuariosController`, `RepartidorController`, `InventarioController`, `ClientesController`, `SeguimientoControler` | Lógica del panel de administración |
-| `app/Controllers/Api/` | Controladores REST para carrito, favoritos, productos, categorías, inventario, perfil, direcciones, tarjetas, repartidores, facturas | APIs JSON consumidas desde el front |
+| `app/Controllers/Api/` | Controladores REST para carrito, favoritos, productos, categorías, inventario, perfil, direcciones, tarjetas, repartidores | APIs JSON consumidas desde el front |
 | `app/Controllers/Api/Admin*` | `AdminRepartidorController` | Operaciones de administración de repartidores (aprobar/rechazar/suspender/activar) |
 | `app/Controllers/Cliente/` | `PerfilApiController`, `DireccionController`, `TarjetaController`, `PedidosController` | Datos del cliente autenticado |
 | `app/Controllers/Procesar/` | `db.php`, `login.php`, `registrar.php`, `recuperar_password.php` | Scripts heredados (login/registro por formulario tradicional) |
-| `app/Models/` | `UsuarioModel`, `PedidoModel`, `ProductoModel`, `CategoriaModel`, `CarritoModel`, `FacturaModel`, `DireccionModel`, `TarjetaModel`, `Favorito` | Acceso a datos con PDO parametrizado |
+| `app/Models/` | `UsuarioModel`, `PedidoModel`, `ProductoModel`, `CategoriaModel`, `CarritoModel`, `DireccionModel`, `TarjetaModel`, `Favorito` | Acceso a datos con PDO parametrizado |
 | `app/Libraries/` | `EmailService.php` | Envío de correos (SMTP) |
 | `app/Views/` | Vistas HTML/PHP organizadas por módulo | Renderización del frontend |
 
@@ -76,7 +76,7 @@ Archivos:
 
 Archivos:
 - `database/001_add_asignado_status.sql`
-- `database/002_add_facturas_table.sql`
+- `database/999_drop_facturacion.sql`
 - `migrations/add_direcciones_tarjetas.sql`
 
 **Responsabilidad**: evolucionar la BD sin destruir datos existentes.
@@ -119,17 +119,10 @@ protección para no ejecutar scripts (`.htaccess`).
 
 ---
 
-## `facturacion/` — Microservicio de facturación (Flask)
+## `facturacion/` — (Eliminado)
 
-**Propósito**: generar facturas/PDF y persistirlas en las tablas `facturas*`.
-
-**Estructura**:
-- `app.py` — aplicación Flask (puerto 5000).
-- `config.py`, `models/`, `routes/`, `services/`, `templates/`, `pdfs/`.
-- `requirements.txt`, `run.bat`, `.env`.
-
-**Depende de**: la misma BD MySQL y del `.env` propio.
-**Interactúa con**: la app PHP (le envía los datos del pedido/factura).
+El microservicio de facturación Python (Flask) fue **eliminado** del proyecto.
+Ver `docs/ARQUITECTURA.md` §13 para el detalle de la limpieza.
 
 ---
 

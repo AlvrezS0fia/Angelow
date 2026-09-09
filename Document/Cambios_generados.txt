@@ -172,10 +172,6 @@ Total acumulado rastreado: 2332 inserciones y 1773 eliminaciones.
 - `app/Views/home/bienvenida.php`: se actualizaron secciones de la vista de bienvenida.
 - `public/assets/js/bienvenida.js`: se ajustó la lógica de la página de bienvenida.
 
-### Factura
-
-- `public/assets/js/factura.js`: se realizaron ajustes menores en la lógica de factura.
-
 ### Repositorio anidado
 
 - `Angelow/`: carpeta nueva no rastreada en el repositorio principal. Dentro existe otro repositorio Git que actualmente aparece limpio.

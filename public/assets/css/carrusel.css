@@ -259,6 +259,16 @@
   box-shadow: 0 12px 22px rgba(251, 191, 36, 0.3);
 }
 
+.ser-repartidor-btn {
+  background: linear-gradient(135deg, #1BA805, #179A04);
+  color: #ffffff;
+}
+
+.ser-repartidor-btn:hover {
+  background: linear-gradient(135deg, #159A04, #1BA805);
+  box-shadow: 0 12px 22px rgba(27, 168, 5, 0.3);
+}
+
 /* ======================== TEMPORIZADOR ======================== */
 .flash-timer {
   background: rgba(255, 255, 255, 0.8);

@@ -4,9 +4,11 @@ namespace App\Controllers\Api;
 use App\Core\Controller;
 use App\Models\Favorito;
 
+
+// HERENCIA: controlador API concreto que hereda de la base de controladores.
 class FavoritoController extends Controller
 {
-    private $favoritoModel;
+    private Favorito $favoritoModel;
 
     private function getCurrentUserId()
     {
@@ -114,10 +116,13 @@ class FavoritoController extends Controller
         }
     }
 
+    // POLIMORFISMO: sobrescritura (override) de Controller::json() con firma
+    // idéntica. La hija reimplementa el contrato heredado; los llamadores usan
+    // $this->json(...) sin saber qué implementación se ejecuta.
     /**
      * Envía respuesta JSON
      */
-    protected function json($data, $statusCode = 200)
+    protected function json(array $data, int $statusCode = 200)
     {
         http_response_code($statusCode);
         header('Content-Type: application/json');

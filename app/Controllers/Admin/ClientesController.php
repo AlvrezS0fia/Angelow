@@ -4,28 +4,42 @@ namespace App\Controllers\Admin;
 use App\Core\Controller;
 use App\Models\UsuarioModel;
 
+// HERENCIA: extiende la base Controller y usa su json() heredado para la API.
 class ClientesController extends Controller
 {
-    private $usuarioModel;
+    private UsuarioModel $usuarioModel;
 
     public function __construct() {
         $this->usuarioModel = new UsuarioModel();
     }
 
-    public function index() {
+    // --- GUARDIÁN DE ROL (repetido en cada acción; ver ProductsController) ---
+    // Entrada: $_SESSION['user'].
+    // Procesamiento: si no hay sesión o el rol no es 'administrador' → 403 JSON.
+    // Salida: nada si OK; 403 si el que llama no es administrador.
+    private function requireAdmin() {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
             $this->json(['error' => 'No autorizado'], 403);
-            return;
         }
+    }
+
+    // GET /api/clientes → Lista de usuarios (solo admin).
+    //   ↓ Los datos vienen de: tabla `usuarios` vía UsuarioModel::getAll()
+    //   ↓ Validación en: requireAdmin()
+    //   ↓ Retorna a: fetch() del panel (JSON array)
+    public function index() {
+        $this->requireAdmin();
         $usuarios = $this->usuarioModel->getAll();
         $this->json($usuarios);
     }
 
+    // POST /api/clientes/buscar → Busca clientes (solo admin).
+    //   ↓ Datos recibidos desde: buscador del panel (JSON {nombre})
+    //   ↓ Validación: requireAdmin() + JSON válido
+    //   ↓ Se procesan en: UsuarioModel::buscarPorNombre (LIKE %...%)
+    //   ↓ Retorna: JSON array (si nombre vacío → lista completa)
     public function buscar() {
-        if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
-            $this->json(['error' => 'No autorizado'], 403);
-            return;
-        }
+        $this->requireAdmin();
         $data = json_decode(file_get_contents('php://input'), true);
         if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
             $this->json(['error' => 'JSON inválido'], 400);
@@ -42,11 +56,17 @@ class ClientesController extends Controller
         $this->json($usuarios);
     }
 
+    // POST /api/clientes/rol → CAMBIA EL ROL DE UN USUARIO (solo admin).
+    //   ↓ Datos recibidos desde: panel usuarios (JSON {id, rol})
+    //   ↓ Validación 1 (rol del que llama): requireAdmin() → 403 si no es admin.
+    //   ↓ Validación 2 (rol objetivo): whitelist ['cliente','repartidor','administrador'] → 400.
+    //   ↓ Se guarda en: tabla `usuarios` vía UsuarioModel::updateRol:
+    //     "UPDATE usuarios SET rol = :rol WHERE id = :id"
+    //   ↓ Retorna: JSON {success, message}
+    //   ESTO AFECTA A: vista del usuario, rutas /admin*, /repartidor*, /perfil,
+    //   redirección post-login y login JWT de la app de repartos.
     public function cambiarRol() {
-        if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
-            $this->json(['error' => 'No autorizado'], 403);
-            return;
-        }
+        $this->requireAdmin();
         $data = json_decode(file_get_contents('php://input'), true);
         if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
             $this->json(['error' => 'JSON inválido'], 400);
@@ -68,11 +88,13 @@ class ClientesController extends Controller
         }
     }
 
+    // POST /api/clientes → Crea un usuario manualmente (solo admin).
+    //   ↓ Datos recibidos desde: formulario del panel (JSON)
+    //   ↓ Validación: requireAdmin() + nombre/email obligatorios
+    //   ↓ Se guarda en: tabla `usuarios` (INSERT con password aleatorio + rol elegido)
+    //   ↓ Retorna: JSON {success, id}
     public function store() {
-        if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
-            $this->json(['error' => 'No autorizado'], 403);
-            return;
-        }
+        $this->requireAdmin();
         $data = json_decode(file_get_contents('php://input'), true);
         if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
             $this->json(['error' => 'JSON inválido'], 400);
@@ -109,11 +131,12 @@ class ClientesController extends Controller
         }
     }
 
-    public function destroy($id) {
-        if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
-            $this->json(['error' => 'No autorizado'], 403);
-            return;
-        }
+    // DELETE /api/clientes/{id} → Elimina un usuario (solo admin).
+    //   ↓ Validación: requireAdmin()
+    //   ↓ Se procesa en: UsuarioModel::delete → DELETE de `usuarios`
+    //   ↓ Retorna: JSON {success}
+    public function destroy(int $id) {
+        $this->requireAdmin();
         $this->usuarioModel->delete($id);
         $this->json(['success' => true, 'message' => 'Usuario eliminado']);
     }

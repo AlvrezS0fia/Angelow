@@ -17,7 +17,7 @@ let descuentoAplicado = 0;
 let codigoDescuento = "";
 let costoEnvio = 0;
 let datosUsuario = {};
-let ultimaFactura = null;
+let ultimoPedido = null;
 
 // ======================== VALIDACIONES EN TIEMPO REAL ========================
 function inicializarValidaciones() {
@@ -190,14 +190,9 @@ function showToast(mensaje, tipo = 'info') {
 }
 
 function calcularDescuento(codigo, subtotal) {
-    const tabla = {
-        'BIENVENIDA10': subtotal * 0.10,
-        'ANGELOW20': subtotal * 0.20,
-        'ANGELOW25': subtotal * 0.25,
-        'DESCUENTO5': subtotal * 0.05,
-        'ANGELOW50': subtotal * 0.50
-    };
-    return tabla[codigo] || 0;
+    // Esta función ya no se usa para validar cupones.
+    // La validación ahora se hace contra el backend.
+    return 0;
 }
 
 // ======================== CARGAR CARRITO ========================
@@ -322,7 +317,7 @@ function actualizarTotales() {
 }
 
 // ======================== CUPONES ========================
-window.applyPromo = function() {
+window.applyPromo = async function() {
     const input = document.getElementById('promoInput');
     if (!input) return;
     const code = input.value.trim().toUpperCase();
@@ -330,15 +325,30 @@ window.applyPromo = function() {
         showToast('Ingresa un codigo', 'warning');
         return;
     }
+
     let subtotal = carrito.reduce((sum, p) => sum + (p.price || p.precio || 0) * (p.quantity || p.cantidad || 1), 0);
-    const desc = calcularDescuento(code, subtotal);
-    if (desc > 0) {
-        descuentoAplicado = desc;
-        codigoDescuento = code;
-        localStorage.setItem('promoCode', code);
-        showToast(`Cupon ${code} aplicado: -$${desc.toLocaleString()}`, 'success');
-    } else {
-        showToast('Codigo invalido', 'error');
+
+    try {
+        const res = await fetch(`${APP_URL}/api/cupones/validar`, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codigo: code, subtotal: subtotal })
+        });
+        const result = await res.json();
+
+        if (result.success && result.descuento > 0) {
+            descuentoAplicado = result.descuento;
+            codigoDescuento = code;
+            localStorage.setItem('promoCode', code);
+            showToast(`Cupon ${code} aplicado: -$${result.descuento.toLocaleString()}`, 'success');
+        } else {
+            showToast(result.message || 'Codigo invalido', 'error');
+            descuentoAplicado = 0;
+            codigoDescuento = "";
+            localStorage.removeItem('promoCode');
+        }
+    } catch (e) {
+        showToast('Error al validar el cupon', 'error');
         descuentoAplicado = 0;
         codigoDescuento = "";
         localStorage.removeItem('promoCode');
@@ -346,16 +356,25 @@ window.applyPromo = function() {
     actualizarTotales();
 };
 
-function aplicarPromoGuardado() {
+async function aplicarPromoGuardado() {
     const input = document.getElementById('promoInput');
     if (input && input.value) {
         const code = input.value.trim().toUpperCase();
         let subtotal = carrito.reduce((sum, p) => sum + (p.price || p.precio || 0) * (p.quantity || p.cantidad || 1), 0);
-        const desc = calcularDescuento(code, subtotal);
-        if (desc > 0) {
-            descuentoAplicado = desc;
-            codigoDescuento = code;
-            actualizarTotales();
+        try {
+            const res = await fetch(`${APP_URL}/api/cupones/validar`, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ codigo: code, subtotal: subtotal })
+            });
+            const result = await res.json();
+            if (result.success && result.descuento > 0) {
+                descuentoAplicado = result.descuento;
+                codigoDescuento = code;
+                actualizarTotales();
+            }
+        } catch (e) {
+            // Silently fail for saved promo
         }
     }
 }
@@ -422,17 +441,13 @@ window.goToStep = function(step) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-// ======================== GENERAR NUMERO DE FACTURA ========================
-function generarNumeroFactura() {
-    const anio = new Date().getFullYear();
-    const mes = String(new Date().getMonth() + 1).padStart(2, '0');
-    const dia = String(new Date().getDate()).padStart(2, '0');
-    const aleatorio = Math.floor(Math.random() * 9000 + 1000);
-    return `A-${anio}${mes}${dia}-${aleatorio}`;
+// ======================== GENERAR NUMERO DE PEDIDO (temporal solo para UI local) ========================
+function generarNumeroPedidoLocal() {
+    return 'PENDIENTE';
 }
 
 // ======================== GUARDAR PEDIDO ========================
-async function guardarPedido(facturaData) {
+async function guardarPedido(pedidoInfo) {
     const usuarioId = window.CURRENT_USER?.id || window.APP_USER_ID || 0;
 
     let ubicacion = null;
@@ -444,27 +459,28 @@ async function guardarPedido(facturaData) {
 
     const pedidoData = {
         usuario_id: usuarioId,
-        numero_pedido: facturaData.numero,
-        nombre_cliente: facturaData.cliente.nombre,
-        email_cliente: facturaData.cliente.email,
-        telefono_cliente: facturaData.cliente.telefono,
-        cedula_cliente: facturaData.cliente.cedula,
-        direccion_envio: facturaData.envio.direccion,
-        barrio: facturaData.envio.direccion.split(',')[1]?.trim() || '',
-        ciudad: facturaData.envio.direccion.split(',')[2]?.trim() || 'Bogotá',
-        departamento: facturaData.envio.direccion.split(',')[3]?.trim() || 'Cundinamarca',
-        destinatario: facturaData.envio.destinatario,
-        informacion_adicional: facturaData.infoAdicional,
-        metodo_pago: facturaData.pago.metodo === 'Mercado Pago' ? 'mercadopago' : 'pse',
-        metodo_envio: facturaData.envio.metodo.includes('Express') ? 'express' : 'normal',
-        costo_envio: facturaData.envio.costo,
-        subtotal: facturaData.subtotal,
-        descuento: facturaData.descuento,
-        total: facturaData.total,
+        numero_pedido: pedidoInfo.numero,
+        nombre_cliente: pedidoInfo.cliente.nombre,
+        email_cliente: pedidoInfo.cliente.email,
+        telefono_cliente: pedidoInfo.cliente.telefono,
+        cedula_cliente: pedidoInfo.cliente.cedula,
+        direccion_envio: pedidoInfo.envio.direccion,
+        direccion_complementaria: pedidoInfo.envio.direccionComplementaria || null,
+        barrio: pedidoInfo.envio.barrio || '',
+        ciudad: pedidoInfo.envio.ciudad || '',
+        departamento: pedidoInfo.envio.departamento || '',
+        destinatario: pedidoInfo.envio.destinatario,
+        informacion_adicional: pedidoInfo.infoAdicional,
+        metodo_pago: pedidoInfo.pago.metodo === 'Mercado Pago' ? 'mercadopago' : 'pse',
+        metodo_envio: pedidoInfo.envio.metodo.includes('Express') ? 'express' : 'normal',
+        costo_envio: pedidoInfo.envio.costo,
+        subtotal: pedidoInfo.subtotal,
+        descuento: pedidoInfo.descuento,
+        total: pedidoInfo.total,
         latitud_destino: ubicacion?.lat || null,
         longitud_destino: ubicacion?.lng || null,
-        productos: facturaData.productos.map(p => ({
-            producto_id: 0,
+        productos: pedidoInfo.productos.map(p => ({
+            producto_id: p.id,
             nombre: p.nombre,
             cantidad: p.cantidad,
             precioUnitario: p.precioUnitario,
@@ -473,38 +489,6 @@ async function guardarPedido(facturaData) {
             imagen: p.imagen || ''
         }))
     };
-
-    let orders = JSON.parse(localStorage.getItem('angelow_orders')) || [];
-    
-    const nuevoPedido = {
-        id: facturaData.numero,
-        orderNumber: facturaData.numero,
-        date: new Date().toISOString(),
-        total: facturaData.total,
-        status: 'processing',
-        items: facturaData.productos.length,
-        products: facturaData.productos.map(p => ({
-            nombre: p.nombre,
-            cantidad: p.cantidad,
-            precioUnitario: p.precioUnitario,
-            talla: p.talla,
-            color: p.color || 'N/A'
-        })),
-        cliente: facturaData.cliente,
-        envio: facturaData.envio,
-        pago: facturaData.pago,
-        subtotal: facturaData.subtotal,
-        descuento: facturaData.descuento,
-        codigoDescuento: facturaData.codigoDescuento,
-        infoAdicional: facturaData.infoAdicional,
-        fechaFormateada: facturaData.fecha
-    };
-    
-    orders.unshift(nuevoPedido);
-    localStorage.setItem('angelow_orders', JSON.stringify(orders));
-    sessionStorage.setItem('ultimaFactura', JSON.stringify(facturaData));
-    sessionStorage.setItem('nuevoPedido', JSON.stringify(nuevoPedido));
-    ultimaFactura = facturaData;
 
     try {
         const res = await fetch(`${APP_URL}/procesar-compra`, {
@@ -516,17 +500,53 @@ async function guardarPedido(facturaData) {
             body: JSON.stringify(pedidoData)
         });
         const result = await res.json();
-        if (result.success) {
-            nuevoPedido.pedido_id = result.pedido_id;
-            nuevoPedido.numero_pedido = result.numero_pedido;
-            showToast('Pedido guardado en el sistema', 'success');
+
+        if (!res.ok || !result.success) {
+            const errorMsg = result.error || result.message || 'Error desconocido del servidor';
+            console.error('Error del servidor:', errorMsg);
+            showToast(`Error al procesar pedido: ${errorMsg}`, 'error');
+            return { success: false, error: errorMsg };
         }
+
+        const nuevoPedido = {
+            id: result.numero_pedido || pedidoInfo.numero,
+            pedido_id: result.pedido_id,
+            numero_pedido: result.numero_pedido,
+            orderNumber: result.numero_pedido,
+            date: new Date().toISOString(),
+            total: pedidoInfo.total,
+            status: 'processing',
+            items: pedidoInfo.productos.length,
+            products: pedidoInfo.productos.map(p => ({
+                nombre: p.nombre,
+                cantidad: p.cantidad,
+                precioUnitario: p.precioUnitario,
+                talla: p.talla,
+                color: p.color || 'N/A'
+            })),
+            cliente: pedidoInfo.cliente,
+            envio: pedidoInfo.envio,
+            pago: pedidoInfo.pago,
+            subtotal: pedidoInfo.subtotal,
+            descuento: pedidoInfo.descuento,
+            codigoDescuento: pedidoInfo.codigoDescuento,
+            infoAdicional: pedidoInfo.infoAdicional,
+            fechaFormateada: pedidoInfo.fecha
+        };
+
+        let orders = JSON.parse(localStorage.getItem('angelow_orders')) || [];
+        orders.unshift(nuevoPedido);
+        localStorage.setItem('angelow_orders', JSON.stringify(orders));
+        sessionStorage.setItem('nuevoPedido', JSON.stringify(nuevoPedido));
+        ultimoPedido = pedidoInfo;
+
+        return { success: true, pedido: nuevoPedido };
+
     } catch (e) {
-        console.error('Error al guardar pedido en BD:', e);
-        showToast('Pedido guardado localmente (sin conexión)', 'warning');
+        console.error('Error de conexion al guardar pedido:', e);
+        showToast('Error de conexion. Verifica tu internet e intenta de nuevo.', 'error');
+        return { success: false, error: 'Sin conexion' };
     }
-    
-    return nuevoPedido;
 }
 
 // ======================== COMPLETAR COMPRA ========================
@@ -552,7 +572,7 @@ window.completePurchase = async function() {
         return;
     }
 
-    showToast('Generando factura...', 'info');
+    showToast('Procesando pedido...', 'info');
 
     let subtotal = 0;
     const productos = carrito.map(item => {
@@ -560,6 +580,7 @@ window.completePurchase = async function() {
         const cant = item.quantity || item.cantidad || 1;
         subtotal += precio * cant;
         return {
+            id: item.id || item.producto_id,
             nombre: item.name || item.nombre || 'Producto',
             precioUnitario: precio,
             cantidad: cant,
@@ -575,7 +596,7 @@ window.completePurchase = async function() {
     const destinatario = document.getElementById('destinatario').value || `${document.getElementById('nombre').value} ${document.getElementById('apellidos').value}`;
     const total = subtotal - descuentoAplicado + costoEnvio;
 
-    const numeroFactura = generarNumeroFactura();
+    const numeroPedido = generarNumeroPedidoLocal();
     const fechaActual = new Date().toLocaleDateString('es-CO', { 
         year: 'numeric', 
         month: 'long', 
@@ -584,8 +605,8 @@ window.completePurchase = async function() {
         minute: '2-digit'
     });
     
-    const facturaData = {
-        numero: numeroFactura,
+    const pedidoInfo = {
+        numero: numeroPedido,
         fecha: fechaActual,
         cliente: {
             nombre: `${document.getElementById('nombre').value} ${document.getElementById('apellidos').value}`,
@@ -594,7 +615,11 @@ window.completePurchase = async function() {
             email: document.getElementById('email').value
         },
         envio: {
-            direccion: `${document.getElementById('direccion').value}, ${document.getElementById('barrio').value}, ${document.getElementById('municipio').value}, ${document.getElementById('departamento').value}`,
+            direccion: document.getElementById('direccion').value,
+            direccionComplementaria: document.getElementById('direccionComplementaria')?.value || '',
+            barrio: document.getElementById('barrio').value,
+            ciudad: document.getElementById('municipio').value,
+            departamento: document.getElementById('departamento').value,
             destinatario: destinatario,
             metodo: metodoEnvio === 'express' ? 'Envio Express - 1 dia habil' : 'Envio Normal - 2-5 dias',
             costo: costoEnvio
@@ -610,22 +635,17 @@ window.completePurchase = async function() {
         infoAdicional: infoAdicional
     };
 
-    const nuevoPedido = await guardarPedido(facturaData);
-    sessionStorage.setItem('ultimaFactura', JSON.stringify(facturaData));
-    sessionStorage.setItem('nuevoPedido', JSON.stringify(nuevoPedido));
+    const resultado = await guardarPedido(pedidoInfo);
 
-    if (nuevoPedido.pedido_id) {
-        facturaData.numero = nuevoPedido.numero_pedido || facturaData.numero;
-        facturaData.pedido_id = nuevoPedido.pedido_id;
-        let orders = JSON.parse(localStorage.getItem('angelow_orders')) || [];
-        const index = orders.findIndex(o => o.numero === nuevoPedido.id);
-        if (index !== -1) {
-            orders[index].pedido_id = nuevoPedido.pedido_id;
-            orders[index].numero_pedido = nuevoPedido.numero_pedido;
-            orders[index].id = nuevoPedido.numero_pedido || nuevoPedido.id;
-            localStorage.setItem('angelow_orders', JSON.stringify(orders));
-        }
+    if (!resultado.success) {
+        showToast('No se pudo completar la compra. Intenta de nuevo.', 'error');
+        return;
     }
+
+    const nuevoPedido = resultado.pedido;
+    sessionStorage.setItem('nuevoPedido', JSON.stringify(nuevoPedido));
+    pedidoInfo.numero = nuevoPedido.numero_pedido || pedidoInfo.numero;
+    pedidoInfo.pedido_id = nuevoPedido.pedido_id;
 
     carrito = [];
     localStorage.removeItem('angelow_cart');
@@ -644,14 +664,12 @@ window.completePurchase = async function() {
       console.error('Error al vaciar carrito en BD:', e);
     }
 
-    const numeroFinal = facturaData.numero;
-    sessionStorage.setItem('facturaData', JSON.stringify(facturaData));
-    mostrarFactura(facturaData);
-    showToast(`Compra completada. Pedido #${numeroFinal}`, 'success');
+    mostrarConfirmacionPedido(pedidoInfo);
+    showToast(`Compra completada. Pedido #${pedidoInfo.numero}`, 'success');
 };
 
-// ======================== MOSTRAR FACTURA ========================
-function mostrarFactura(data) {
+// ======================== MOSTRAR CONFIRMACION DE PEDIDO ========================
+function mostrarConfirmacionPedido(data) {
     document.querySelectorAll('.step-content').forEach(c => c.classList.remove('active'));
     const progress = document.querySelector('.progress-container');
     if (progress) progress.style.display = 'none';
@@ -661,8 +679,8 @@ function mostrarFactura(data) {
     
     const logoUrl = APP_URL + '/assets/imagenes/general/logos.png';
     
-    const facturaHTML = `
-        <div id="facturaContainer" style="max-width: 900px; margin: 0 auto; background: #ffffff; border-radius: 20px; box-shadow: 0 20px 60px rgba(30, 58, 138, 0.15); overflow: hidden; padding: 50px; border: 1px solid #e8edf5;">
+    const confirmacionHTML = `
+        <div id="pedidoContainer" style="max-width: 900px; margin: 0 auto; background: #ffffff; border-radius: 20px; box-shadow: 0 20px 60px rgba(30, 58, 138, 0.15); overflow: hidden; padding: 50px; border: 1px solid #e8edf5;">
             
             <!-- HEADER -->
             <div style="text-align: center; border-bottom: 3px solid #1e3a8a; padding-bottom: 25px; margin-bottom: 30px;">
@@ -674,8 +692,7 @@ function mostrarFactura(data) {
                     </div>
                 </div>
                 <div style="margin-top: 15px; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
-                    <span style="background: #1e3a8a; color: white; font-size: 14px; font-weight: 700; letter-spacing: 2px; padding: 6px 30px; border-radius: 30px;">FACTURA</span>
-                    <span style="background: #10b981; color: white; font-size: 14px; font-weight: 700; padding: 6px 25px; border-radius: 30px;">PAGADA</span>
+                    <span style="background: #10b981; color: white; font-size: 14px; font-weight: 700; padding: 6px 25px; border-radius: 30px;">PEDIDO CONFIRMADO</span>
                 </div>
                 <div style="margin-top: 12px; color: #4a6fa5; font-size: 15px; font-weight: 600;">N° ${data.numero}</div>
                 <div style="color: #6b7280; font-size: 14px;">${data.fecha}</div>
@@ -761,16 +778,12 @@ function mostrarFactura(data) {
                 <p style="margin: 0; color: #1e3a8a; font-size: 16px; font-weight: 600;">Gracias por elegir ANGELOW</p>
                 <p style="margin: 5px 0 0 0; color: #4a6fa5;">Moda Infantil - Calidad y Estilo para tus pequeños</p>
                 <p style="margin: 5px 0 0 0; font-size: 12px; color: #9ca3af;">info@angelow.com | +57 3135951664 | Medellin, Colombia</p>
-                <p style="margin: 5px 0 0 0; font-size: 11px; color: #b0b8c8;">Factura N° ${data.numero} | ${data.fecha} | Este documento es un comprobante de compra valido</p>
+                <p style="margin: 5px 0 0 0; font-size: 11px; color: #b0b8c8;">Pedido N° ${data.numero} | ${data.fecha}</p>
             </div>
             
             <!-- BOTONES DE ACCIÓN -->
             <div style="display: flex; gap: 14px; justify-content: center; margin-top: 30px; flex-wrap: wrap;">
-                <button onclick="generarPDFFactura()" style="background: linear-gradient(135deg, #1e3a8a 0%, #2a4f9e 100%); color: white; border: none; padding: 15px 40px; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px rgba(30, 58, 138, 0.35); transition: all 0.3s ease; display: flex; align-items: center; gap: 10px;">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
-                    Descargar PDF
-                </button>
-                <button onclick="window.location.href='${APP_URL || '/'}/perfil'" style="background: #e8edf5; color: #1e3a8a; border: 2px solid #1e3a8a; padding: 15px 40px; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.3s ease;">
+                <button onclick="window.location.href='${APP_URL || '/'}/perfil'" style="background: #1e3a8a; color: white; border: none; padding: 15px 40px; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px rgba(30, 58, 138, 0.35); transition: all 0.3s ease;">
                     Ver Mis Pedidos
                 </button>
                 <button onclick="window.location.href='${APP_URL || '/'}'" style="background: #10b981; color: white; border: none; padding: 15px 40px; border-radius: 50px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35); transition: all 0.3s ease;">
@@ -780,81 +793,10 @@ function mostrarFactura(data) {
         </div>
     `;
     
-    container.innerHTML = facturaHTML;
+    container.innerHTML = confirmacionHTML;
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
-    ultimaFactura = data;
-}
-
-// ======================== GENERAR PDF ========================
-function generarPDFFactura() {
-    const facturaData = sessionStorage.getItem('facturaData');
-    if (facturaData) {
-        const data = JSON.parse(facturaData);
-        generarPDF(data);
-    } else if (ultimaFactura) {
-        generarPDF(ultimaFactura);
-    } else {
-        showToast('No hay datos de factura para generar PDF', 'error');
-    }
-}
-
-function generarPDF(data) {
-    showToast('Generando PDF...', 'info');
-    
-    if (typeof html2pdf === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-        script.onload = function() {
-            generarPDFConBiblioteca(data);
-        };
-        script.onerror = function() {
-            showToast('Error al cargar la biblioteca PDF', 'error');
-        };
-        document.head.appendChild(script);
-    } else {
-        generarPDFConBiblioteca(data);
-    }
-}
-
-function generarPDFConBiblioteca(data) {
-    const element = document.getElementById('facturaContainer');
-    if (!element) {
-        showToast('No se encontró la factura para generar PDF', 'error');
-        return;
-    }
-    
-    const opt = {
-        margin: [10, 10, 10, 10],
-        filename: `Factura_ANGELOW_${data.numero}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-            scale: 2, 
-            useCORS: true, 
-            logging: false,
-            width: 850,
-            letterRendering: true
-        },
-        jsPDF: { 
-            unit: 'mm', 
-            format: 'a4', 
-            orientation: 'portrait' 
-        },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-    
-    html2pdf()
-        .set(opt)
-        .from(element)
-        .save()
-        .then(() => {
-            showToast('PDF generado correctamente', 'success');
-        })
-        .catch(err => {
-            console.error('Error al generar PDF:', err);
-            showToast('Error al generar PDF. Intenta con otra herramienta.', 'error');
-            window.print();
-        });
+    ultimoPedido = data;
 }
 
 function actualizarAnioFooter() {

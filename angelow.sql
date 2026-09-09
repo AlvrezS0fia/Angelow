@@ -340,7 +340,7 @@ CREATE TABLE pedidos (
     fecha_recogida TIMESTAMP NULL,
 
     -- Estado del pedido (compatible con repartidor.html)
-    estado ENUM('pendiente', 'confirmado', 'procesando', 'listo', 'asignado', 'aceptado', 'recogido', 'en_camino', 'entregado', 'cancelado', 'reembolsado') DEFAULT 'pendiente',
+    estado ENUM('pendiente', 'confirmado', 'procesando', 'listo', 'asignado', 'aceptado', 'recogido', 'en_camino', 'entregado', 'cancelado', 'reembolsado', 'rechazado') DEFAULT 'pendiente',
 
     -- Métodos
     metodo_pago ENUM('pse', 'tarjeta_credito', 'tarjeta_debito', 'mercadopago', 'efectivo', 'transferencia') DEFAULT 'pse',

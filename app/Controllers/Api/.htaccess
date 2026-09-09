@@ -1,5 +1,8 @@
-Options +Indexes
-Require all granted
+Options -Indexes
 <IfModule mod_authz_core.c>
-    Require all granted
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
 </IfModule>

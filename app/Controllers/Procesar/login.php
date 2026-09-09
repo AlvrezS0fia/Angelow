@@ -57,6 +57,7 @@ try {
         'rol' => $usuario['rol'],
         'login_time' => date('Y-m-d H:i:s')
     ];
+    $_SESSION['user_id'] = $usuario['id'];
     
      // Cookie de remember me (30 días)
      if ($remember) {

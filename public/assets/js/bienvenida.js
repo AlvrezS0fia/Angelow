@@ -91,6 +91,29 @@ function normalizeCart() {
         const productId = Number(item.id);
         const product = products.find((p) => p.id === productId);
         
+        // Si el item viene del servidor (tiene name, price, imgs del backend), conservarlo tal cual
+        if (item.name && item.price !== undefined && item.imgs) {
+            normalizedCart.push({
+                id: productId,
+                name: item.name,
+                category: item.category || '',
+                subcategory: item.subcategory || '',
+                price: item.price,
+                description: item.description || '',
+                sizes: item.sizes || ["2","4","6","8"],
+                imgs: Array.isArray(item.imgs) ? item.imgs : (item.imgs ? [item.imgs] : []),
+                stock: item.stock || 0,
+                rating: item.rating || 0,
+                reviews: item.reviews || 0,
+                features: item.features || [],
+                selectedSize: item.selectedSize || "Única",
+                quantity: item.quantity || 1,
+                cartId: item.cartId
+            });
+            return;
+        }
+        
+        // Si el item es local (invitado) y el producto existe en el array hardcodeado
         if (product) {
             const normalizedItem = {
                 id: product.id,
@@ -110,6 +133,25 @@ function normalizeCart() {
                 cartId: item.cartId || `${product.id}-${item.selectedSize || product.sizes[0] || "Única"}`
             };
             normalizedCart.push(normalizedItem);
+        } else {
+            // Producto no encontrado localmente pero conservar el item con los datos que tenga
+            normalizedCart.push({
+                id: productId,
+                name: item.name || item.nombre || 'Producto',
+                category: item.category || '',
+                subcategory: item.subcategory || '',
+                price: item.price || item.precio || 0,
+                description: item.description || '',
+                sizes: item.sizes || ["2","4","6","8"],
+                imgs: Array.isArray(item.imgs) ? item.imgs : (item.imgs ? [item.imgs] : []),
+                stock: item.stock || 0,
+                rating: item.rating || 0,
+                reviews: item.reviews || 0,
+                features: item.features || [],
+                selectedSize: item.selectedSize || "Única",
+                quantity: item.quantity || 1,
+                cartId: item.cartId || `${productId}-Única`
+            });
         }
     });
     
@@ -699,36 +741,66 @@ function loadUser() {
   }
 }
 
+function crearMenuItem(id, href, etiqueta, icono) {
+  const item = document.createElement('a');
+  item.href = href;
+  item.className = 'dropdown-item';
+  item.id = id;
+  item.setAttribute('role', 'menuitem');
+  if (icono) {
+    item.innerHTML = `<i class="fas ${icono}" aria-hidden="true"></i> ${etiqueta}`;
+  } else {
+    item.textContent = etiqueta;
+  }
+  return item;
+}
+
+function insertarFacturas(ancla) {
+  let facturasLink = document.getElementById('facturasLink');
+  if (!facturasLink) {
+    facturasLink = crearMenuItem('facturasLink', APP_URL + '/perfil#pedidos', 'Facturas', 'fa-file-invoice');
+  }
+  if (ancla && ancla.parentNode) {
+    ancla.after(facturasLink);
+  } else {
+    document.getElementById('dropdownMenu').appendChild(facturasLink);
+  }
+  return facturasLink;
+}
+
 function updateUserUI() {
   const loginLink = document.getElementById('loginLink');
   const dropdownMenu = document.getElementById('dropdownMenu');
   const existingInventario = document.getElementById('inventarioLink');
   if (existingInventario) existingInventario.remove();
+  const existingFacturas = document.getElementById('facturasLink');
+  if (existingFacturas) existingFacturas.remove();
 
-  const serRepartidorMenu = document.getElementById('serRepartidorMenu');
   const openFavoritesFromMenu = document.getElementById('openFavoritesFromMenu');
+
+  if (openFavoritesFromMenu && !openFavoritesFromMenu.querySelector('i.fa-heart')) {
+    openFavoritesFromMenu.innerHTML = '<i class="fas fa-heart" aria-hidden="true"></i>' + openFavoritesFromMenu.innerHTML;
+  }
 
   if (currentUser) {
     const isAdmin = currentUser.rol === 'administrador';
     const isRepartidor = currentUser.rol === 'repartidor';
     if (isAdmin) {
-      loginLink.textContent = 'Administración';
+      loginLink.innerHTML = '<i class="fas fa-user-shield" aria-hidden="true"></i> Administración';
       loginLink.href = APP_URL + '/admin';
-      const inventarioLink = document.createElement('a');
-      inventarioLink.href = APP_URL + '/admin/inventario';
-      inventarioLink.className = 'dropdown-item';
-      inventarioLink.id = 'inventarioLink';
-      inventarioLink.textContent = 'Inventario';
+      const inventarioLink = crearMenuItem('inventarioLink', APP_URL + '/admin/inventario', 'Inventario', 'fa-box');
       loginLink.after(inventarioLink);
+      insertarFacturas(inventarioLink);
     } else if (isRepartidor) {
-      loginLink.textContent = 'Mi panel de repartidor';
+      loginLink.innerHTML = '<i class="fas fa-truck-fast" aria-hidden="true"></i> Panel repartidor';
       loginLink.href = APP_URL + '/repartidor/dashboard';
+      insertarFacturas(loginLink);
     } else {
-      loginLink.textContent = 'Mi cuenta';
+      loginLink.innerHTML = '<i class="fas fa-user" aria-hidden="true"></i> Mi cuenta';
       loginLink.href = APP_URL + '/perfil';
+      insertarFacturas(openFavoritesFromMenu);
     }
     loginLink.onclick = null;
-    if (serRepartidorMenu) serRepartidorMenu.style.display = 'none';
     if (isAdmin || isRepartidor) {
       if (openFavoritesFromMenu) openFavoritesFromMenu.style.display = 'none';
     } else {
@@ -739,11 +811,10 @@ function updateUserUI() {
     const logoutItem = document.createElement('a');
     logoutItem.href = '#';
     logoutItem.className = 'dropdown-item logout-item';
-    logoutItem.innerHTML = '<i class="fas fa-sign-out-alt"></i> Cerrar sesión';
+    logoutItem.innerHTML = '<i class="fas fa-sign-out-alt" aria-hidden="true"></i> Cerrar sesión';
     logoutItem.onclick = (e) => { e.preventDefault(); logout(); };
     dropdownMenu.appendChild(logoutItem);
   } else {
-    if (serRepartidorMenu) serRepartidorMenu.style.display = '';
     if (openFavoritesFromMenu) openFavoritesFromMenu.style.display = '';
     loginLink.textContent = 'Iniciar sesión';
     loginLink.href = '#';

@@ -106,6 +106,8 @@ class RepartidorAuthController extends Controller
             'total_entregas' => $user['total_entregas'] ?? 0,
             'calificacion_promedio' => $user['calificacion_promedio'] ?? 5.00,
         ];
+        $_SESSION['user_id'] = $user['id'];
+        session_regenerate_id(true);
 
         try {
             Database::query("UPDATE usuarios SET ultima_sesion = NOW(), en_linea = 1 WHERE id = ?", [$user['id']]);
@@ -416,6 +418,8 @@ class RepartidorAuthController extends Controller
             'tipo_vehiculo' => $vehiculo,
             'placa_vehiculo' => $placa,
         ];
+        $_SESSION['user_id'] = $userId;
+        session_regenerate_id(true);
 
         echo json_encode([
             'success' => true,
@@ -515,6 +519,8 @@ class RepartidorAuthController extends Controller
             'tipo_vehiculo' => $vehiculo,
             'placa_vehiculo' => $placa,
         ];
+        $_SESSION['user_id'] = $userId;
+        session_regenerate_id(true);
 
         echo json_encode([
             'success' => true,

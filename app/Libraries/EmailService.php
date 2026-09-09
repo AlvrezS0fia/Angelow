@@ -50,6 +50,7 @@ class EmailService {
             $mail->SMTPAuth = true;
             $mail->Username = $smtpConfig['username'];
             $mail->Password = $smtpConfig['password'];
+            // CAPA 4 ISO-OSI (Transporte): cifrado SMTP con STARTTLS.
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port = $smtpConfig['port'];
             $mail->setFrom($smtpConfig['from_email'], $smtpConfig['from_name']);
@@ -180,12 +181,9 @@ class EmailService {
         $html = str_replace('{{reset_link}}', $resetLink, $html);
         $html = str_replace('{{token}}', $datos_extra['token'] ?? '', $html);
         $html = str_replace('{{app_url}}', $app_url, $html);
-        $html = str_replace('{{factura_id}}', $datos_extra['factura_id'] ?? '', $html);
         $html = str_replace('{{monto}}', $datos_extra['monto'] ?? '0', $html);
         $html = str_replace('{{mensaje}}', $datos_extra['mensaje'] ?? '', $html);
         
-        // Variables especificas de factura
-        $html = str_replace('{{numero_factura}}', $datos_extra['numero_factura'] ?? '', $html);
         $html = str_replace('{{nombre_cliente}}', $datos_extra['nombre_cliente'] ?? $nombre, $html);
         $html = str_replace('{{fecha_emision}}', $datos_extra['fecha_emision'] ?? date('d/m/Y'), $html);
         $html = str_replace('{{estado_label}}', $datos_extra['estado_label'] ?? 'Pendiente', $html);
@@ -201,10 +199,6 @@ class EmailService {
             $descuentoRow = '';
         }
         $html = str_replace('{{descuento_row}}', $descuentoRow, $html);
-        
-        // Enlaces
-        $html = str_replace('{{link_ver_factura}}', $datos_extra['link_ver_factura'] ?? ($app_url . '/factura'), $html);
-        $html = str_replace('{{link_descargar_pdf}}', $datos_extra['link_descargar_pdf'] ?? ($app_url . '/factura'), $html);
         
         // NOTA: La imagen ya tiene src="cid:logo_angelow" en tu HTML
         // No es necesario reemplazar nada más para el logo
@@ -241,15 +235,6 @@ class EmailService {
                 $mensaje = $datos_extra['mensaje'] ?? 'Notificación del sistema';
                 return "Hola $nombre,\n\n$mensaje\n\nSaludos,\nEquipo Angelow";
             
-            case 'factura':
-                $factura_id = $datos_extra['factura_id'] ?? '';
-                $monto = $datos_extra['monto'] ?? '';
-                return "Hola $nombre,\n\n" .
-                       "Gracias por tu compra.\n\n" .
-                       "Factura #$factura_id\n" .
-                       "Monto: $$monto\n\n" .
-                       "Saludos,\nEquipo Angelow";
-            
             default:
                 return "Hola $nombre,\n\n" .
                        "Este es un mensaje de Angelow.\n\n" .
@@ -264,8 +249,7 @@ class EmailService {
         $subjects = [
             'bienvenida' => '¡Bienvenido a Angelow!',
             'recuperacion' => 'Recuperación de contraseña - Angelow',
-            'notificacion' => 'Notificación - Angelow',
-            'factura' => 'Factura de compra - Angelow'
+            'notificacion' => 'Notificación - Angelow'
         ];
         return $subjects[$tipo] ?? 'Notificación - Angelow';
     }

@@ -324,11 +324,11 @@ $user = $_SESSION['user'];
             o.querySelector('#modalConfirmBtn').onclick=()=>{const v=o.querySelector('#modalMotivo').value.trim();o.remove();callback(v);};
         }
 
-        function showDocReviewModal(docId, docTipo, docUrl){
-            const isImg = /\.(jpg|jpeg|png)$/i.test(docUrl);
+        function showDocReviewModal(docId, docTipo, docUrl, archivoUrl){
+            const isImg = /\.(jpg|jpeg|png)$/i.test(archivoUrl || docUrl || '');
             const preview = isImg
-                ? '<img src="'+APP_URL+'/'+docUrl+'" style="max-width:100%;max-height:380px;border-radius:12px;object-fit:contain;">'
-                : '<iframe src="'+APP_URL+'/'+docUrl+'" style="width:100%;height:380px;border:none;border-radius:12px;"></iframe>';
+                ? '<img src="'+docUrl+'" style="max-width:100%;max-height:380px;border-radius:12px;object-fit:contain;">'
+                : '<iframe src="'+docUrl+'" style="width:100%;height:380px;border:none;border-radius:12px;"></iframe>';
             const o=showModal('Revisar Documento','<p style="font-size:13px;color:var(--text-secondary);margin-bottom:4px;text-transform:capitalize;">'+escapeHtml(docTipo.replace(/_/g,' '))+'</p><div style="text-align:center;margin-bottom:16px;background:var(--bg-soft);border-radius:12px;padding:16px;">'+preview+'</div><textarea id="docReviewObs" rows="2" placeholder="Observaciones (opcional)..." style="width:100%;padding:10px;border:2px solid var(--border-light);border-radius:10px;font-family:Inter,sans-serif;font-size:13px;resize:vertical;box-sizing:border-box;"></textarea>',[
                 {label:'Cerrar',cls:'rp-btn-reject',id:'docCloseBtn'},
                 {label:'<i class="fas fa-times"></i> Rechazar',cls:'rp-btn-reject',id:'docRejectBtn'},
@@ -352,11 +352,12 @@ $user = $_SESSION['user'];
         function docPreview(doc, label){
             if(!doc) return '<div class="rp-doc missing" style="height:200px;"><div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-soft);"><i class="fas fa-exclamation-triangle" style="color:#f59e0b;font-size:22px;margin-bottom:6px;"></i><div style="font-size:12px;color:var(--text-secondary);font-weight:500;">'+label+'</div><div style="font-size:11px;color:#9ca3af;">No subido</div></div></div>';
             const estado=doc.estado||'pendiente';
-            const isImg=/\.(jpg|jpeg|png)$/i.test(doc.archivo_url);
+            const docSrc = doc.url || (APP_URL+'/'+doc.archivo_url);
+            const isImg=/\.(jpg|jpeg|png)$/i.test(doc.archivo_url || docSrc);
             const preview=isImg
-                ? '<img class="rp-doc-img" src="'+APP_URL+'/'+doc.archivo_url+'" alt="'+label+'" onerror="this.outerHTML=\'<div class=\\'rp-doc-icon\\'><i class=\\'fas fa-file\\'></i></div>\'">'
+                ? '<img class="rp-doc-img" src="'+docSrc+'" alt="'+label+'" onerror="this.outerHTML=\'<div class=\\'rp-doc-icon\\'><i class=\\'fas fa-file\\'></i></div>\'">'
                 : '<div class="rp-doc-icon"><i class="fas fa-file-pdf" style="color:#ef4444;"></i></div>';
-            return '<div class="rp-doc" onclick="showDocReviewModal('+doc.id+', \''+doc.tipo+'\', \''+escapeHtml(doc.archivo_url)+'\')">'
+            return '<div class="rp-doc" onclick="showDocReviewModal('+doc.id+', \''+doc.tipo+'\', \''+escapeHtml(docSrc)+'\', \''+escapeHtml(doc.archivo_url||'')+'\')">'
                 +preview
                 +'<div class="rp-doc-badge '+estado+'">'+estado.toUpperCase()+'</div>'
                 +'<div class="rp-doc-label">'+label+'</div>'

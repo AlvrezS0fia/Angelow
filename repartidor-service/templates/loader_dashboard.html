@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANGELOW — Cargando Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/loader.css">
+<link rel="icon" href="/static/uploads/documentos/logo.png" type="image/png">
+</head>
+<body>
+
+<div class="loader-stage">
+
+  <!-- Estrellas -->
+  <div class="loader-star" style="top:12%; left:14%; animation-delay:.2s;"><svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg></div>
+  <div class="loader-star" style="top:20%; left:78%; animation-delay:1.1s;"><svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg></div>
+  <div class="loader-star" style="top:65%; left:8%; animation-delay:.6s;"><svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg></div>
+  <div class="loader-star" style="top:70%; left:88%; animation-delay:1.6s;"><svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg></div>
+  <div class="loader-star" style="top:8%; left:48%; animation-delay:2.1s;"><svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg></div>
+  <div class="loader-star" style="top:40%; left:5%; animation-delay:1.8s;"><svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg></div>
+  <div class="loader-star" style="top:45%; left:92%; animation-delay:.9s;"><svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg></div>
+
+  <!-- Capa nubes trasera -->
+  <div class="loader-cloud-layer loader-layer-back">
+    <span class="loader-cloud"><svg width="160" height="70" viewBox="0 0 160 70"><path d="M20 60 Q0 60 0 42 Q0 26 18 26 Q20 8 42 8 Q62 8 66 24 Q80 16 96 24 Q116 20 122 38 Q142 36 142 54 Q142 60 132 60 Z" fill="#5e9de6"/></svg></span>
+    <span class="loader-cloud"><svg width="130" height="56" viewBox="0 0 130 56"><path d="M16 48 Q0 48 0 34 Q0 21 15 21 Q17 6 34 6 Q50 6 53 19 Q64 13 78 19 Q94 16 99 31 Q115 29 115 43 Q115 48 106 48 Z" fill="#5e9de6"/></svg></span>
+    <span class="loader-cloud"><svg width="160" height="70" viewBox="0 0 160 70"><path d="M20 60 Q0 60 0 42 Q0 26 18 26 Q20 8 42 8 Q62 8 66 24 Q80 16 96 24 Q116 20 122 38 Q142 36 142 54 Q142 60 132 60 Z" fill="#5e9de6"/></svg></span>
+  </div>
+
+  <!-- Capa nubes media -->
+  <div class="loader-cloud-layer loader-layer-mid">
+    <span class="loader-cloud"><svg width="200" height="86" viewBox="0 0 200 86"><path d="M26 74 Q0 74 0 52 Q0 32 22 32 Q25 10 52 10 Q78 10 83 30 Q100 20 120 30 Q145 25 153 47 Q178 45 178 66 Q178 74 165 74 Z" fill="#5e9de6"/></svg></span>
+    <span class="loader-cloud"><svg width="150" height="64" viewBox="0 0 150 64"><path d="M20 55 Q0 55 0 39 Q0 24 17 24 Q19 8 39 8 Q59 8 62 22 Q75 15 90 22 Q109 19 114 36 Q133 34 133 49 Q133 55 122 55 Z" fill="#5e9de6"/></svg></span>
+  </div>
+
+  <!-- Centro -->
+  <div class="loader-center">
+    <div class="loader-halo-wrap">
+      <div class="loader-breath-halo"></div>
+      <div class="loader-orbit-sparkle">
+        <svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
+      </div>
+      <div class="loader-orbit-sparkle loader-orbit-sparkle-reverse">
+        <svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg>
+      </div>
+      <div class="loader-logo-float">
+        <img src="/static/uploads/documentos/logo.png" alt="ANGELOW" onerror="this.style.display='none';this.parentElement.innerHTML='<span style=font-size:60px;font-weight:700;color:#1d5a87;font-family:Fredoka,sans-serif;>ANGELOW</span>'">
+      </div>
+    </div>
+
+    <div class="loader-label">
+      <h1>ANGELOW — Panel de Repartidor</h1>
+      <p id="loaderStatusText">Cargando tu panel
+        <span class="loader-dots"><span>.</span><span>.</span><span>.</span></span>
+      </p>
+    </div>
+
+    <div class="loader-progress-track">
+      <div class="loader-progress-fill-indeterminate" id="loaderProgressFill"></div>
+    </div>
+  </div>
+
+  <!-- Capa nubes delantera -->
+  <div class="loader-cloud-layer loader-layer-front">
+    <span class="loader-cloud"><svg width="260" height="110" viewBox="0 0 260 110"><path d="M34 96 Q0 96 0 68 Q0 42 30 42 Q34 12 70 12 Q104 12 112 40 Q134 26 160 40 Q194 32 206 62 Q238 58 238 86 Q238 96 220 96 Z" fill="#5e9de6"/></svg></span>
+    <span class="loader-cloud"><svg width="200" height="88" viewBox="0 0 200 88"><path d="M26 76 Q0 76 0 54 Q0 33 23 33 Q26 10 53 10 Q79 10 85 31 Q102 20 122 31 Q148 25 156 48 Q182 45 182 68 Q182 76 168 76 Z" fill="#5e9de6"/></svg></span>
+    <span class="loader-cloud"><svg width="260" height="110" viewBox="0 0 260 110"><path d="M34 96 Q0 96 0 68 Q0 42 30 42 Q34 12 70 12 Q104 12 112 40 Q134 26 160 40 Q194 32 206 62 Q238 58 238 86 Q238 96 220 96 Z" fill="#5e9de6"/></svg></span>
+  </div>
+
+</div>
+
+<script src="/static/js/promesas.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var API = MicroservicioAPI;
+  var CONFIG = {
+    timeout: 8000,
+    minDisplayTime: 2500,
+    transitionDelay: 400,
+    redirectUrl: '/dashboard',
+  };
+
+  var progressFill = document.getElementById('loaderProgressFill');
+  var statusText = document.getElementById('loaderStatusText');
+  var totalPromises = 0;
+  var resolvedCount = 0;
+  var failedCount = 0;
+
+  function updateProgress() {
+    var done = resolvedCount + failedCount;
+    var pct = Math.min(Math.round((done / totalPromises) * 100), 100);
+    if (progressFill) {
+      progressFill.className = 'loader-progress-fill';
+      progressFill.style.width = pct + '%';
+    }
+  }
+
+  function setStatus(msg) {
+    if (statusText) {
+      statusText.style.opacity = '0';
+      setTimeout(function () {
+        statusText.textContent = msg;
+        statusText.style.opacity = '1';
+      }, 200);
+    }
+  }
+
+  // ── Promesas de carga para el dashboard ────────────────────────
+  function cargarFuentes() {
+    return API.loadFont('Inter', '400')
+      .then(function () { return API.loadFont('Inter', '700'); })
+      .then(function () { return API.loadFont('Inter', '800'); })
+      .then(function () { return 'fuentes-loaded'; });
+  }
+
+  function cargarIconos() {
+    return API.loadStylesheet('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css')
+      .then(function () { return 'iconos-loaded'; });
+  }
+
+  function cargarEstilos() {
+    return API.loadStylesheet('/static/css/dashboard.css')
+      .then(function () { return 'estilos-loaded'; });
+  }
+
+  function cargarLeaflet() {
+    return Promise.all([
+      API.loadStylesheet('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'),
+      API.loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'),
+    ]).then(function () { return 'leaflet-loaded'; });
+  }
+
+  function cargarLogo() {
+    return API.loadImage('/static/uploads/documentos/logo.png')
+      .then(function () { return 'logo-loaded'; })
+      .catch(function () { return 'logo-fallback'; });
+  }
+
+  function cargarScript() {
+    return API.loadScript('/static/js/dashboard.js')
+      .then(function () { return 'script-loaded'; });
+  }
+
+  // ── Verificar token ────────────────────────────────────────────
+  function verificarToken() {
+    var token = localStorage.getItem('repartidor_token');
+    if (!token) {
+      window.location.href = '/';
+      return Promise.reject(new Error('Sin token'));
+    }
+    return API.dashboardMe(token)
+      .then(function (result) {
+        if (result.ok && result.data && result.data.success) {
+          return 'token-valid';
+        }
+        localStorage.removeItem('repartidor_token');
+        window.location.href = '/';
+        return Promise.reject(new Error('Token inválido'));
+      })
+      .catch(function (err) {
+        if (err.type === 'network') {
+          // Si hay error de red, permitir cargar el dashboard (funciona offline parcialmente)
+          return 'token-check-skipped';
+        }
+        localStorage.removeItem('repartidor_token');
+        window.location.href = '/';
+        return Promise.reject(err);
+      });
+  }
+
+  // ── Ejecutar carga ─────────────────────────────────────────────
+  function iniciarCarga() {
+    var promesas = [
+      { id: 'fuentes',  fn: cargarFuentes,  critica: true,  label: 'Cargando fuentes...' },
+      { id: 'iconos',   fn: cargarIconos,   critica: true,  label: 'Cargando iconos...' },
+      { id: 'estilos',  fn: cargarEstilos,  critica: true,  label: 'Cargando estilos...' },
+      { id: 'leaflet',  fn: cargarLeaflet,  critica: true,  label: 'Cargando mapas...' },
+      { id: 'logo',     fn: cargarLogo,     critica: false, label: 'Cargando logo...' },
+      { id: 'script',   fn: cargarScript,   critica: true,  label: 'Cargando panel...' },
+      { id: 'token',    fn: verificarToken, critica: true,  label: 'Verificando sesión...' },
+    ];
+
+    totalPromises = promesas.length;
+    resolvedCount = 0;
+    failedCount = 0;
+
+    var startTime = Date.now();
+
+    var wrappedPromises = promesas.map(function (p) {
+      var wrapped = API.withTimeout(p.fn(), CONFIG.timeout);
+      return wrapped
+        .then(function (result) {
+          resolvedCount++;
+          updateProgress();
+          console.log('[Cargador Dashboard] OK', p.id, '->', result);
+          return { id: p.id, status: 'ok', result: result };
+        })
+        .catch(function (err) {
+          failedCount++;
+          updateProgress();
+          console.warn('[Cargador Dashboard] FAIL', p.id, '->', err.message || err);
+          return { id: p.id, status: 'fail', error: err.message || err };
+        });
+    });
+
+    var criticas = promesas
+      .map(function (p, i) { return { promise: wrappedPromises[i], meta: p }; })
+      .filter(function (item) { return item.meta.critica; })
+      .map(function (item) { return item.promise; });
+
+    Promise.all(criticas).then(function () {
+      var elapsed = Date.now() - startTime;
+      var remaining = Math.max(0, CONFIG.minDisplayTime - elapsed);
+
+      setTimeout(function () {
+        setStatus('Listo! Abriendo panel...');
+        setTimeout(function () {
+          window.location.href = CONFIG.redirectUrl;
+        }, CONFIG.transitionDelay);
+      }, remaining);
+
+    }).catch(function (err) {
+      console.error('[Cargador Dashboard] Error inesperado:', err);
+      setStatus('Error de carga. Reintentando...');
+      setTimeout(function () {
+        window.location.href = CONFIG.redirectUrl;
+      }, 1500);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', iniciarCarga);
+  } else {
+    iniciarCarga();
+  }
+
+})();
+</script>
+</body>
+</html>

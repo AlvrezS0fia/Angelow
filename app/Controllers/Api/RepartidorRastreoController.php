@@ -100,11 +100,6 @@ class RepartidorRastreoController
             [$p['id']]
         )->fetch();
 
-        $factura = Database::query(
-            "SELECT * FROM facturas WHERE pedido_id = ? LIMIT 1",
-            [$p['id']]
-        )->fetch();
-
         return [
             'id' => $p['id'],
             'numero_pedido' => $p['numero_pedido'],
@@ -128,10 +123,6 @@ class RepartidorRastreoController
                 'velocidad_kmh' => floatval($ubicacionRepartidor['velocidad_kmh'] ?? 0),
                 'bateria' => intval($ubicacionRepartidor['bateria_porcentaje'] ?? 0),
                 'timestamp' => $ubicacionRepartidor['timestamp_ubicacion'],
-            ] : null,
-            'factura' => $factura ? [
-                'id' => $factura['id'],
-                'numero' => $factura['numero_factura'] ?? ('FAC-' . $factura['id']),
             ] : null,
             'items' => array_map(function ($i) {
                 return [

@@ -11,8 +11,6 @@ return [
     ['method' => 'GET', 'path' => '/perfil', 'controller' => 'PerfilController', 'action' => 'index'],
     ['method' => 'GET', 'path' => '/compra', 'controller' => 'CompraController', 'action' => 'index'],
     ['method' => 'POST', 'path' => '/procesar-compra', 'controller' => 'CompraController', 'action' => 'procesar'],
-    ['method' => 'GET', 'path' => '/factura', 'controller' => 'FacturaController', 'action' => 'index'],
-    ['method' => 'GET', 'path' => '/factura/:id', 'controller' => 'FacturaController', 'action' => 'show'],
     ['method' => 'GET', 'path' => '/seguimiento', 'controller' => 'SeguimientoController', 'action' => 'index'],
     // Panel de administración
     ['method' => 'GET', 'path' => '/admin', 'controller' => 'Admin\\DashboardController', 'action' => 'index'],
@@ -45,7 +43,10 @@ return [
     ['method' => 'POST',   'path' => '/api/carrito/actualizar','controller' => 'Api\\CarritoController', 'action' => 'actualizar'],
     ['method' => 'DELETE', 'path' => '/api/carrito/eliminar',  'controller' => 'Api\\CarritoController', 'action' => 'eliminar'],
     ['method' => 'POST',   'path' => '/api/carrito/sincronizar','controller' => 'Api\\CarritoController', 'action' => 'sincronizar'],
-    ['method' => 'POST',   'path' => '/api/carrito/vaciar',     'controller' => 'Api\\CarritoController', 'action' => 'vaciar'],
+     ['method' => 'POST',   'path' => '/api/carrito/vaciar',     'controller' => 'Api\\CarritoController', 'action' => 'vaciar'],
+
+     // RUTAS API CUPONES
+     ['method' => 'POST',   'path' => '/api/cupones/validar',    'controller' => 'Api\\CuponController', 'action' => 'validar'],
 
      // RUTAS API FAVORITOS 
      ['method' => 'GET',    'path' => '/api/favoritos',         'controller' => 'Api\\FavoritoController', 'action' => 'index'],
@@ -73,12 +74,12 @@ return [
      ['method' => 'POST',   'path' => '/api/clientes/rol',       'controller' => 'Admin\\ClientesController', 'action' => 'cambiarRol'],
      ['method' => 'DELETE', 'path' => '/api/clientes/{id}',      'controller' => 'Admin\\ClientesController', 'action' => 'destroy'],
      ['method' => 'GET',    'path' => '/api/pedidos',             'controller' => 'Admin\\PedidosController', 'action' => 'obtenerPedidos'],
+     ['method' => 'GET',    'path' => '/api/pedidos/{id}',         'controller' => 'Admin\\PedidosController', 'action' => 'obtenerPedido'],
      ['method' => 'POST',   'path' => '/api/pedidos/estado',     'controller' => 'Admin\\PedidosController', 'action' => 'updateStatus'],
      ['method' => 'GET',    'path' => '/api/mis-pedidos',          'controller' => 'Cliente\\PedidosController', 'action' => 'index'],
-     ['method' => 'GET',    'path' => '/api/mis-pedidos/:id',      'controller' => 'Cliente\\PedidosController', 'action' => 'detalle'],
-     ['method' => 'GET',    'path' => '/api/mis-pedidos/:id/seguimiento', 'controller' => 'Cliente\\PedidosController', 'action' => 'seguimiento'],
-     ['method' => 'POST',   'path' => '/api/mis-pedidos/:id/cancelar', 'controller' => 'Cliente\\PedidosController', 'action' => 'cancelar'],
-     ['method' => 'GET',    'path' => '/api/mis-pedidos/:id/factura', 'controller' => 'Cliente\\PedidosController', 'action' => 'factura'],
+     ['method' => 'GET',    'path' => '/api/mis-pedidos/{id}',      'controller' => 'Cliente\\PedidosController', 'action' => 'detalle'],
+     ['method' => 'GET',    'path' => '/api/mis-pedidos/{id}/seguimiento', 'controller' => 'Cliente\\PedidosController', 'action' => 'seguimiento'],
+     ['method' => 'POST',   'path' => '/api/mis-pedidos/{id}/cancelar', 'controller' => 'Cliente\\PedidosController', 'action' => 'cancelar'],
      ['method' => 'POST',   'path' => '/api/inventario/update',    'controller' => 'Api\\StockController', 'action' => 'update'],
      ['method' => 'POST',   'path' => '/api/inventario/ajustar',    'controller' => 'Api\\StockController', 'action' => 'ajustar'],
      ['method' => 'POST',   'path' => '/api/inventario/eliminar',   'controller' => 'Api\\StockController', 'action' => 'destroy'],
@@ -102,6 +103,8 @@ return [
       ['method' => 'POST',   'path' => '/api/tarjetas/predeterminada/{id}','controller' => 'Cliente\\TarjetaController', 'action' => 'setPredeterminada'],
 
       // API REPARTIDOR 
+     ['method' => 'POST',   'path' => '/api/repartidor/registro',     'controller' => 'Api\\RepartidorRegistroController', 'action' => 'registro'],
+     ['method' => 'GET',    'path' => '/api/repartidor/estado',       'controller' => 'Api\\RepartidorRegistroController', 'action' => 'estado'],
      ['method' => 'POST',   'path' => '/api/repartidor/auth/login',   'controller' => 'Api\\RepartidorAuthController', 'action' => 'login'],
      ['method' => 'POST',   'path' => '/api/repartidor/auth/logout',  'controller' => 'Api\\RepartidorAuthController', 'action' => 'logout'],
      ['method' => 'GET',    'path' => '/api/repartidor/auth/me',      'controller' => 'Api\\RepartidorAuthController', 'action' => 'me'],
@@ -131,6 +134,7 @@ return [
      ['method' => 'POST',   'path' => '/api/repartidor/documentos/subir',       'controller' => 'Api\\RepartidorDocumentosController', 'action' => 'subir'],
      ['method' => 'GET',    'path' => '/api/repartidor/documentos/{repartidorId}','controller' => 'Api\\RepartidorDocumentosController', 'action' => 'index'],
      ['method' => 'GET',    'path' => '/api/repartidor/documentos',             'controller' => 'Api\\RepartidorDocumentosController', 'action' => 'index'],
+     ['method' => 'GET',    'path' => '/api/documentos/{id}/archivo',           'controller' => 'Api\\RepartidorDocumentosController', 'action' => 'archivo'],
      
       // Página repartidor
      ['method' => 'GET', 'path' => '/repartidor', 'controller' => 'RepartidorController', 'action' => 'index'],
@@ -155,13 +159,4 @@ return [
       ['method' => 'POST',   'path' => '/api/admin/repartidores/documentos/revisar',    'controller' => 'Api\\AdminRepartidorController', 'action' => 'revisarDocumento'],
       ['method' => 'GET',    'path' => '/api/admin/dashboard/stats',                    'controller' => 'Api\\AdminRepartidorController', 'action' => 'dashboardStats'],
 
-      // ========== RUTAS API FACTURACION ==========
-     ['method' => 'GET',    'path' => '/api/facturas',                    'controller' => 'Api\\FacturasController', 'action' => 'index'],
-     ['method' => 'GET',    'path' => '/api/facturas/stats',              'controller' => 'Api\\FacturasController', 'action' => 'stats'],
-     ['method' => 'POST',   'path' => '/api/facturas/crear',              'controller' => 'Api\\FacturasController', 'action' => 'crear'],
-     ['method' => 'GET',    'path' => '/api/facturas/{id}',               'controller' => 'Api\\FacturasController', 'action' => 'show'],
-     ['method' => 'PUT',    'path' => '/api/facturas/{id}/estado',        'controller' => 'Api\\FacturasController', 'action' => 'cambiarEstado'],
-     ['method' => 'POST',   'path' => '/api/facturas/{id}/enviar-correo', 'controller' => 'Api\\FacturasController', 'action' => 'enviarCorreo'],
-     ['method' => 'GET',    'path' => '/api/facturas/{id}/pdf',           'controller' => 'Api\\FacturasController', 'action' => 'pdf'],
-     ['method' => 'GET',    'path' => '/api/facturas/pedido/{pedidoId}',  'controller' => 'Api\\FacturasController', 'action' => 'porPedido'],
 ];

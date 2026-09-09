@@ -5,3 +5,6 @@ composer.lock
 node_modules/ 
 .DS_Store 
 *.log 
+repartidor-service/__pycache__/
+repartidor-service/*.pyc
+repartidor-service/repartidores.db

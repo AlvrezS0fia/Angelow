@@ -4,13 +4,22 @@ namespace App\Controllers\Api;
 use App\Core\Controller;
 use App\Models\ProductoModel;
 
+// HERENCIA: controlador concreto que hereda la respuesta JSON de la base.
 class ProductsController extends Controller {
-    private $productoModel;
+    private ProductoModel $productoModel;
 
     public function __construct() {
+        // Se inyecta el modelo de datos: toda consulta a `productos` pasa por aquí.
         $this->productoModel = new ProductoModel();
     }
 
+    // --- GUARDIÁN DE ROL (ejemplo de "middleware" casero) ---
+    // Entrada: $_SESSION['user'] (columnas id, email, nombre, rol, estado).
+    // Procesamiento: si no hay sesión, o el rol NO es 'administrador' →
+    //    código 403 + JSON de error. Se usa exit para cortar la ejecución
+    //    inmediatamente (no deja llegar al modelo).
+    // Salida: nada si está permitido; 403 JSON si no.
+    // ROLES VERIFICADOS: administrador (solo él pasa).
     private function checkAdmin() {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
             http_response_code(403);
@@ -19,6 +28,11 @@ class ProductsController extends Controller {
         }
     }
 
+    // GET /api/productos → Lista todos los productos (solo admin).
+    //   ↓ Los datos vienen de: tabla `productos` (JOIN categorias/subcategorias)
+    //   ↓ Se procesan en: checkAdmin() + ProductoModel::getAll()
+    //   ↓ Se transforman en: campos planos (JSON de tallas/colores/imágenes decodificados)
+    //   ↓ Retorna a: fetch() del panel admin (JSON array)
     public function index() {
         $this->checkAdmin();
         $productos = $this->productoModel->getAll();
@@ -65,7 +79,11 @@ class ProductsController extends Controller {
         echo json_encode($resultado);
     }
 
-    public function show($id) {
+    // GET /api/productos/{id} → Detalle de un producto (solo admin).
+    //   ↓ Los datos vienen de: tabla `productos` WHERE id = {id}
+    //   ↓ Se procesan en: checkAdmin() + ProductoModel::getById($id)
+    //   ↓ Retorna: JSON con el producto o 404 si no existe
+    public function show(int $id) {
         $this->checkAdmin();
         $producto = $this->productoModel->getById($id);
 
@@ -108,6 +126,11 @@ class ProductsController extends Controller {
         ]);
     }
 
+    // POST /api/productos → Crea un producto nuevo (solo admin).
+    //   ↓ Datos recibidos desde: formulario del panel (JSON en el body)
+    //   ↓ Validación en: checkAdmin() + nombre y precio obligatorios
+    //   ↓ Se guarda en: tabla `productos` (INSERT) vía ProductoModel::create
+    //   ↓ Retorna: JSON {success, id}
     public function store() {
         $this->checkAdmin();
         $data = json_decode(file_get_contents('php://input'), true);
@@ -128,7 +151,12 @@ class ProductsController extends Controller {
         }
     }
 
-    public function update($id) {
+    // PUT /api/productos/{id} → Actualiza un producto (solo admin).
+    //   ↓ Datos recibidos desde: formulario de edición (JSON en el body)
+    //   ↓ Validación en: checkAdmin() + existencia del producto (404 si no está)
+    //   ↓ Se guarda en: tabla `productos` (UPDATE) vía ProductoModel::update
+    //   ↓ Retorna: JSON {success}
+    public function update(int $id) {
         $this->checkAdmin();
         $data = json_decode(file_get_contents('php://input'), true);
 
@@ -149,7 +177,11 @@ class ProductsController extends Controller {
         }
     }
 
-    public function destroy($id) {
+    // DELETE /api/productos/{id} → Elimina un producto (solo admin).
+    //   ↓ Validación en: checkAdmin() + existencia del producto
+    //   ↓ Se procesa en: ProductoModel::delete (DELETE de `productos`)
+    //   ↓ Retorna: JSON {success}
+    public function destroy(int $id) {
         $this->checkAdmin();
         $existing = $this->productoModel->getById($id);
         if (!$existing) {

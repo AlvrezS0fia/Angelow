@@ -10,6 +10,7 @@ $user = $user ?? null;
   <title>ANGELOW - INICIO INTERACTIVO | OFERTAS DINÁMICAS</title>
   <link rel="shortcut icon" href="<?= APP_URL ?>/assets/imagenes/general/favico.ico" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/bienvenida.css">
   <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/carrusel.css">
 
@@ -55,10 +56,11 @@ $user = $user ?? null;
     <button id="clearSearch" class="clear-search">×</button>
   </div>
   <div class="header-icons">
+    <a href="<?= MICROSERVICE_URL ?>" class="btn-gold ser-repartidor-btn" style="padding:10px 22px;font-size:.9rem;margin:0;white-space:nowrap;">Ser Repartidor</a>
     <div class="icon-btn" id="contactBtn"><a href="<?= APP_URL ?>/contactenos"><img src="<?= APP_URL ?>/assets/imagenes/general/contactenos.png" alt="Contacto" style="width:24px;"></a></div>
     <div class="icon-btn" id="cartBtnHeader"><img src="<?= APP_URL ?>/assets/imagenes/general/carro.png" alt="Carrito" style="width:24px;"><span id="cartCount" class="badge" style="display:none"></span></div>
     <div class="icon-btn" id="favBtnHeader"><img src="<?= APP_URL ?>/assets/imagenes/general/favoritos.png" alt="Favoritos" style="width:24px;"><span id="favHeaderBadge" class="badge" style="display:none">0</span></div>
-    <div class="icon-btn" id="profileBtn"><img src="<?= APP_URL ?>/assets/imagenes/general/avatar.png" alt="Perfil" style="width:24px;"><div class="dropdown-menu" id="dropdownMenu"><a href="<?= APP_URL ?>/perfil" class="dropdown-item" id="loginLink">Mi perfil</a><a href="#" class="dropdown-item" id="openFavoritesFromMenu"><span>Mis Favoritos</span><span id="favBadge" class="badge" style="position:static; margin-left:auto; display:none;">0</span></a><a href="<?= APP_URL ?>/repartidor/login" class="dropdown-item" id="serRepartidorMenu">Ser Repartidor</a></div></div>
+    <div class="icon-btn" id="profileBtn"><img src="<?= APP_URL ?>/assets/imagenes/general/avatar.png" alt="Perfil" style="width:24px;"><div class="dropdown-menu" id="dropdownMenu"><a href="<?= APP_URL ?>/perfil" class="dropdown-item" id="loginLink">Mi perfil</a><a href="#" class="dropdown-item" id="openFavoritesFromMenu"><span>Mis Favoritos</span><span id="favBadge" class="badge" style="position:static; margin-left:auto; display:none;">0</span></a></div></div>
   </div>
 </header>
 

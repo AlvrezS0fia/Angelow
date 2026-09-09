@@ -6,34 +6,35 @@ use App\Core\Database;
 use App\Models\PedidoModel;
 use App\Models\UsuarioModel;
 
+// HERENCIA: controlador API de cliente que hereda la respuesta JSON de la base.
 class PedidosController extends Controller
 {
-    private $pedidoModel;
+    private PedidoModel $pedidoModel;
 
     public function __construct() {
         $this->pedidoModel = new PedidoModel();
     }
-
     public function index() {
         if (!isset($_SESSION['user'])) {
             $this->json(['error' => 'No autorizado'], 403);
             return;
         }
+        // El id se toma de la SESIÓN, nunca del body/URL. Así el usuario solo
+        // puede leer sus propios pedidos (el frontend no puede elegir otro id).
         $usuarioId = (int) $_SESSION['user']['id'];
         $pedidos = $this->pedidoModel->getByUsuario($usuarioId);
-
-        // Adjuntar factura relacionada a cada pedido
-        foreach ($pedidos as &$pedido) {
-            $pedido['factura'] = Database::query(
-                "SELECT id, numero_factura, estado, total, fecha_emision FROM facturas WHERE pedido_id = ? ORDER BY id DESC LIMIT 1",
-                [$pedido['id']]
-            )->fetch();
-        }
-        unset($pedido);
 
         $this->json($pedidos);
     }
 
+    // GET /api/mis-pedidos/{id} → Detalle de UN pedido propio.
+    //   ↓ Entrada: $pedidoId viene de la URL (parámetro routeado por el Router).
+    //   ↓ Validación de rol: sesión obligatoria.
+    //   ↓ Validación de propiedad (IDOR): $pedido['usuario_id'] debe ser el de
+    //     la sesión; si no → 404. Esto impide leer el pedido de otro cliente.
+    //   ↓ Se procesan en: PedidoModel::getById + getDetalles
+    //   ↓ Retorna: JSON {pedido, items} → frontend.
+    /** @param int|string $pedidoId */
     public function detalle($pedidoId) {
         if (!isset($_SESSION['user'])) {
             $this->json(['error' => 'No autorizado'], 403);
@@ -45,61 +46,22 @@ class PedidosController extends Controller
             return;
         }
         $items = $this->pedidoModel->getDetalles($pedidoId);
-        $factura = Database::query(
-            "SELECT * FROM facturas WHERE pedido_id = ? ORDER BY id DESC LIMIT 1",
-            [$pedidoId]
-        )->fetch();
         $this->json([
             'pedido' => $pedido,
-            'items' => $items,
-            'factura' => $factura
+            'items' => $items
         ]);
     }
 
-    public function factura($pedidoId) {
-        if (!isset($_SESSION['user'])) {
-            $this->json(['error' => 'No autorizado'], 403);
-            return;
-        }
-        $pedido = $this->pedidoModel->getById($pedidoId);
-        if (!$pedido || $pedido['usuario_id'] != $_SESSION['user']['id']) {
-            $this->json(['error' => 'Pedido no encontrado'], 404);
-            return;
-        }
-        $items = $this->pedidoModel->getDetalles($pedidoId);
-
-        // Buscar la factura real conectada al pedido
-        $factura = Database::query(
-            "SELECT * FROM facturas WHERE pedido_id = ? ORDER BY id DESC LIMIT 1",
-            [$pedidoId]
-        )->fetch();
-
-        $facturaDetalles = [];
-        if ($factura) {
-            $facturaDetalles = Database::query(
-                "SELECT * FROM facturas_detalle WHERE factura_id = ?",
-                [$factura['id']]
-            )->fetchAll();
-            $factura['detalles'] = $facturaDetalles;
-        }
-
-        $this->json([
-            'pedido' => $pedido,
-            'items' => $items,
-            'factura' => $factura,
-            'cliente' => [
-                'nombre' => $pedido['nombre_cliente'],
-                'email' => $pedido['email_cliente'],
-                'telefono' => $pedido['telefono_cliente'],
-                'cedula' => $pedido['cedula_cliente']
-            ],
-            'envio' => [
-                'direccion' => $pedido['direccion_envio'],
-                'destinatario' => $pedido['destinatario']
-            ]
-        ]);
-    }
-
+    // POST /api/mis-pedidos/{id}/cancelar → Cancela un pedido propio.
+    //   ↓ Entrada: $pedidoId desde la URL + $_SESSION (identidad del cliente).
+    //   ↓ Validaciones en cadena:
+    //       1. Sesión obligatoria (403).
+    //       2. Propiedad del pedido (404 si no es suyo).
+    //       3. Estado permitido: solo 'pendiente' o 'procesando' (400 si no).
+    //   ↓ Se guarda en: tabla `pedidos` (UPDATE estado = 'cancelado')
+    //     vía PedidoModel::updateEstado.
+    //   ↓ Retorna: JSON {success} → frontend refresca la vista de mis pedidos.
+    /** @param int|string $pedidoId */
     public function cancelar($pedidoId) {
         if (!isset($_SESSION['user'])) {
             $this->json(['error' => 'No autorizado'], 403);
@@ -111,14 +73,25 @@ class PedidosController extends Controller
             return;
         }
         $estado = strtolower($pedido['estado'] ?? '');
-        if (!in_array($estado, ['pendiente', 'procesando'])) {
-            $this->json(['error' => 'Solo se pueden cancelar pedidos pendientes o en proceso'], 400);
+        if (!in_array($estado, ['pendiente'])) {
+            $this->json(['error' => 'Solo se pueden cancelar pedidos pendientes'], 400);
             return;
         }
-        $this->pedidoModel->updateEstado($pedidoId, 'cancelado');
+        $this->pedidoModel->updateEstado($pedidoId, 'rechazada');
         $this->json(['success' => true, 'message' => 'Pedido cancelado correctamente']);
     }
 
+    // GET /api/mis-pedidos/{id}/seguimiento → Ubicación en tiempo real del pedido.
+    //   ↓ Entrada: $pedidoId desde la URL + $_SESSION.
+    //   ↓ Validaciones: sesión obligatoria + propiedad del pedido (IDOR).
+    //   ↓ Procesamiento (3 orígenes de datos):
+    //       1. tabla `pedidos` → estado, número, dirección, coordenadas destino.
+    //       2. tabla `seguimiento_tiempo_real` → última ubicación GPS (lat, long,
+    //          velocidad, batería). Es la posicion que el repartidor reportó vía
+    //          POST /api/repartidor/seguimiento/ubicacion.
+    //       3. tabla `usuarios` → datos del repartidor asignado (repartidor_id).
+    //   ↓ Retorna a: fetch() del mapa en el perfil/cliente (JSON).
+    /** @param int|string $pedidoId */
     public function seguimiento($pedidoId) {
         if (!isset($_SESSION['user'])) {
             $this->json(['error' => 'No autorizado'], 403);

@@ -312,15 +312,28 @@ header {
   color: var(--primary);
 }
 
-#serRepartidorMenu {
-  color: #059669;
-  font-weight: 700;
+.dropdown-menu .dropdown-item i {
+  width: 20px;
+  text-align: center;
+  margin-right: 10px;
+  color: var(--primary);
+  font-size: 15px;
 }
 
-#serRepartidorMenu:hover {
-  background: #ecfdf5;
-  color: #047857;
+.dropdown-item.logout-item i {
+  color: var(--error);
 }
+
+#facturasLink {
+  display: flex;
+  align-items: center;
+}
+
+#openFavoritesFromMenu {
+  display: flex;
+  align-items: center;
+}
+
 
 /*  CATEGORÍAS  */
 .categories {

@@ -150,7 +150,7 @@ input::placeholder{color:var(--text-secondary);font-weight:400;}
       </form>
 
       <div class="login-link">
-        ¿Aún no te has registrado? <a href="<?= APP_URL ?>/repartidor/registro">Regístrate aquí</a>
+        ¿Aún no te has registrado? <a href="<?= MICROSERVICE_URL ?>">Regístrate aquí</a>
       </div>
     </main>
   </div>

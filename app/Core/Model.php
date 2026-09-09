@@ -1,46 +1,49 @@
 <?php
 namespace App\Core;
 
+use PDO;
+
 class Model {
-    protected $table;
-    protected $db;
+    // ENCAPSULAMIENTO: propiedades protegidas; la conexión ($db) y la tabla
+    // ($table) no se exponen y solo son visibles para esta clase y sus hijas.
+    protected string $table;
+    protected PDO $db;
 
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
     }
 
-    public function getAll() {
-        $stmt = $this->db->query("SELECT * FROM {$this->table}");
-        return $stmt->fetchAll();
+    public function getAll(): array {
+        return Database::query("SELECT * FROM {$this->table}")->fetchAll();
     }
 
+    /** @param int|string $id
+     * @return array<string, mixed>|false */
     public function getById($id) {
-        $stmt = $this->db->prepare("SELECT * FROM {$this->table} WHERE id = :id");
-        $stmt->execute(['id' => $id]);
-        return $stmt->fetch();
+        return Database::query("SELECT * FROM {$this->table} WHERE id = :id", ['id' => $id])->fetch();
     }
 
-    public function create($data) {
+    /** @param array<string, mixed> $data
+     * @return int */
+    public function create(array $data) {
         $columns = array_keys($data);
         $placeholders = array_map(fn($c) => ":$c", $columns);
         $sql = "INSERT INTO {$this->table} (" . implode(', ', $columns) . ")
                 VALUES (" . implode(', ', $placeholders) . ")";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($data);
+        $stmt = Database::query($sql, $data);
         return (int) $this->db->lastInsertId();
     }
 
-    public function update($id, $data) {
+    /** @param int|string $id
+     * @param array<string, mixed> $data */
+    public function update($id, array $data): bool {
         $set = implode(', ', array_map(fn($c) => "$c = :$c", array_keys($data)));
         $sql = "UPDATE {$this->table} SET $set WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute(array_merge($data, ['id' => $id]));
-        return $stmt->rowCount() > 0;
+        return Database::query($sql, array_merge($data, ['id' => $id]))->rowCount() > 0;
     }
 
-    public function delete($id) {
-        $stmt = $this->db->prepare("DELETE FROM {$this->table} WHERE id = :id");
-        $stmt->execute(['id' => $id]);
-        return $stmt->rowCount() > 0;
+    /** @param int|string $id */
+    public function delete($id): bool {
+        return Database::query("DELETE FROM {$this->table} WHERE id = :id", ['id' => $id])->rowCount() > 0;
     }
 }

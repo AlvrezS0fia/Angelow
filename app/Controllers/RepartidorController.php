@@ -65,6 +65,7 @@ class RepartidorController extends Controller
 
     public function registro()
     {
-        $this->view('repartidor.registro_repartidor');
+        header('Location: ' . MICROSERVICE_URL);
+        exit;
     }
 }

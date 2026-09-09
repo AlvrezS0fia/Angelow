@@ -86,10 +86,15 @@ class AdminRepartidorController extends Controller
     {
         try {
             $stmt = Database::query(
-                "SELECT * FROM documentos WHERE solicitud_id = ? ORDER BY fecha_subida DESC",
+                "SELECT id, repartidor_id, tipo, archivo_url, estado, observaciones, fecha_subida FROM documentos WHERE solicitud_id = ? ORDER BY fecha_subida DESC",
                 [$solicitudId]
             );
-            return $stmt->fetchAll();
+            $docs = $stmt->fetchAll();
+            foreach ($docs as &$d) {
+                $d['url'] = APP_URL . '/api/documentos/' . $d['id'] . '/archivo';
+            }
+            unset($d);
+            return $docs;
         } catch (\Exception $e) {
             return [];
         }
@@ -175,7 +180,7 @@ class AdminRepartidorController extends Controller
         } catch (\Exception $e) {
             Database::getInstance()->getConnection()->rollBack();
             error_log("AdminRepartidor::aprobar ERROR - " . $e->getMessage());
-            $this->jsonOut(['success' => false, 'message' => 'Error al aprobar la solicitud: ' . $e->getMessage()], 500);
+            $this->jsonOut(['success' => false, 'message' => 'Error al aprobar la solicitud'], 500);
         }
     }
 
@@ -233,7 +238,7 @@ class AdminRepartidorController extends Controller
         } catch (\Exception $e) {
             Database::getInstance()->getConnection()->rollBack();
             error_log("AdminRepartidor::rechazar ERROR - " . $e->getMessage());
-            $this->jsonOut(['success' => false, 'message' => 'Error al rechazar la solicitud: ' . $e->getMessage()], 500);
+            $this->jsonOut(['success' => false, 'message' => 'Error al rechazar la solicitud'], 500);
         }
     }
 
@@ -284,7 +289,7 @@ class AdminRepartidorController extends Controller
             $this->jsonOut(['success' => true, 'message' => 'Repartidor suspendido correctamente.']);
         } catch (\Exception $e) {
             error_log("AdminRepartidor::suspender ERROR - " . $e->getMessage());
-            $this->jsonOut(['success' => false, 'message' => 'Error al suspender: ' . $e->getMessage()], 500);
+            $this->jsonOut(['success' => false, 'message' => 'Error al suspender el repartidor'], 500);
         }
     }
 
@@ -324,7 +329,7 @@ class AdminRepartidorController extends Controller
             $this->jsonOut(['success' => true, 'message' => 'Repartidor reactivado correctamente.']);
         } catch (\Exception $e) {
             error_log("AdminRepartidor::activar ERROR - " . $e->getMessage());
-            $this->jsonOut(['success' => false, 'message' => 'Error al reactivar: ' . $e->getMessage()], 500);
+            $this->jsonOut(['success' => false, 'message' => 'Error al reactivar al repartidor'], 500);
         }
     }
 

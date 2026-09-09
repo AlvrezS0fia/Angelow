@@ -65,6 +65,7 @@ class RepartidorDocumentosController
                 'estado' => $d['estado'] ?? 'pendiente',
                 'fecha_subida' => $d['fecha_subida'],
                 'observaciones' => $d['observaciones'] ?? '',
+                'url' => APP_URL . '/api/documentos/' . $d['id'] . '/archivo',
             ];
         }, $documentos);
 
@@ -90,6 +91,7 @@ class RepartidorDocumentosController
             'tecnomecanica',
         ];
         $tipo = $_POST['tipo'] ?? '';
+        // CAPA 7 ISO-OSI (Aplicación): whitelist de tipo -> evita path traversal / archivos arbitrarios.
         if (!in_array($tipo, $tiposPermitidos, true) || $tipo === '') {
             $this->json(['error' => 'Tipo de documento no válido'], 400);
             return;
@@ -165,5 +167,107 @@ class RepartidorDocumentosController
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             ");
         }
+    }
+
+    // --- ID RESUELTO (sesión o JWT), sin lanzar sesión si no hay token ---
+    /** @return int|null */
+    private function id()
+    {
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+        $token = str_replace('Bearer ', '', $authHeader);
+        if ($token) {
+            $payload = JWTHelper::decode($token);
+            if ($payload && isset($payload['sub'])) {
+                return (int) $payload['sub'];
+            }
+        }
+        if (!empty($_SESSION['user']['id'])) {
+            return (int) $_SESSION['user']['id'];
+        }
+        return null;
+    }
+
+    // GET /api/documentos/{id}/archivo → Sirve un documento autenticado.
+    //   Autenticación: sesión PHP o JWT válido.
+    //   Autorización: solo admin puede leer documentos de cualquiera; el resto
+    //     solo los suyos (IDOR).
+    //   Sirve el BINARIO real (no pública) desde uploads/documentos/ o
+    //   public/uploads/documentos/, con Content-Type estricto y nosniff.
+    public function archivo($id)
+    {
+        $authId = $this->id();
+        if (!$authId) {
+            $this->json(['error' => 'No autorizado'], 401);
+            return;
+        }
+        $id = (int) $id;
+        if ($id <= 0) {
+            $this->json(['error' => 'Documento no encontrado'], 404);
+            return;
+        }
+
+        $doc = Database::query("SELECT * FROM documentos WHERE id = ?", [$id])->fetch();
+        if (!$doc) {
+            $this->json(['error' => 'Documento no encontrado'], 404);
+            return;
+        }
+
+        $esAdmin = isset($_SESSION['user']['rol']) && $_SESSION['user']['rol'] === 'administrador';
+        if (!$esAdmin && (int) $doc['repartidor_id'] !== $authId) {
+            $this->json(['error' => 'No autorizado'], 403);
+            return;
+        }
+
+        $rel = ltrim((string) ($doc['archivo_url'] ?? ''), '/');
+        if ($rel === '') {
+            $this->json(['error' => 'Documento sin archivo'], 404);
+            return;
+        }
+
+        // El registro apunta a uploads/documentos/... (sin public). Se buscan
+        // ambas rutas reales para servir también documentos de flujos previos.
+        $base = dirname(__DIR__, 3); // raíz del proyecto
+        $candidatos = [
+            $base . '/' . $rel,
+            $base . '/public/' . $rel,
+        ];
+        $path = null;
+        foreach ($candidatos as $cand) {
+            $norm = str_replace('\\', '/', $cand);
+            $real = realpath($norm);
+            if ($real !== false && is_file($real)) {
+                $path = $real;
+                break;
+            }
+        }
+        if ($path === null) {
+            $this->json(['error' => 'Archivo no encontrado'], 404);
+            return;
+        }
+
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mimeByExt = [
+            'pdf' => 'application/pdf',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+        ];
+        $mime = $mimeByExt[$ext] ?? 'application/octet-stream';
+        $nombre = 'documento_' . $doc['tipo'] . '.' . ($ext ?: 'file');
+
+        if (ob_get_level()) {
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+        }
+        header('Content-Type: ' . $mime);
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Disposition: inline; filename="' . $nombre . '"');
+        header('Content-Length: ' . (string) filesize($path));
+        // X-Sendfile / X-Accel-Redirect: si Apache XSendfile está activo lo
+        // delega; si no, lee el archivo (los docs son <10MB → seguro).
+        header('X-Sendfile: ' . $path);
+        readfile($path);
+        exit;
     }
 }

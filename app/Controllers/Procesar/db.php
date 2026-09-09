@@ -10,7 +10,8 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 } catch(PDOException $e) {
-    die(json_encode(['success' => false, 'message' => 'Error de conexión: ' . $e->getMessage()]));
+    error_log('[Procesar/db] Error de conexión: ' . $e->getMessage());
+    die(json_encode(['success' => false, 'message' => 'Error de conexión con la base de datos']));
 }
 
 // Función para generar hash seguro de contraseña

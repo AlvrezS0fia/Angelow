@@ -13,13 +13,12 @@ base de datos MySQL** (`angelow_db`):
 
 | Aplicación | Tecnología | Puerta de entrada | Propósito |
 |------------|-----------|-------------------|-----------|
-| Tienda + Panel admin + APIs | PHP 8 (MVC propio) | `public/index.php` vía Apache | Frontend tienda, carrito, checkout, facturación, perfil, panel admin |
-| Microservicio de facturación | Python Flask | `facturacion/app.py` (puerto 5000) | Generación y envío de facturas/PDF, persistencia en `facturas*` |
+| Tienda + Panel admin + APIs | PHP 8 (MVC propio) | `public/index.php` vía Apache | Frontend tienda, carrito, checkout, perfil, panel admin |
 | App de repartidor (realtime) | Node.js Express + Socket.IO | `Repartidor/server.js` (puerto 3000) | Dashboard de entregas en tiempo real, seguimiento |
 | App de repartidor (HTML/JS) | Vanilla HTML/JS/PHP | `app/Views/repartidor/*` | Dashboard repartidor embebido en la app PHP |
 
 > **IMPORTANTE**: El núcleo PHP es la fuente de verdad para usuarios, pedidos y roles.
-> Flask y la app Node escriben en las mismas tablas MySQL.
+> La app Node escribe en las mismas tablas MySQL.
 
 ---
 
@@ -72,7 +71,6 @@ Angelow/
 ├── config/               # Rutas y configuración
 ├── database/             # Migraciones SQL de la BD
 ├── Document/             # Notas de cambios y soluciones del equipo
-├── facturacion/          # Microservicio Flask de facturación
 ├── Repartidor/           # App Node.js Express de repartidor (tiempo real)
 ├── public/               # Raíz web (index.php, assets)
 ├── storage/              # Sesiones del servidor (writable)
@@ -105,7 +103,7 @@ Angelow/
   sentencias preparadas (protección contra SQL injection).
 - `app/Core/Model.php`: clase base con CRUD genérico (`getAll`, `getById`, `create`,
   `update`, `delete`).
-- Los modelos concretos (`UsuarioModel`, `PedidoModel`, `FacturaModel`, etc.) usan
+- Los modelos concretos (`UsuarioModel`, `PedidoModel`, etc.) usan
   consultas preparadas.
 
 ### 4.5 Autenticación y autorización
@@ -134,7 +132,7 @@ Angelow/
 - Esquema de referencia: `angelow.sql`.
 - Migraciones:
   - `database/001_add_asignado_status.sql`
-  - `database/002_add_facturas_table.sql` (crea `facturas`, `facturas_detalle`,
+  - `database/999_drop_facturacion.sql` (elimina `facturas`, `facturas_detalle`,
     `facturas_historial` y `pedidos.factura_generada`)
   - `migrations/add_direcciones_tarjetas.sql`
 
@@ -144,7 +142,6 @@ Angelow/
 | `usuarios` | Personas y roles (`rol` ENUM: cliente/repartidor/administrador); estado `estado` ENUM (pendiente/activo/inactivo/suspendido/eliminado) |
 | `pedidos` | Pedidos y estados (pendiente, confirmado, procesando, listo, asignado, aceptado, recogido, en_camino, entregado, cancelado) |
 | `pedidos_detalle` (o detalle de pedido) | Líneas de cada pedido |
-| `facturas`, `facturas_detalle`, `facturas_historial` | Facturación (microservicio Flask) |
 | `productos`, `categorias` | Catálogo e inventario |
 | `carrito`, `favoritos`, `direcciones`, `tarjetas` | Datos de cliente |
 | `solicitudes_repartidores` | Flujo de aprobación de repartidores (con `email`) |
@@ -158,7 +155,7 @@ Angelow/
 
 | Rol | Recursos que puede consultar |
 |-----|------------------------------|
-| `cliente` | Tienda, perfil, carrito, favoritos, sus pedidos, facturas |
+| `cliente` | Tienda, perfil, carrito, favoritos, sus pedidos |
 | `repartidor` | `/repartidor/dashboard`, su perfil, pedidos asignados, sus documentos |
 | `administrador` | `/admin` y subrutas (dashboard, pedidos, usuarios, repartidores, inventario) + APIs `/api/admin/*`, `/api/clientes`, `/api/productos`, etc. |
 
@@ -182,9 +179,6 @@ CompraController::procesar  (/procesar-compra)
    ↓ valida datos + crea el pedido
 pedidos + detalle
    ↓
-FacturaController / microservicio Flask
-   → facturas + detalle
-   ↓
 Admin (panel admin)  → cambia estado  (Admin\PedidosController)
    ↓
 Repartidor (dashboard)  → acepta, recogido, en_camino, entregado
@@ -196,7 +190,6 @@ Entrega
 - Consulta de pedidos (API): `Api/RepartidorPedidosController` (`?available=1` para
   pedidos sin asignar), `Admin/PedidosController::obtenerPedidos`.
 - Cambio de estado: `Admin\PedidosController::updateStatus`, `Api\RepartidorPedidosController::updateStatus`.
-- Facturación: `app/Controllers/Api/FacturasController.php` + microservicio Flask.
 
 ---
 
@@ -268,8 +261,6 @@ Endpoints `/api/repartidor/rastreo` (todos exigen sesión/JWT de repartidor acti
 
 ## 11. Servicios externos / microservicios
 
-- **Facturación (Flask)**: `facturacion/` — POST genera factura + PDF y escribe en
-  `facturas*`; requiere su propio `.env` y `requirements.txt`.
 - **App repartidor (Node)**: `Repartidor/` — Express + Socket.IO en puerto 3000;
   usa `config.js`, `middleware/`, `routes/`, `services/` y una BD SQLite local
   (`repartidor.db`) además de compartir MySQL.
@@ -306,22 +297,17 @@ diseños existentes.
 
 ---
 
-## 13. Facturación Python — autenticación (esta sesión)
+## 13. Eliminación de la facturación (esta sesión)
 
-- El API Flask (`facturacion/routes/factura_routes.py`) quedó protegido con un
-  **secreto compartido** (`require_api_key`): exige `Authorization: Bearer <FACTURA_API_SECRET>`
-  (o `?api_key=`) en **los 9 endpoints de datos**. Fail-closed si falta el secreto.
-- `FACTURA_API_SECRET` se define **solo en `facturacion/.env`** (generado 64 hex) y se lee
-  en `facturacion/config.py`; nunca está hardcodeado en código.
-- `/api/health` continúa abierto para sondeo de disponibilidad.
-- **PENDIENTE operativo para migrar la facturación a Python como única oficial**:
-  1. `pip install -r facturacion/requirements.txt` (faltan `mysql-connector-python`, `fpdf2`, …).
-  2. Iniciar el servicio: `facturacion/run.bat` (puerto 5000).
-  3. Desde PHP/JS llamar al servicio con el Bearer token para generar/enviar PDF y email.
-  4. Reapuntar cliente/admin/repartidor a la factura Python.
-  5. **Solo después** de que todo esté migrado y probado, eliminar la factura antigua
-     (`FacturaController`, `Api\FacturasController`, `Views/paginas/factura.php`, `factura.js/css`)
-     (regla 20 del proyecto). Hasta entonces la factura antigua **se conserva**.
-- **Aviso de seguridad heredado**: `facturacion/config.py` tiene un `SMTP_PASSWORD`
-  como fallback literal en código (además del de `.env`). Se recomienda eliminar ese
-  fallback y leer solo de `.env`.
+- Se **eliminó toda la funcionalidad de facturación** del proyecto:
+  - Microservicio Python `facturacion/` (Flask) borrado por completo.
+  - Controladores/modelos PHP (`FacturaController`, `Api\FacturasController`,
+    `FacturaModel`), vista `paginas/factura.php`, email `emails/factura.html` y
+    `factura.js`/`factura.css`.
+- Se limpiaron las referencias en `CompraController`, `Cliente\PedidosController`
+  (método `factura`), `Api\RepartidorRastreoController`, `EmailService` (tipo
+  `factura`), `config/routes.php`, el dashboard de repartidor y `panel.css`.
+- El checkout de `compra.js` mantiene el flujo de **guardar pedido** y muestra una
+  **confirmación de pedido** (sin documento de factura ni generación de PDF).
+- Migración de limpieza de BD: `database/999_drop_facturacion.sql` (elimina las tablas
+  `facturas*` y `pedidos.factura_generada`).

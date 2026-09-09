@@ -105,10 +105,10 @@ async function cambiarEstadoPedido(pedidoId, nuevoEstado) {
         });
         const data = await res.json();
         if (data.success) {
-            showToast({ title: "Éxito", message: `Estado del pedido actualizado a ${nuevoEstado}`, type: "success" });
-            cargarPedidos();
+            showToast({ title: "Estado actualizado", message: `Factura #${pedidoId} → ${getStatusText(nuevoEstado)}`, type: "success" });
+            await cargarPedidos();
         } else {
-            showToast({ title: "Error", message: data.error || 'No se pudo actualizar', type: "error" });
+            showToast({ title: "Error", message: data.error || 'No se pudo actualizar el estado', type: "error" });
         }
     } catch (e) {
         console.error('Error:', e);
@@ -932,12 +932,12 @@ function updateMapMarkers(filteredOrders = orders) {
             marker.bindPopup(`
                 <div class="marker-popup">
                     <h4>${order.customer}</h4>
-                    <p>Pedido: ${order.id}</p>
+                    <p>Pedido: ${order.numero_pedido || order.id}</p>
                     <p>${order.address}</p>
                     <p>Total: $${order.total.toLocaleString()}</p>
-                    <span class="status-badge ${getStatusClass(order.status)}">${getStatusText(order.status)}</span>
+                    <span class="status-badge ${getStatusClass(order.estado)}">${getStatusText(order.estado)}</span>
                     <br>
-                    <button onclick="selectOrder('${order.id}')" style="margin-top:8px; padding:4px 8px; background:var(--primary); color:white; border:none; border-radius:4px; cursor:pointer;">
+                    <button onclick="verDetallesPedido(${order.id})" style="margin-top:8px; padding:4px 8px; background:var(--primary); color:white; border:none; border-radius:4px; cursor:pointer;">
                         Ver detalles
                     </button>
                 </div>
@@ -977,22 +977,42 @@ window.selectOrder = function(orderId) {
 
 function getStatusText(status) {
     const statusMap = {
-        'pending': 'Pendiente',
-        'processing': 'En proceso',
-        'shipped': 'Enviado',
-        'delivered': 'Entregado',
-        'cancelled': 'Cancelado'
+        'pendiente': 'Pendiente',
+        'confirmada': 'Confirmada',
+        'cambio': 'Cambio',
+        'devolucion': 'Devolución',
+        'rechazada': 'Rechazada',
+        'confirmado': 'Confirmada',
+        'procesando': 'Pendiente',
+        'listo': 'Confirmada',
+        'asignado': 'Confirmada',
+        'aceptado': 'Confirmada',
+        'recogido': 'Confirmada',
+        'en_camino': 'Confirmada',
+        'entregado': 'Confirmada',
+        'cancelado': 'Rechazada',
+        'reembolsado': 'Rechazada'
     };
-    return statusMap[status] || status;
+    return statusMap[status] || status || 'Pendiente';
 }
 
 function getStatusClass(status) {
     const classMap = {
-        'pending': 'status-pending',
-        'processing': 'status-pending',
-        'shipped': 'status-shipped',
-        'delivered': 'status-delivered',
-        'cancelled': 'status-cancelled'
+        'pendiente': 'status-pending',
+        'confirmada': 'status-delivered',
+        'cambio': 'status-processing',
+        'devolucion': 'status-processing',
+        'rechazada': 'status-cancelled',
+        'confirmado': 'status-delivered',
+        'procesando': 'status-pending',
+        'listo': 'status-delivered',
+        'asignado': 'status-delivered',
+        'aceptado': 'status-delivered',
+        'recogido': 'status-delivered',
+        'en_camino': 'status-delivered',
+        'entregado': 'status-delivered',
+        'cancelado': 'status-cancelled',
+        'reembolsado': 'status-cancelled'
     };
     return classMap[status] || 'status-pending';
 }
@@ -1012,13 +1032,14 @@ function renderOrdersList(ordersToRender = orders) {
 
     container.innerHTML = ordersToRender.map(order => {
         const orderId = order.id || order.numero_pedido || 'N/A';
-        const orderNumber = order.orderNumber || order.numero_pedido || String(order.id || '');
+        const orderNumber = order.numero_pedido || String(order.id || '');
+        const estado = order.estado || 'pendiente';
         
         return `
-            <div class="order-item ${orderId === selectedOrderId ? 'selected' : ''}" data-id="${orderId}" onclick="selectOrder('${orderId}')">
+            <div class="order-item ${orderId == selectedOrderId ? 'selected' : ''}" data-id="${orderId}" onclick="selectOrder('${orderId}')">
                 <div class="order-item-header">
                     <span class="order-item-id">#${orderNumber}</span>
-                    <span class="order-item-status ${getStatusClass(order.status)}">${getStatusText(order.status)}</span>
+                    <span class="order-item-status ${getStatusClass(estado)}">${getStatusText(estado)}</span>
                 </div>
                 <div class="order-item-customer">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1057,7 +1078,7 @@ function renderOrdersList(ordersToRender = orders) {
                             <line x1="2" y1="8" x2="22" y2="8"></line>
                             <line x1="2" y1="16" x2="22" y2="16"></line>
                         </svg>
-                        ${order.products?.length || order.total_productos || 0} items
+                        ${order.total_productos || 0} items
                     </span>
                 </div>
             </div>
@@ -1082,16 +1103,21 @@ function renderOrdersTable(ordersToRender = orders) {
 
     tbody.innerHTML = ordersToRender.map(order => {
         const orderId = order.id || order.numero_pedido || 'N/A';
-        const orderNumber = order.orderNumber || order.numero_pedido || String(order.id || '');
+        const orderNumber = order.numero_pedido || String(order.id || '');
+        const estado = order.estado || 'pendiente';
         const estadoSelect = `
             <select class="estado-select" data-order-id="${order.id}" onchange="cambiarEstadoPedido(${order.id}, this.value)">
-                <option value="pendiente" ${order.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
-                <option value="confirmado" ${order.estado === 'confirmado' ? 'selected' : ''}>Confirmado</option>
-                <option value="procesando" ${order.estado === 'procesando' ? 'selected' : ''}>En proceso</option>
-                <option value="listo" ${order.estado === 'listo' ? 'selected' : ''}>Listo</option>
-                <option value="en_camino" ${order.estado === 'en_camino' ? 'selected' : ''}>En camino</option>
-                <option value="entregado" ${order.estado === 'entregado' ? 'selected' : ''}>Entregado</option>
-                <option value="cancelado" ${order.estado === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+                <option value="pendiente" ${estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                <option value="confirmado" ${estado === 'confirmado' ? 'selected' : ''}>Confirmado</option>
+                <option value="procesando" ${estado === 'procesando' ? 'selected' : ''}>Procesando</option>
+                <option value="listo" ${estado === 'listo' ? 'selected' : ''}>Listo</option>
+                <option value="asignado" ${estado === 'asignado' ? 'selected' : ''}>Asignado</option>
+                <option value="aceptado" ${estado === 'aceptado' ? 'selected' : ''}>Aceptado</option>
+                <option value="recogido" ${estado === 'recogido' ? 'selected' : ''}>Recogido</option>
+                <option value="en_camino" ${estado === 'en_camino' ? 'selected' : ''}>En camino</option>
+                <option value="entregado" ${estado === 'entregado' ? 'selected' : ''}>Entregado</option>
+                <option value="cancelado" ${estado === 'cancelado' ? 'selected' : ''}>Cancelado</option>
+                <option value="reembolsado" ${estado === 'reembolsado' ? 'selected' : ''}>Reembolsado</option>
             </select>
         `;
 
@@ -1122,29 +1148,52 @@ window.editOrder = function(id) {
     const order = orders.find(o => o.id == id);
     if (!order) return;
     
-    const statuses = ['pendiente', 'confirmado', 'procesando', 'listo', 'en_camino', 'entregado', 'cancelado'];
-    const currentIndex = statuses.indexOf(order.estado || order.status);
+    const statuses = ['pendiente', 'confirmado', 'procesando', 'listo', 'asignado', 'aceptado', 'recogido', 'en_camino', 'entregado', 'cancelado', 'reembolsado'];
+    const currentIndex = statuses.indexOf(order.estado || order.status || 'pendiente');
     const nextStatus = statuses[(currentIndex + 1) % statuses.length];
     
     cambiarEstadoPedido(id, nextStatus);
 };
 
-window.verDetallesPedido = function(pedidoId) {
+window.verDetallesPedido = async function(pedidoId) {
     const order = orders.find(o => o.id == pedidoId || o.numero_pedido == pedidoId);
     if (!order) {
         showToast({ title: "Error", message: "Pedido no encontrado", type: "error" });
         return;
     }
 
-    const productos = order.products || order.productos || [];
-    const productosHtml = productos.length > 0 
-        ? productos.map(p => `
+    let pedidoCompleto = null;
+    let items = order.products || order.productos || [];
+
+    try {
+        const res = await fetch(`${APP_URL}/api/pedidos/${pedidoId}`, {
+            headers: { 'Accept': 'application/json' }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.pedido) {
+                pedidoCompleto = data.pedido;
+                items = data.pedido.items || items;
+            }
+        }
+    } catch (e) {
+        console.error('Error loading order details:', e);
+    }
+
+    const o = pedidoCompleto || order;
+    const estado = o.estado || 'pendiente';
+    const fecha = o.fecha_pedido ? new Date(o.fecha_pedido) : (order.date ? new Date(order.date) : new Date());
+    const envio = parseFloat(o.costo_envio || 0);
+    const descuento = parseFloat(o.descuento || 0);
+
+    const productosHtml = items.length > 0 
+        ? items.map(p => `
             <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${p.nombre || p.name || 'Producto'}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${p.nombre_producto || p.nombre || p.name || 'Producto'}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${p.talla || 'Única'}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${p.cantidad || p.quantity || 1}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">COP $${(p.precioUnitario || p.price || 0).toLocaleString()}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">COP $${((p.precioUnitario || p.price || 0) * (p.cantidad || p.quantity || 1)).toLocaleString()}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${p.cantidad || 1}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">COP $${parseFloat(p.precio_unitario || p.precioUnitario || 0).toLocaleString()}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right; font-weight: 600;">COP $${parseFloat(p.subtotal || 0).toLocaleString()}</td>
             </tr>
         `).join('')
         : '<tr><td colspan="5" style="padding: 20px; text-align: center; color: var(--text-secondary);">Sin productos registrados</td></tr>';
@@ -1152,26 +1201,41 @@ window.verDetallesPedido = function(pedidoId) {
     const detalleHtml = `
         <div style="max-width: 900px; margin: 0 auto; background: #ffffff; border-radius: 16px; box-shadow: 0 20px 60px rgba(30, 58, 138, 0.15); overflow: hidden; padding: 30px; border: 1px solid #e8edf5;">
             <div style="border-bottom: 2px solid #1e3a8a; padding-bottom: 20px; margin-bottom: 24px;">
-                <h2 style="color: #1e3a8a; font-size: 24px; margin: 0 0 8px 0; font-weight: 800;">Pedido #${order.orderNumber || order.numero_pedido || order.id}</h2>
-                <div style="display: flex; gap: 20px; flex-wrap: wrap; color: #4b5563; font-size: 14px;">
-                    <span><strong>Fecha:</strong> ${order.date ? new Date(order.date).toLocaleDateString('es-CO') : '-'}</span>
-                    <span><strong>Estado:</strong> <span class="status-badge ${getStatusClass(order.estado || order.status)}">${getStatusText(order.estado || order.status)}</span></span>
-                    <span><strong>Total:</strong> <strong style="color: #1e3a8a;">COP $${(order.total || 0).toLocaleString()}</strong></span>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+                    <div>
+                        <h2 style="color: #1e3a8a; font-size: 24px; margin: 0 0 8px 0; font-weight: 800;">Factura #${o.numero_pedido || order.numero_pedido || order.id}</h2>
+                        <div style="display: flex; gap: 20px; flex-wrap: wrap; color: #4b5563; font-size: 14px;">
+                            <span><strong>Fecha:</strong> ${fecha.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                            <span><strong>Total:</strong> <strong style="color: #1e3a8a;">COP $${parseFloat(o.total || order.total || 0).toLocaleString()}</strong></span>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <label style="font-size: 12px; font-weight: 600; color: #6b7280; display: block; margin-bottom: 6px;">ESTADO DEL PEDIDO</label>
+                        <select id="adminEstadoSelect" style="padding: 10px 16px; border: 2px solid #1e3a8a; border-radius: 8px; font-size: 14px; font-weight: 600; color: #1e3a8a; background: white; cursor: pointer; min-width: 180px;" onchange="cambiarEstadoPedido(${o.id || order.id}, this.value)">
+                            <option value="pendiente" ${estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                            <option value="confirmada" ${estado === 'confirmada' ? 'selected' : ''}>Confirmada</option>
+                            <option value="cambio" ${estado === 'cambio' ? 'selected' : ''}>Cambio</option>
+                            <option value="devolucion" ${estado === 'devolucion' ? 'selected' : ''}>Devolución</option>
+                            <option value="rechazada" ${estado === 'rechazada' ? 'selected' : ''}>Rechazada</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e8edf5;">
                 <div>
                     <h3 style="color: #1e3a8a; font-size: 12px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Datos del Cliente</h3>
-                    <p style="margin: 4px 0; color: #1f2937; font-weight: 600;">${order.cliente?.nombre || order.customer || 'Cliente'}</p>
-                    <p style="margin: 4px 0; color: #4b5563; font-size: 13px;">${order.cliente?.email || order.email_cliente || ''}</p>
-                    <p style="margin: 4px 0; color: #4b5563; font-size: 13px;">${order.cliente?.telefono || order.phone || ''}</p>
+                    <p style="margin: 4px 0; color: #1f2937; font-weight: 600;">${o.nombre_cliente || o.nombre_usuario || order.customer || 'Cliente'}</p>
+                    <p style="margin: 4px 0; color: #4b5563; font-size: 13px;">CC: ${o.cedula_cliente || o.cedula_usuario || 'N/A'}</p>
+                    <p style="margin: 4px 0; color: #4b5563; font-size: 13px;">Tel: ${o.telefono_cliente || o.telefono_usuario || 'N/A'}</p>
+                    <p style="margin: 4px 0; color: #4b5563; font-size: 13px;">Email: ${o.email_cliente || o.email_usuario || ''}</p>
                 </div>
                 <div>
                     <h3 style="color: #1e3a8a; font-size: 12px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Datos de Envío</h3>
-                    <p style="margin: 4px 0; color: #1f2937; font-weight: 600;">${order.envio?.destinatario || order.cliente?.nombre || 'Cliente'}</p>
-                    <p style="margin: 4px 0; color: #4b5563; font-size: 13px;">${order.envio?.direccion || order.address || 'Sin dirección'}</p>
-                    <p style="margin: 4px 0; color: #4b5563; font-size: 13px;">${order.envio?.metodo || 'Envío Normal'}</p>
+                    <p style="margin: 4px 0; color: #1f2937; font-weight: 600;">${o.destinatario || o.nombre_cliente || 'Cliente'}</p>
+                    <p style="margin: 4px 0; color: #4b5563; font-size: 13px;">${o.direccion_envio || order.address || 'Sin dirección'}${o.direccion_complementaria ? ', ' + o.direccion_complementaria : ''}</p>
+                    <p style="margin: 4px 0; color: #4b5563; font-size: 13px;">${o.barrio || ''}, ${o.ciudad || ''}, ${o.departamento || ''}</p>
+                    <p style="margin: 4px 0; color: #4b5563; font-size: 13px;">Método: ${o.metodo_envio === 'express' ? 'Envío Express' : 'Envío Normal'}</p>
                 </div>
             </div>
 
@@ -1196,17 +1260,23 @@ window.verDetallesPedido = function(pedidoId) {
                 <div style="width: 280px;">
                     <div style="display: flex; justify-content: space-between; padding: 6px 0;">
                         <span style="color: #4b5563;">Subtotal</span>
-                        <span style="font-weight: 600;">COP $${(order.subtotal || order.total || 0).toLocaleString()}</span>
+                        <span style="font-weight: 600;">COP $${parseFloat(o.subtotal || order.subtotal || 0).toLocaleString()}</span>
                     </div>
-                    ${(order.descuento || 0) > 0 ? `
+                    ${descuento > 0 ? `
                         <div style="display: flex; justify-content: space-between; padding: 6px 0; color: #10b981;">
                             <span>Descuento</span>
-                            <span style="font-weight: 600;">- COP $${(order.descuento || 0).toLocaleString()}</span>
+                            <span style="font-weight: 600;">- COP $${descuento.toLocaleString()}</span>
+                        </div>
+                    ` : ''}
+                    ${envio > 0 ? `
+                        <div style="display: flex; justify-content: space-between; padding: 6px 0;">
+                            <span style="color: #4b5563;">Envío</span>
+                            <span style="font-weight: 600;">COP $${envio.toLocaleString()}</span>
                         </div>
                     ` : ''}
                     <div style="display: flex; justify-content: space-between; padding: 6px 0; border-top: 2px solid #1e3a8a; margin-top: 8px;">
                         <span style="color: #1e3a8a; font-weight: 800; font-size: 16px;">TOTAL</span>
-                        <span style="color: #1e3a8a; font-weight: 900; font-size: 18px;">COP $${(order.total || 0).toLocaleString()}</span>
+                        <span style="color: #1e3a8a; font-weight: 900; font-size: 18px;">COP $${parseFloat(o.total || order.total || 0).toLocaleString()}</span>
                     </div>
                 </div>
             </div>
@@ -1221,7 +1291,7 @@ window.verDetallesPedido = function(pedidoId) {
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
-    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;';
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;';
     overlay.innerHTML = detalleHtml;
     document.body.appendChild(overlay);
 };
@@ -1239,12 +1309,15 @@ function setupOrderFilters() {
         const search = searchInput.value.toLowerCase().trim();
 
         let filtered = orders.filter(order => {
-            if (status !== 'all' && order.status !== status) return false;
+            if (status !== 'all' && order.estado !== status) return false;
             if (city !== 'all' && order.city !== city) return false;
             if (search) {
-                return order.customer.toLowerCase().includes(search) ||
-                    order.id.toLowerCase().includes(search) ||
-                    order.address.toLowerCase().includes(search);
+                const customer = order.customer || order.cliente?.nombre || '';
+                const id = String(order.id || '');
+                const addr = order.address || order.envio?.direccion || '';
+                return customer.toLowerCase().includes(search) ||
+                    id.includes(search) ||
+                    addr.toLowerCase().includes(search);
             }
             return true;
         });
@@ -1508,10 +1581,10 @@ function renderSolicitudes() {
     }
 
     container.innerHTML = pendientes.map(s => {
-        const initials = ((s.nombre || 'N')[0] + (s.apellido || 'A')[0]).toUpperCase();
+        const initials = ((s.nombres || 'N')[0] + (s.apellidos || 'A')[0]).toUpperCase();
         const docs = s.documentos || [];
         const docsHtml = docs.map(d => `
-            <a href="${APP_URL}/${d.archivo_url}" target="_blank" 
+            <a href="${d.url || APP_URL + '/' + d.archivo_url}" target="_blank" 
                style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:var(--bg-soft); border-radius:8px; text-decoration:none; color:var(--primary); font-size:12px; font-weight:600; border:1px solid var(--border-color);">
                 <i class="fas fa-file-${d.tipo === 'foto_perfil' ? 'image' : d.tipo === 'hoja_vida' ? 'alt' : 'pdf'}"></i>
                 ${d.tipo.replace(/_/g, ' ')}
@@ -1527,7 +1600,7 @@ function renderSolicitudes() {
                                 ${initials}
                             </div>
                             <div>
-                                <h4 style="margin:0; font-size:18px; color:var(--text-primary);">${s.nombre} ${s.apellido}</h4>
+                                <h4 style="margin:0; font-size:18px; color:var(--text-primary);">${s.nombres} ${s.apellidos}</h4>
                                 <span style="font-size:12px; color:var(--text-secondary);">${s.email}</span>
                             </div>
                         </div>
@@ -1536,7 +1609,7 @@ function renderSolicitudes() {
                             <div><strong style="color:var(--text-secondary);">Teléfono:</strong> ${s.telefono || 'N/A'}</div>
                             <div><strong style="color:var(--text-secondary);">Vehículo:</strong> ${s.tipo_vehiculo || 'N/A'} ${s.placa_vehiculo ? '• ' + s.placa_vehiculo : ''}</div>
                             <div><strong style="color:var(--text-secondary);">Licencia:</strong> ${s.numero_licencia || 'N/A'} ${s.categoria_licencia ? '(Cat. ' + s.categoria_licencia + ')' : ''}</div>
-                            <div><strong style="color:var(--text-secondary);">Tarjeta profesional:</strong> ${s.numero_tarjeta || 'N/A'}</div>
+                            <div><strong style="color:var(--text-secondary);">Tarjeta profesional:</strong> ${s.tarjeta_propiedad || 'N/A'}</div>
                             <div><strong style="color:var(--text-secondary);">Fecha solicitud:</strong> ${s.fecha_solicitud ? new Date(s.fecha_solicitud).toLocaleDateString('es-CO') : 'N/A'}</div>
                         </div>
                     </div>
@@ -1562,91 +1635,189 @@ function renderSolicitudes() {
     }).join('');
 }
 
-async function aprobarSolicitud(id) {
-    if (!confirm('¿Aprobar esta solicitud? El usuario será habilitado como repartidor.')) return;
-    try {
-        const res = await fetch(`${APP_URL}/api/admin/repartidores/solicitudes/aprobar`, {
-            method: 'POST',
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id })
-        });
-        const data = await res.json();
-        if (data.success) {
-            showToast({ title: "Solicitud aprobada", message: "El repartidor ha sido habilitado exitosamente", type: "success" });
-            solicitudes = solicitudes.filter(s => s.id !== id);
-            localStorage.setItem('angelow_solicitudes', JSON.stringify(solicitudes));
-            renderSolicitudes();
-            await Promise.all([cargarRepartidoresActivos(), cargarEstadisticasRepartidores()]);
-        } else {
-            showToast({ title: "Error", message: data.error || 'No se pudo aprobar', type: "error" });
-        }
-    } catch (e) {
-        showToast({ title: "Error", message: 'Error al aprobar solicitud', type: "error" });
+// ======================== MODAL PERSONALIZADO ========================
+function showPanelModal({ titulo, mensaje, icono, tipo, conTexto, placeholder, boton, onConfirm }) {
+    tipo = tipo || 'success';
+    var colores = { success:'var(--success)', danger:'var(--danger)', warning:'var(--warning)' };
+    var color = colores[tipo] || colores.success;
+
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;animation:panelModalIn .2s ease;backdrop-filter:blur(2px);';
+
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border-radius:16px;max-width:420px;width:100%;box-shadow:0 25px 50px rgba(0,0,0,0.25);animation:panelModalIn .25s ease;overflow:hidden;';
+
+    var bodyHtml = '<p style="font-size:14px;color:#64748b;margin:0 0 16px;line-height:1.5;">' + mensaje + '</p>';
+    if (conTexto) {
+        bodyHtml += '<textarea id="panelModalTA" rows="3" placeholder="' + (placeholder || 'Escribe aquí...') + '" style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:10px;font-size:14px;font-family:Inter,sans-serif;resize:vertical;box-sizing:border-box;transition:border-color .2s;outline:none;"></textarea>';
     }
+
+    var cancelLabel = 'Cancelar';
+    var confirmLabel = boton || 'Confirmar';
+
+    card.innerHTML =
+        '<div style="display:flex;align-items:center;gap:12px;padding:20px 24px;border-bottom:1px solid #f1f5f9;background:linear-gradient(135deg,' + color + ' 0%,' + color + ' 100%);">' +
+            '<div style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;">' + icono + '</div>' +
+            '<div style="font-weight:800;font-size:17px;color:#fff;">' + titulo + '</div>' +
+        '</div>' +
+        '<div style="padding:24px;">' + bodyHtml +
+            '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">' +
+                '<button id="panelModalCancel" style="padding:10px 20px;background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;transition:all .2s;">' + cancelLabel + '</button>' +
+                '<button id="panelModalConfirm" style="padding:10px 24px;background:' + color + ';color:#fff;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;">' + confirmLabel + '</button>' +
+            '</div>' +
+        '</div>';
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    var style = document.createElement('style');
+    style.textContent = '@keyframes panelModalIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:none}}';
+    document.head.appendChild(style);
+
+    var ta = card.querySelector('#panelModalTA');
+    if (ta) setTimeout(function(){ ta.focus(); }, 80);
+
+    function close() { overlay.remove(); style.remove(); }
+
+    card.querySelector('#panelModalCancel').onclick = close;
+    overlay.onclick = function(e) { if (e.target === overlay) close(); };
+
+    card.querySelector('#panelModalConfirm').onclick = function() {
+        var val = ta ? ta.value.trim() : '';
+        close();
+        onConfirm(val);
+    };
+
+    if (ta) {
+        ta.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                card.querySelector('#panelModalConfirm').click();
+            }
+        });
+    }
+}
+
+// ======================== SOLICITUDES ========================
+
+async function aprobarSolicitud(id) {
+    showPanelModal({
+        titulo: 'Aprobar solicitud',
+        mensaje: '¿Aprobar esta solicitud? El usuario será habilitado como repartidor.',
+        icono: '✓',
+        tipo: 'success',
+        boton: 'Aprobar',
+        onConfirm: async function() {
+            try {
+                const res = await fetch(`${APP_URL}/api/admin/repartidores/solicitudes/aprobar`, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast({ title: "Solicitud aprobada", message: "El repartidor ha sido habilitado exitosamente", type: "success" });
+                    solicitudes = solicitudes.filter(s => s.id !== id);
+                    localStorage.setItem('angelow_solicitudes', JSON.stringify(solicitudes));
+                    renderSolicitudes();
+                    await Promise.all([cargarRepartidoresActivos(), cargarEstadisticasRepartidores()]);
+                } else {
+                    showToast({ title: "Error", message: data.error || 'No se pudo aprobar', type: "error" });
+                }
+            } catch (e) {
+                showToast({ title: "Error", message: 'Error al aprobar solicitud', type: "error" });
+            }
+        }
+    });
 }
 
 async function rechazarSolicitud(id) {
-    const motivo = prompt('Motivo del rechazo (opcional):');
-    if (motivo === null) return;
-    try {
-        const res = await fetch(`${APP_URL}/api/admin/repartidores/solicitudes/rechazar`, {
-            method: 'POST',
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, observaciones: motivo })
-        });
-        const data = await res.json();
-        if (data.success) {
-            showToast({ title: "Solicitud rechazada", message: "La solicitud ha sido rechazada", type: "success" });
-            solicitudes = solicitudes.filter(s => s.id !== id);
-            localStorage.setItem('angelow_solicitudes', JSON.stringify(solicitudes));
-            renderSolicitudes();
-            await cargarEstadisticasRepartidores();
-        } else {
-            showToast({ title: "Error", message: data.error || 'No se pudo rechazar', type: "error" });
+    showPanelModal({
+        titulo: 'Rechazar solicitud',
+        mensaje: 'Motivo del rechazo (opcional):',
+        icono: '✕',
+        tipo: 'danger',
+        conTexto: true,
+        placeholder: 'Escribe el motivo del rechazo...',
+        boton: 'Rechazar',
+        onConfirm: async function(motivo) {
+            try {
+                const res = await fetch(`${APP_URL}/api/admin/repartidores/solicitudes/rechazar`, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, observaciones: motivo })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast({ title: "Solicitud rechazada", message: "La solicitud ha sido rechazada", type: "success" });
+                    solicitudes = solicitudes.filter(s => s.id !== id);
+                    localStorage.setItem('angelow_solicitudes', JSON.stringify(solicitudes));
+                    renderSolicitudes();
+                    await cargarEstadisticasRepartidores();
+                } else {
+                    showToast({ title: "Error", message: data.error || 'No se pudo rechazar', type: "error" });
+                }
+            } catch (e) {
+                showToast({ title: "Error", message: 'Error al rechazar solicitud', type: "error" });
+            }
         }
-    } catch (e) {
-        showToast({ title: "Error", message: 'Error al rechazar solicitud', type: "error" });
-    }
+    });
 }
 
 async function suspenderRepartidor(id) {
-    if (!confirm('¿Suspender este repartidor? No podrá aceptar pedidos hasta ser reactivado.')) return;
-    try {
-        const res = await fetch(`${APP_URL}/api/admin/repartidores/suspender`, {
-            method: 'POST',
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id })
-        });
-        const data = await res.json();
-        if (data.success) {
-            showToast({ title: "Repartidor suspendido", message: "El repartidor ha sido suspendido", type: "warning" });
-            await cargarRepartidoresActivos();
-        } else {
-            showToast({ title: "Error", message: data.error || 'No se pudo suspender', type: "error" });
+    showPanelModal({
+        titulo: 'Suspender repartidor',
+        mensaje: '¿Suspender este repartidor? No podrá aceptar pedidos hasta ser reactivado.',
+        icono: '⚠',
+        tipo: 'warning',
+        boton: 'Suspender',
+        onConfirm: async function() {
+            try {
+                const res = await fetch(`${APP_URL}/api/admin/repartidores/suspender`, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast({ title: "Repartidor suspendido", message: "El repartidor ha sido suspendido", type: "warning" });
+                    await cargarRepartidoresActivos();
+                } else {
+                    showToast({ title: "Error", message: data.error || 'No se pudo suspender', type: "error" });
+                }
+            } catch (e) {
+                showToast({ title: "Error", message: 'Error al suspender', type: "error" });
+            }
         }
-    } catch (e) {
-        showToast({ title: "Error", message: 'Error al suspender', type: "error" });
-    }
+    });
 }
 
 async function activarRepartidor(id) {
-    if (!confirm('¿Reactivar este repartidor?')) return;
-    try {
-        const res = await fetch(`${APP_URL}/api/admin/repartidores/activar`, {
-            method: 'POST',
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id })
-        });
-        const data = await res.json();
-        if (data.success) {
-            showToast({ title: "Repartidor activado", message: "El repartidor ha sido reactivado", type: "success" });
-            await cargarRepartidoresActivos();
-        } else {
-            showToast({ title: "Error", message: data.error || 'No se pudo activar', type: "error" });
+    showPanelModal({
+        titulo: 'Reactivar repartidor',
+        mensaje: '¿Reactivar este repartidor?',
+        icono: '✓',
+        tipo: 'success',
+        boton: 'Reactivar',
+        onConfirm: async function() {
+            try {
+                const res = await fetch(`${APP_URL}/api/admin/repartidores/activar`, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast({ title: "Repartidor activado", message: "El repartidor ha sido reactivado", type: "success" });
+                    await cargarRepartidoresActivos();
+                } else {
+                    showToast({ title: "Error", message: data.error || 'No se pudo activar', type: "error" });
+                }
+            } catch (e) {
+                showToast({ title: "Error", message: 'Error al activar', type: "error" });
+            }
         }
-    } catch (e) {
-        showToast({ title: "Error", message: 'Error al activar', type: "error" });
-    }
+    });
 }
 
 function renderDeliveryTable() {
@@ -1670,7 +1841,7 @@ function renderDeliveryTable() {
         const statusText = d.estado === 'activo' ? 'Activo' : d.estado === 'suspendido' ? 'Suspendido' : d.estado || 'Pendiente';
         const docs = d.documentos || [];
         const docsCount = docs.length;
-        const docsLinks = docs.map(doc => `<a href="${APP_URL}/${doc.archivo_url}" target="_blank" title="${doc.tipo} - ${doc.estado}" style="font-size:11px; color:var(--primary); text-decoration:underline; display:block;">${doc.tipo.replace(/_/g,' ')}</a>`).join('');
+        const docsLinks = docs.map(doc => `<a href="${doc.url || APP_URL + '/' + doc.archivo_url}" target="_blank" title="${doc.tipo} - ${doc.estado}" style="font-size:11px; color:var(--primary); text-decoration:underline; display:block;">${doc.tipo.replace(/_/g,' ')}</a>`).join('');
 
         const toggleBtn = d.estado === 'activo'
             ? `<button onclick="suspenderRepartidor(${d.id})" style="padding:5px 10px; background:#FEE2E2; color:#991B1B; border:none; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;">Suspender</button>`
@@ -2095,11 +2266,11 @@ function exportOrdersToPDF() {
 
     orders.forEach(order => {
         const row = [
-            order.orderNumber || order.numero_pedido || String(order.id),
+            order.numero_pedido || String(order.id),
             order.customer || order.cliente?.nombre || 'Cliente',
             order.date ? new Date(order.date).toLocaleDateString('es-CO') : '-',
             "COP $" + (order.total || 0).toLocaleString('es-CO'),
-            getStatusText(order.status || order.estado || 'pendiente'),
+            getStatusText(order.estado || 'pendiente'),
             order.address || order.envio?.direccion || 'Sin dirección'
         ];
         tableRows.push(row);

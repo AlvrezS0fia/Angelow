@@ -167,7 +167,7 @@
             
             <h3>4.1. Datos que recopilamos</h3>
             <ul>
-                <li><strong>Datos de contacto:</strong> Para envío y facturación</li>
+                <li><strong>Datos de contacto:</strong> Para gestionar el envío de tu pedido</li>
                 <li><strong>Medidas del niño/a:</strong> Para recomendaciones de talla</li>
                 <li><strong>Preferencias:</strong> Para personalizar tu experiencia</li>
                 <li><strong>Datos de pago:</strong> Procesados de forma segura por pasarelas certificadas</li>
@@ -217,7 +217,7 @@
                 <li>El producto esté en estado original</li>
                 <li>Conserve todas las etiquetas</li>
                 <li>No haya sido usado o lavado</li>
-                <li>Se presente la factura original</li>
+                <li>Se presente el comprobante de compra</li>
             </ul>
             
             <h3>6.2. Proceso de cambio</h3>

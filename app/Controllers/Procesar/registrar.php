@@ -106,6 +106,7 @@ try {
         'rol' => 'cliente',
         'login_time' => date('Y-m-d H:i:s')
     ];
+    $_SESSION['user_id'] = $usuario_id;
     
     // Registrar actividad
     $stmt = $pdo->prepare("INSERT INTO logs_actividad (usuario_id, tipo, accion, ip_address, fecha) VALUES (?, 'usuario', 'registro', ?, NOW())");

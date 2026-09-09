@@ -74,7 +74,7 @@ $user = $_SESSION['user'];
                 <li><a href="#dashboard" class="active" data-section="dashboard"><i class="fas fa-gauge-high admin-menu-icon icon-dashboard"></i><span>Dashboard</span></a></li>
                 <li><a href="#products" data-section="products"><i class="fas fa-box admin-menu-icon icon-products"></i><span>Productos</span></a></li>
                 <li><a href="#categories" data-section="categories"><i class="fas fa-tags admin-menu-icon icon-categories"></i><span>Categorías</span></a></li>
-                <li><a href="#orders" data-section="orders"><i class="fas fa-clipboard-list admin-menu-icon icon-orders"></i><span>Pedidos</span></a></li>
+                <li><a href="#orders" data-section="orders"><i class="fas fa-file-invoice admin-menu-icon icon-orders"></i><span>Facturas</span></a></li>
                 <li><a href="#customers" data-section="customers"><i class="fas fa-users admin-menu-icon icon-customers"></i><span>Clientes</span></a></li>
                 <li><a href="#delivery" data-section="delivery"><i class="fas fa-truck-fast admin-menu-icon icon-delivery"></i><span>Repartidores</span></a></li>
                 <li><a href="#seguimiento" data-section="seguimiento"><i class="fas fa-map-location-dot admin-menu-icon icon-seguimiento"></i><span>Seguimiento</span></a></li>
@@ -235,10 +235,10 @@ $user = $_SESSION['user'];
                 </div>
             </section>
 
-            <!-- SECCIÓN PEDIDOS (TIEMPO REAL) -->
+            <!-- SECCIÓN FACTURAS -->
             <section id="orders-section" class="admin-section" style="display: none;">
                 <div class="section-header">
-                    <h2 class="section-title">Gestión de Pedidos</h2>
+                    <h2 class="section-title">Gestión de Facturas</h2>
                     <div class="action-buttons" style="gap: 12px;">
                         <button id="exportOrdersBtn" class="btn btn-secondary" onclick="exportOrdersToPDF()">Exportar a PDF</button>
                         <button id="refreshOrdersBtn" class="btn btn-primary" onclick="refreshOrdersRealTime()">
@@ -254,11 +254,17 @@ $user = $_SESSION['user'];
                 <div class="orders-filters">
                     <select id="orderStatusFilter" class="filter-select">
                         <option value="all">Todos los estados</option>
-                        <option value="pending">Pendiente</option>
-                        <option value="processing">En proceso</option>
-                        <option value="shipped">Enviado</option>
-                        <option value="delivered">Entregado</option>
-                        <option value="cancelled">Cancelado</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="confirmado">Confirmado</option>
+                        <option value="procesando">Procesando</option>
+                        <option value="listo">Listo</option>
+                        <option value="asignado">Asignado</option>
+                        <option value="aceptado">Aceptado</option>
+                        <option value="recogido">Recogido</option>
+                        <option value="en_camino">En camino</option>
+                        <option value="entregado">Entregado</option>
+                        <option value="cancelado">Cancelado</option>
+                        <option value="reembolsado">Reembolsado</option>
                     </select>
                     <select id="orderCityFilter" class="filter-select">
                         <option value="all">Todas las ciudades</option>
@@ -277,9 +283,9 @@ $user = $_SESSION['user'];
                 </div>
 
                 <div style="margin-top: 30px;">
-                    <h3 class="section-title" style="margin-bottom: 20px;">Listado General de Pedidos</h3>
+                    <h3 class="section-title" style="margin-bottom: 20px;">Listado General de Facturas</h3>
                     <table class="admin-table">
-                        <thead><tr><th>ID Pedido</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Dirección</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>Factura</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Dirección</th><th>Acciones</th></tr></thead>
                         <tbody id="ordersTable"></tbody>
                     </table>
                 </div>
@@ -713,7 +719,7 @@ $user = $_SESSION['user'];
         </div>
     </div>
 
-    <script src="<?= APP_URL ?>/assets/js/panel.js"></script>
+    <script src="<?= APP_URL ?>/assets/js/panel.js?v=2"></script>
     <script src="<?= APP_URL ?>/assets/js/seguimiento-perfil.js"></script>
 </body>
 </html>

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro Repartidor — ANGELOW</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/vendor/font-awesome/css/all.min.css">
+<link rel="stylesheet" href="/static/css/style.css">
+<link rel="icon" href="/static/uploads/documentos/logo.png" type="image/png">
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-logo" title="ANGELOW">
+    <img src="/static/uploads/documentos/logo.png" onerror="this.style.display='none'" alt="ANGELOW">
+  </div>
+  <div class="topbar-brand">
+    <span class="topbar-name">ANGELOW</span>
+    <span class="topbar-sub">Repartidores</span>
+  </div>
+  <a href="http://localhost/Angelow/public/?from=loader" class="btn-back-home">
+    <i class="fa-solid fa-arrow-left"></i>
+    Volver
+  </a>
+</header>
+
+<div class="page-body">
+<div class="wrapper">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo-area">
+      <div class="logo-badge">
+        <img src="/static/uploads/documentos/logo.png" onerror="this.style.display='none'" alt="ANGELOW">
+      </div>
+      <div class="logo-text">
+        <div class="app-name">ANGELOW</div>
+        <div class="app-sub">Repartidores</div>
+      </div>
+    </div>
+
+    <nav class="steps-nav">
+      <div class="step-item active" id="nav0">
+        <div class="step-dot">1</div>
+        <div class="step-label">
+          <strong>Datos Personales</strong>
+          <small>Información básica</small>
+        </div>
+      </div>
+      <div class="step-item" id="nav1">
+        <div class="step-dot">2</div>
+        <div class="step-label">
+          <strong>Vehículo</strong>
+          <small>Datos del transporte</small>
+        </div>
+      </div>
+      <div class="step-item" id="nav2">
+        <div class="step-dot">3</div>
+        <div class="step-label">
+          <strong>Documentos</strong>
+          <small>Archivos y declaraciones</small>
+        </div>
+      </div>
+    </nav>
+
+    <div class="login-prompt">
+      <div class="login-divider"></div>
+      <p class="login-question">¿Ya tienes una cuenta?</p>
+      <button class="btn-login-sidebar" onclick="openLoginModal()">
+        <i class="fa-solid fa-right-to-bracket"></i>
+        Iniciar Sesión
+      </button>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Progreso</span>
+        <span id="pctLabel">33%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- Indicador móvil -->
+    <div class="mobile-steps" id="mobileSteps">
+      <div class="ms-seg active" id="ms0"></div>
+      <div class="ms-seg" id="ms1"></div>
+      <div class="ms-seg" id="ms2"></div>
+    </div>
+
+    <!-- Paso 1 -->
+    <div class="form-step active">
+      <div class="step-heading">
+        <h2>Datos Personales</h2>
+        <p>Completa tu información de identificación y contacto.</p>
+      </div>
+      <div class="grid">
+        <div class="field" id="f-nombres">
+          <label class="field-label">Nombres</label>
+          <input id="nombres" type="text" placeholder="Ej: Juan David">
+          <span class="error-msg">Solo letras, mínimo 2 caracteres.</span>
+        </div>
+        <div class="field" id="f-apellidos">
+          <label class="field-label">Apellidos</label>
+          <input id="apellidos" type="text" placeholder="Ej: Gómez Ruiz">
+          <span class="error-msg">Solo letras, mínimo 2 caracteres.</span>
+        </div>
+        <div class="field" id="f-tipodoc">
+          <label class="field-label">Tipo de Documento</label>
+          <select id="tipodoc">
+            <option value="">Seleccione tipo</option>
+            <option value="CC">CC — Cédula de Ciudadanía</option>
+            <option value="CE">CE — Cédula de Extranjería</option>
+            <option value="TI">TI — Tarjeta de Identidad</option>
+            <option value="PAS">PAS — Pasaporte</option>
+          </select>
+          <span class="error-msg">Selecciona un tipo de documento.</span>
+        </div>
+        <div class="field" id="f-numdoc">
+          <label class="field-label">Número de Documento</label>
+          <input id="numdoc" type="text" placeholder="Ej: 1020304050">
+          <span class="error-msg">Solo números, entre 5 y 12 dígitos.</span>
+        </div>
+        <div class="field" id="f-celular">
+          <label class="field-label">Celular</label>
+          <input id="celular" type="tel" placeholder="Ej: 3001234567">
+          <span class="error-msg">Número colombiano válido (10 dígitos, empieza en 3).</span>
+        </div>
+        <div class="field" id="f-correo">
+          <label class="field-label">Correo Electrónico</label>
+          <input id="correo" type="email" placeholder="correo@ejemplo.com">
+          <span class="error-msg">Ingresa un correo válido.</span>
+        </div>
+        <div class="field" id="f-correo2">
+          <label class="field-label">Confirmar Correo</label>
+          <input id="correo2" type="email" placeholder="Repite tu correo">
+          <span class="error-msg">Los correos no coinciden.</span>
+        </div>
+        <div class="field" id="f-pass">
+          <label class="field-label">Contraseña</label>
+          <input id="pass" type="password" placeholder="Mín. 8 caracteres, 1 mayúscula, 1 número">
+          <span class="error-msg">Mínimo 8 caracteres con mayúscula, minúscula, número y especial.</span>
+        </div>
+        <div class="field full" id="f-pass2">
+          <label class="field-label">Confirmar Contraseña</label>
+          <input id="pass2" type="password" placeholder="Repite tu contraseña">
+          <span class="error-msg">Las contraseñas no coinciden.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paso 2 -->
+    <div class="form-step">
+      <div class="step-heading">
+        <h2>Información del Vehículo</h2>
+        <p>Ingresa los datos de tu medio de transporte y documentación.</p>
+      </div>
+      <div class="grid">
+        <div class="field" id="f-vehiculo">
+          <label class="field-label">Tipo de Vehículo</label>
+          <select id="vehiculo">
+            <option value="">Seleccione</option>
+            <option value="moto">Moto</option>
+            <option value="bicicleta">Bicicleta</option>
+            <option value="carro">Carro</option>
+            <option value="camioneta">Camioneta</option>
+          </select>
+          <span class="error-msg">Selecciona un tipo de vehículo.</span>
+        </div>
+        <div class="field" id="f-placa">
+          <label class="field-label">Placa del Vehículo</label>
+          <input id="placa" type="text" placeholder="Ej: ABC123" style="text-transform:uppercase">
+          <span class="error-msg">Formato válido: ABC123 o ABC12D.</span>
+        </div>
+        <div class="field" id="f-licencia">
+          <label class="field-label">N° de Licencia</label>
+          <input id="licencia" type="text" placeholder="Número de licencia">
+          <span class="error-msg">Solo números, entre 5 y 15 dígitos.</span>
+        </div>
+        <div class="field" id="f-catlicencia">
+          <label class="field-label">Categoría de Licencia</label>
+          <input id="catlicencia" type="text" placeholder="Ej: A2, B1...">
+          <span class="error-msg">Categoría válida: A1, A2, B1, B2, B3, C1.</span>
+        </div>
+        <div class="field" id="f-venlicencia">
+          <label class="field-label">Vencimiento Licencia</label>
+          <input id="venlicencia" type="date">
+          <span class="error-msg">La licencia no puede estar vencida.</span>
+        </div>
+        <div class="field" id="f-tarjeta">
+          <label class="field-label">N° Tarjeta de Propiedad</label>
+          <input id="tarjeta" type="text" placeholder="Número de tarjeta">
+          <span class="error-msg">Solo números, entre 6 y 15 dígitos.</span>
+        </div>
+        <div class="field full" id="f-vensoat">
+          <label class="field-label">Vencimiento SOAT</label>
+          <input id="vensoat" type="date">
+          <span class="error-msg">El SOAT no puede estar vencido.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paso 3 -->
+    <div class="form-step">
+      <div class="step-heading">
+        <h2>Documentación y Declaraciones</h2>
+        <p>Adjunta los documentos requeridos y acepta los términos.</p>
+      </div>
+      <div class="doc-section">
+        <div class="field" id="f-soatfile">
+          <div class="doc-head">
+            <div class="doc-icon"><i class="fa-solid fa-file-shield"></i></div>
+            <div class="doc-title">
+              <span class="doc-name">Foto del SOAT</span>
+              <span class="doc-hint">Formato imagen o PDF</span>
+            </div>
+          </div>
+          <label class="file-label-btn">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span id="fn1">Subir archivo</span>
+            <input id="soat-file" type="file" accept="image/*,.pdf" onchange="showName(this,'fn1','f-soatfile')">
+          </label>
+          <span class="error-msg">Debes subir la foto del SOAT.</span>
+        </div>
+        <div class="field" id="f-tarjetafile">
+          <div class="doc-head">
+            <div class="doc-icon"><i class="fa-solid fa-file-lines"></i></div>
+            <div class="doc-title">
+              <span class="doc-name">Tarjeta de Propiedad</span>
+              <span class="doc-hint">Formato imagen o PDF</span>
+            </div>
+          </div>
+          <label class="file-label-btn">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span id="fn2">Subir archivo</span>
+            <input id="tarjeta-file" type="file" accept="image/*,.pdf" onchange="showName(this,'fn2','f-tarjetafile')">
+          </label>
+          <span class="error-msg">Debes subir la foto de la tarjeta.</span>
+        </div>
+        <div class="field" id="f-licenciafile">
+          <div class="doc-head">
+            <div class="doc-icon"><i class="fa-solid fa-id-card"></i></div>
+            <div class="doc-title">
+              <span class="doc-name">Licencia de Conducción</span>
+              <span class="doc-hint">Formato imagen o PDF</span>
+            </div>
+          </div>
+          <label class="file-label-btn">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span id="fn3">Subir archivo</span>
+            <input id="licencia-file" type="file" accept="image/*,.pdf" onchange="showName(this,'fn3','f-licenciafile')">
+          </label>
+          <span class="error-msg">Debes subir la foto de la licencia.</span>
+        </div>
+      </div>
+
+      <div class="checks-section">
+        <label class="check-item cbx"><input type="checkbox" class="c-terminos"><span class="cbx-box"><i class="fa-solid fa-check"></i></span><span>Acepto los <strong>términos y condiciones</strong> del servicio</span></label>
+        <label class="check-item cbx"><input type="checkbox" class="c-privacidad"><span class="cbx-box"><i class="fa-solid fa-check"></i></span><span>Acepto la <strong>política de privacidad</strong> de la plataforma</span></label>
+        <label class="check-item cbx"><input type="checkbox" class="c-datos"><span class="cbx-box"><i class="fa-solid fa-check"></i></span><span>Autorizo el <strong>tratamiento de mis datos personales</strong></span></label>
+        <label class="check-item cbx"><input type="checkbox" class="c-veracidad"><span class="cbx-box"><i class="fa-solid fa-check"></i></span><span>Declaro que toda la información suministrada es <strong>verídica y correcta</strong></span></label>
+      </div>
+    </div>
+
+    <!-- Éxito -->
+    <div class="success-screen" id="successScreen">
+      <div class="success-icon">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <h3>¡Registro completado!</h3>
+      <p>Tu solicitud está siendo revisada. Te notificaremos pronto por correo electrónico.</p>
+      <div class="success-note"><i class="fa-solid fa-paper-plane"></i> Solicitud enviada correctamente</div>
+    </div>
+
+    <!-- Error del servidor -->
+    <div class="error-screen" id="errorScreen">
+      <div class="error-icon">
+        <i class="fa-solid fa-circle-exclamation"></i>
+      </div>
+      <h3>No pudimos procesar tu solicitud</h3>
+      <p>Corrige los siguientes errores e inténtalo de nuevo:</p>
+      <div class="error-box" id="errorBox"></div>
+      <button class="btn btn-next btn-retry" onclick="backToForm()">
+        <i class="fa-solid fa-arrow-left"></i>
+        Volver al formulario
+      </button>
+    </div>
+
+    <div class="nav-btns" id="navBtns">
+      <button class="btn btn-back" onclick="prevStep()">
+        <i class="fa-solid fa-arrow-left"></i>
+        Atrás
+      </button>
+      <span class="step-count" id="stepCount">Paso 1 de 3</span>
+      <button class="btn btn-next" onclick="nextStep()" id="btnEnviar">
+        Siguiente
+        <i class="fa-solid fa-arrow-right"></i>
+      </button>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">© 2026 ANGELOW. Todos los derechos reservados.</footer>
+
+<!-- MODAL INICIAR SESIÓN -->
+<div class="login-modal-overlay" id="loginModalOverlay" onclick="closeLoginModal(event)">
+  <div class="login-modal" onclick="event.stopPropagation()">
+    <button class="login-modal-close" onclick="closeLoginModal()">&times;</button>
+    <div class="login-modal-icon">
+      <i class="fa-solid fa-right-to-bracket"></i>
+    </div>
+    <h3 class="login-modal-title">Iniciar Sesión</h3>
+    <p class="login-modal-subtitle">Accede a tu panel de repartidor</p>
+    <form class="login-modal-form" onsubmit="return false;">
+      <div class="login-modal-field" id="lm-f-email">
+        <label class="login-modal-label">Correo Electrónico</label>
+        <input id="lm-email" type="email" placeholder="correo@ejemplo.com" autocomplete="email">
+        <span class="login-modal-error">Ingresa un correo válido.</span>
+      </div>
+      <div class="login-modal-field" id="lm-f-password">
+        <label class="login-modal-label">Contraseña</label>
+        <input id="lm-password" type="password" placeholder="Tu contraseña" autocomplete="current-password">
+        <span class="login-modal-error">Ingresa tu contraseña.</span>
+      </div>
+      <div class="login-modal-alert" id="lm-alert"></div>
+      <button type="button" class="login-modal-btn" id="lm-btnLogin" onclick="doLoginFromModal()">
+        <i class="fa-solid fa-right-to-bracket"></i>
+        Iniciar Sesión
+      </button>
+    </form>
+    <p class="login-modal-register">¿No tienes cuenta? <a href="/">Regístrate aquí</a></p>
+  </div>
+</div>
+
+<script src="/static/js/script.js"></script>
+</body>
+</html>
