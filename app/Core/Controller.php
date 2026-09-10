@@ -1,6 +1,15 @@
 <?php
 namespace App\Core;
 
+/**
+ * ============================================================
+ * ARCHIVO: Controller.php — MÓDULO: Controlador base
+ * ============================================================
+ * QUÉ HACE: Clase padre de todos los controladores. Provee helpers
+ *           para renderizar vistas HTML, responder JSON (API REST)
+ *           y redirigir a rutas internas.
+ * QUIÉN LO USA: Todos los controladores del sistema (extienden Controller).
+ */
 class Controller {
 
     // --- RENDERIZAR UNA VISTA (HTML) ---

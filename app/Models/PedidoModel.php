@@ -4,6 +4,18 @@ namespace App\Models;
 use App\Core\Database;
 use PDO;
 
+/**
+ * ============================================================
+ * ARCHIVO: PedidoModel.php — MÓDULO: Modelo de pedidos
+ * ============================================================
+ * QUÉ HACE: CRUD completo de pedidos con transacción ACID en crearPedido.
+ *           Genera número de pedido secuencial (ORD-AAAA-NNNN), recalcula
+ *           precios y stock desde BD, valida disponibilidad. NO descuenta
+ *           stock directamente (solo valida).
+ * TABLA(S): pedidos, detalles_pedido, productos, usuarios (JOIN)
+ * QUIÉN LO USA: CompraController, Admin\PedidosController,
+ *               Cliente\PedidosController
+ */
 class PedidoModel {
     private $db;
 
@@ -12,6 +24,7 @@ class PedidoModel {
     }
 
     private function generarNumeroPedido() {
+        // Número secuencial: ORD-2026-0001 (máximo actual + 1 por año)
         $anio = date('Y');
         $stmt = $this->db->prepare("SELECT COALESCE(MAX(CAST(SUBSTRING(numero_pedido, 10) AS UNSIGNED)), 0) + 1 as next_num FROM pedidos WHERE numero_pedido LIKE :patron");
         $stmt->execute(['patron' => "ORD-{$anio}-%"]);
@@ -19,7 +32,16 @@ class PedidoModel {
         return "ORD-{$anio}-" . str_pad($next, 4, '0', STR_PAD_LEFT);
     }
 
+    /**
+     * Crea un pedido dentro de una transacción ACID: si algo falla (producto
+     * inválido, stock insuficiente, error de SQL) se hace rollBack y no queda
+     * información parcial. NO descuenta stock: solo valida que alcance.
+     * @param array<string, mixed> $data
+     * @return array{id: int, numero_pedido: string}
+     * @throws \Exception
+     */
     public function crearPedido($data) {
+        // Inicio de transacción: todo o nada entre pedido y sus detalles
         $this->db->beginTransaction();
 
         try {
@@ -156,11 +178,16 @@ class PedidoModel {
             return ['id' => $pedidoId, 'numero_pedido' => $numeroPedido];
 
         } catch (\Exception $e) {
+            // Deshacer todos los INSERT si algo falló a mitad de camino
             $this->db->rollBack();
             throw $e;
         }
     }
 
+    /**
+     * Todos los pedidos con nombre/email del usuario via LEFT JOIN y total de items.
+     * @return array<int, array<string, mixed>>
+     */
     public function getAll() {
         $sql = "SELECT p.*, u.nombre as nombre_usuario, u.email as email_usuario,
                 (SELECT COUNT(*) FROM detalles_pedido dp WHERE dp.pedido_id = p.id) as total_productos
@@ -171,6 +198,7 @@ class PedidoModel {
         return $stmt->fetchAll();
     }
 
+    /** Pedidos filtrados por usuario (para el panel del cliente). */
     public function getByUsuario($usuarioId) {
         $sql = "SELECT p.*,
                 (SELECT COUNT(*) FROM detalles_pedido dp WHERE dp.pedido_id = p.id) as total_productos
@@ -182,6 +210,7 @@ class PedidoModel {
         return $stmt->fetchAll();
     }
 
+    /** Líneas de un pedido (detalles) con datos del encabezado. */
     public function getDetalles($pedidoId) {
         $sql = "SELECT dp.*, p.numero_pedido, p.nombre_cliente, p.estado, p.fecha_pedido, p.total
                 FROM detalles_pedido dp
@@ -192,6 +221,7 @@ class PedidoModel {
         return $stmt->fetchAll();
     }
 
+    /** Pedido único con datos del usuario (nombre, email, teléfono). */
     public function getById($pedidoId) {
         $sql = "SELECT p.*, u.nombre as nombre_usuario, u.email as email_usuario, u.telefono as telefono_usuario
                 FROM pedidos p
@@ -202,8 +232,13 @@ class PedidoModel {
         return $stmt->fetch();
     }
 
+    // Whitelist de estados válidos del ciclo de vida de un pedido
     const ESTADOS_VALIDOS = ['pendiente', 'confirmado', 'procesando', 'listo', 'asignado', 'aceptado', 'recogido', 'en_camino', 'entregado', 'cancelado', 'reembolsado'];
 
+    /**
+     * Actualiza el estado de un pedido validando contra ESTADOS_VALIDOS.
+     * Lanza excepción si el estado no está en la whitelist.
+     */
     public function updateEstado($pedidoId, $estado) {
         $estado = strtolower(trim($estado));
         if (!in_array($estado, self::ESTADOS_VALIDOS)) {
@@ -214,6 +249,10 @@ class PedidoModel {
         return $stmt->execute(['estado' => $estado, 'id' => $pedidoId]);
     }
 
+    /**
+     * Pedido completo: encabezado + items (con precio actual y stock del producto).
+     * @return array<string, mixed>|null
+     */
     public function getDetallesCompletos($pedidoId) {
         $sql = "SELECT p.*, 
                 u.nombre as nombre_usuario, u.email as email_usuario, u.telefono as telefono_usuario,

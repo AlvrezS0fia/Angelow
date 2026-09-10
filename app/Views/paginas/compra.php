@@ -1,4 +1,18 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: paginas/compra.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Checkout de 3 pasos para finalizar la compra: identificación
+ | (datos del usuario), envío (dirección y método) y pago (PSE, Mercado
+ | Pago, etc.), más resumen del pedido y confirmación final.
+ |
+ | ARCHIVOS EXTERNOS: compra.css (estilos) y assets/js/compra.js (lógica).
+ |
+ | JS QUE LA CONTROLA: assets/js/compra.js, que navega entre pasos, aplica
+ | cupones, calcula totales y envía la compra. No hay JS inline aparte.
+ |========================================================================
+*/
 // Verificar si el usuario está logueado, si no, redirigir al login
 if (!isset($_SESSION['user'])) {
     header('Location: ' . APP_URL . '/auth/login');
@@ -25,6 +39,7 @@ $user = $_SESSION['user'];
   <div class="toast-container" id="toastContainer"></div>
 
   <header>
+  <!-- SECCIÓN: Encabezado con el logo y el botón para volver a la tienda -->
   <div class="logo">
     <div class="header-left">
       <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="logo-img">
@@ -42,6 +57,7 @@ $user = $_SESSION['user'];
   </div>
 </header>
 
+  <!-- SECCIÓN: Barra de progreso con los 3 pasos del checkout (identificación, envío, pago) -->
   <div class="progress-container">
     <div class="progress-steps">
       <div class="progress-line" id="progressLine"></div>
@@ -311,11 +327,12 @@ $user = $_SESSION['user'];
     </div>
 
     <!-- SUMMARY SIDEBAR -->
+    <!-- SECCIÓN: Barra lateral con el resumen de la compra, cupón de descuento y totales -->
     <aside class="summary-card">
       <h3>Resumen de la compra</h3>
       
       <div class="summary-items" id="summaryItems">
-        <!-- Se llenará con JavaScript -->
+        <!-- Se llenará con JavaScript (compra.js) -->
       </div>
 
       <div class="promo-code">
@@ -348,6 +365,7 @@ $user = $_SESSION['user'];
   </div>
 
   <footer>
+    <!-- SECCIÓN: Pie de página con contacto, ayuda, enlaces legales y redes sociales -->
     <div class="footer-content">
       <div class="footer-logo">
         <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" onerror="this.src='https://via.placeholder.com/100?text=ANGELOW'">

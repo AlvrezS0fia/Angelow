@@ -1,4 +1,20 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: documentos/Preguntas.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Preguntas frecuentes de ANGELOW organizadas por categorías
+ | (compras, envíos, tallas, cambios y devoluciones, pagos, productos y
+ | cuenta) con acordeones de pregunta-respuesta.
+ |
+ | ARCHIVOS EXTERNOS: preguntas.css (estilos), back-button.css y
+ | assets/js/preguntas.js (script externo de la vista).
+ |
+ | JS QUE LA CONTROLA: assets/js/preguntas.js, que abre y cierra los
+ | acordeones (.faq-item). Las categorías ya están marcadas con comentarios
+ | <!-- SECCIÓN ... --> en este archivo.
+ |========================================================================
+*/
 // La variable APP_URL está disponible globalmente
 ?>
 <!DOCTYPE html>
@@ -34,6 +50,7 @@
 
 <div class="terms-container">
 
+    <!-- SECCIÓN: Banner de bienvenida y encabezado del documento -->
     <div class="welcome-banner">
         <h2>PREGUNTAS FRECUENTES</h2>
         <p>Encuentra respuestas rápidas a las dudas más comunes sobre nuestros productos y servicios</p>
@@ -44,6 +61,7 @@
         <p>Hemos recopilado las preguntas más frecuentes de nuestros clientes para brindarte información clara y útil</p>
     </div>
 
+    <!-- SECCIÓN: Navegación interna con anclas a las categorías de preguntas -->
     <div class="terms-nav">
         <a href="#compras" class="nav-link active">Compras</a>
         <a href="#envios" class="nav-link">Envíos</a>
@@ -65,6 +83,7 @@
                     <span>¿Cómo puedo realizar una compra en ANGELOW?</span>
                     <span class="faq-icon">+</span>
                 </div>
+                <!-- (las demás preguntas .faq-item de esta sección siguen el mismo patrón pregunta/respuesta) -->
                 <div class="faq-answer">
                     <div class="faq-answer-content">
                         Comprar en ANGELOW es muy fácil y rápido:
@@ -805,6 +824,7 @@
 </div>
 
 <footer>
+    <!-- SECCIÓN: Pie de página con derechos de autor y enlaces a los demás documentos -->
     <p>&copy; <span id="currentYear"></span> ANGELOW - Tienda Online de Ropa Infantil</p>
     <p>Todos los derechos reservados</p>
     
@@ -817,5 +837,6 @@
 </footer>
 
 <script src="<?= APP_URL ?>/assets/js/preguntas.js"></script>
+<!-- La interacción de la vista (acordeones de preguntas) se controla desde el JS externo assets/js/preguntas.js -->
 </body>
 </html>

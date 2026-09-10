@@ -1,4 +1,20 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: home/bienvenida.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Página de inicio de la tienda ANGELOW: encabezado con
+ | buscador, carrusel de ofertas, categorías, grilla de productos, ofertas
+ | relámpago con widget "rasca y gana", carrito y favoritos.
+ |
+ | ARCHIVOS EXTERNOS: bienvenida.css, carrusel.css, botpress.js (chatbot),
+ | assets/js/bienvenida.js y assets/js/carrusel.js.
+ |
+ | JS QUE LA CONTROLA: assets/js/bienvenida.js y carrusel.js; además hay
+ | un bloque <script> inline al inicio que sincroniza los datos del usuario
+ | PHP con localStorage.
+ |========================================================================
+*/
 // La variable $user es inyectada por HomeController
 $user = $user ?? null;
 ?>
@@ -20,6 +36,7 @@ $user = $user ?? null;
 
 <script>
   (function() {
+    // Sincroniza el usuario de sesión (PHP) con localStorage y sus favoritos
     const phpUser = <?php echo json_encode($user, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     window.phpUser = phpUser || null;
     if (phpUser) {
@@ -43,6 +60,7 @@ $user = $user ?? null;
 <div class="toast-container" id="toastContainer"></div>
 
 <header>
+  <!-- SECCIÓN: Encabezado con logo, buscador, carrito, favoritos y perfil -->
   <div class="logo">
     <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="logo-img">
     <div class="logo-text">
@@ -64,14 +82,17 @@ $user = $user ?? null;
   </div>
 </header>
 
+<!-- SECCIÓN: Carrusel hero con las ofertas destacadas -->
 <!-- CARRUSEL HERO MEJORADO (CON MÁS OFERTAS) -->
 <section class="hero-carousel" id="heroCarouselSection">
   <div class="carousel-container" id="heroCarouselContainer"></div>
 </section>
 
+<!-- SECCIÓN: Categorías de productos y grilla principal de productos (rellenadas por JS) -->
 <div class="categories"><div class="categories-inner" id="categoriesList"></div></div>
 <section><div class="products-grid" id="productsGrid"></div></section>
 
+<!-- SECCIÓN: Ofertas relámpago con descuento interactivo (rasca y gana) -->
 <!--  NUEVA SECCIÓN: OFERTAS RELÁMPAGO INTERACTIVAS  -->
 <section class="flash-deals-section" id="flashDealsSection">
   <h2 class="section-title">OFERTAS RELÁMPAGO</h2>
@@ -93,6 +114,7 @@ $user = $user ?? null;
 <div id="favoritesOverlay" class="overlay"><div class="fav-sidebar"><div class="fav-header"><div><h2>Mis Favoritos (<span id="favTotal">0</span>)</h2><p>Envío gratis</p></div><button id="closeFavorites" style="background:none;border:none;font-size:28px;cursor:pointer;">✕</button></div><div class="fav-content" id="favoritesList"></div></div></div>
 
 <footer>
+  <!-- SECCIÓN: Pie de página con contacto, ayuda, enlaces legales y redes sociales -->
   <div class="footer-content">
     <div class="footer-logo"><img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW"><div class="footer-logo-text">ANGELOW</div><p>Ropa infantil de calidad</p></div>
     <div class="footer-section"><h3>Contacto</h3><p>+57 3135951664</p><p>info@angelow.com</p><p>Medellín, Colombia</p></div>
@@ -107,5 +129,6 @@ $user = $user ?? null;
 <script src="<?= APP_URL ?>/assets/chatbot/botpress.js"></script>
 <script src="<?= APP_URL ?>/assets/js/bienvenida.js"></script>
 <script src="<?= APP_URL ?>/assets/js/carrusel.js"></script>
+<!-- La lógica de la tienda se controla desde los JS externos bienvenida.js y carrusel.js; botpress.js es el chatbot -->
 </body>
 </html>

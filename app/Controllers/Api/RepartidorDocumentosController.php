@@ -1,11 +1,32 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: RepartidorDocumentosController.php — MÓDULO: API de documentos del repartidor
+ * ============================================================
+ * QUÉ HACE: Listar, subir y servir documentos (PDF, JPG, PNG) de
+ *   repartidores. Control de acceso: repartidor solo ve los suyos,
+ *   admin ve todos. Subida con validación MIME (finfo) y nombre aleatorio.
+ * MODELO(S) QUE USA: Ninguno — usa Database::query() directamente.
+ * ENDPOINTS/RUTAS: GET /api/repartidor/documentos,
+ *   POST /api/repartidor/documentos/subir,
+ *   GET /api/documentos/{id}/archivo
+ * QUIÉN LO CONSUME: app repartidor (sección de documentos), admin (revisión)
+ */
 namespace App\Controllers\Api;
 
 use App\Core\Database;
 use App\Core\JWTHelper;
 
+/**
+ * Controlador para la gestión de documentos de repartidores.
+ * Incluye subida segura (whitelist MIME, tamaño, nombre aleatorio)
+ * y servicio autenticado de archivos binarios (previene IDOR).
+ */
 class RepartidorDocumentosController
 {
+    /**
+     * Extrae el ID del repartidor desde JWT o sesión PHP.
+     */
     private function getRepartidorId()
     {
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
@@ -23,6 +44,9 @@ class RepartidorDocumentosController
         return null;
     }
 
+    /**
+     * Retorna JSON con cabeceras HTTP y sale del script.
+     */
     private function json($data, $code = 200)
     {
         if (ob_get_length()) ob_clean();
@@ -32,6 +56,10 @@ class RepartidorDocumentosController
         exit;
     }
 
+    /**
+     * GET /api/repartidor/documentos — Lista documentos del repartidor.
+     * El repartidor solo ve los suyos; el admin puede pasar otro ID.
+     */
     public function index($repartidorId = null)
     {
         $authRepartidorId = $this->getRepartidorId();
@@ -72,6 +100,11 @@ class RepartidorDocumentosController
         $this->json(['success' => true, 'documentos' => $result]);
     }
 
+    /**
+     * POST /api/repartidor/documentos/subir — Sube un documento (multipart/form-data).
+     * Valida: tipo whitelist, tamaño ≤ 10MB, MIME real (finfo), extensión segura.
+     * Guarda en uploads/documentos/ con nombre aleatorio (previene path traversal).
+     */
     public function subir()
     {
         $repartidorId = $this->getRepartidorId();
@@ -149,6 +182,9 @@ class RepartidorDocumentosController
         $this->json(['success' => true, 'message' => 'Documento subido correctamente']);
     }
 
+    /**
+     * Crea la tabla documentos si no existe (migración lazy).
+     */
     private function ensureDocumentosTable()
     {
         try {
@@ -169,7 +205,9 @@ class RepartidorDocumentosController
         }
     }
 
-    // --- ID RESUELTO (sesión o JWT), sin lanzar sesión si no hay token ---
+    /**
+     * Resuelve el ID del usuario actual desde JWT o sesión, sin iniciar sesión.
+     */
     /** @return int|null */
     private function id()
     {

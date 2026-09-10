@@ -1,5 +1,22 @@
 <?php
 
+/*
+ |========================================================================
+ | VISTA: paginas/perfil.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Perfil del cliente con secciones de datos personales,
+ | direcciones, facturas, seguimiento de pedidos (mapa Leaflet), tarjetas
+ | de crédito, favoritos y autenticación.
+ |
+ | ARCHIVOS EXTERNOS: tokens.css, perfil.css, seguimiento-perfil.css,
+ | layouts/leaflet-css.php, jsPDF, html2canvas, assets/js/perfil.js,
+ | layouts/leaflet-js.php y assets/js/seguimiento-perfil.js.
+ |
+ | JS QUE LA CONTROLA: assets/js/perfil.js (secciones, facturas, tarjetas,
+ | favoritos) y assets/js/seguimiento-perfil.js (mapa y rastreo). Leaflet
+ | se carga a través de los layouts compartidos.
+ |========================================================================
+*/
 if (!isset($_SESSION['user'])) {
     header('Location: ' . APP_URL . '/auth/login');
     exit();
@@ -25,6 +42,7 @@ $user = $_SESSION['user'];
 </head>
 <body>
 
+<!-- SECCIÓN: Alerta personalizada de confirmación (usada para eliminar datos) -->
 <!-- ALERTA PERSONALIZADA -->
 <div class="alert-overlay" id="alertOverlay">
     <div class="alert-modal">
@@ -44,6 +62,7 @@ $user = $_SESSION['user'];
     </div>
 </div>
 
+<!-- SECCIÓN: Modal de la factura del pedido con contenido dinámico -->
 <!-- MODAL DE FACTURA -->
 <div class="order-modal-overlay" id="orderModal" style="display: none;">
     <div class="order-modal-content" id="orderModalContent">
@@ -54,6 +73,7 @@ $user = $_SESSION['user'];
 <div class="toast-container" id="toastContainer"></div>
 
 <header>
+    <!-- SECCIÓN: Encabezado con el logo y el botón para volver a la tienda -->
     <div class="logo">
         <div class="header-left">
             <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="logo-img">
@@ -74,6 +94,7 @@ $user = $_SESSION['user'];
 </header>
 
 <div class="main-container">
+    <!-- SECCIÓN: Menú lateral con las secciones del perfil (Perfil, Direcciones, Facturas, Rastreo, etc.) -->
     <aside class="sidebar-menu">
         <div class="menu-item active" data-section="datosPersonales">
             <i class="fas fa-user"></i>
@@ -121,13 +142,20 @@ $user = $_SESSION['user'];
                 </button>
             </div>
             <div class="profile-card">
+                <!-- Formulario "Datos personales": los inputs empiezan disabled (solo
+                     lectura). Al pulsar EDITAR, perfil.js los habilita (toggleEdit) y al
+                     guardar valida campo por campo (saveProfile → validarNombre,
+                     validarCedula, validarTelefono, validarFechaNacimiento,
+                     validarCampoRequerido — definidos en perfil.js). -->
                 <form id="profileForm">
                     <div class="form-grid">
                         <div class="form-group">
+                            <!-- validado por validarNombre() en perfil.js -->
                             <label class="form-label">Nombre *</label>
                             <input type="text" class="form-input" id="nombre" value="<?= htmlspecialchars($user['nombre'] ?? '') ?>" disabled>
                         </div>
                         <div class="form-group">
+                            <!-- validado por validarNombre() en perfil.js -->
                             <label class="form-label">Apellido *</label>
                             <input type="text" class="form-input" id="apellido" value="<?= htmlspecialchars($user['apellido'] ?? '') ?>" disabled>
                         </div>
@@ -136,11 +164,13 @@ $user = $_SESSION['user'];
                             <input type="email" class="form-input readonly" id="email" value="<?= htmlspecialchars($user['email'] ?? '') ?>" disabled>
                         </div>
                         <div class="form-group">
+                            <!-- validado por validarCedula() en perfil.js -->
                             <label class="form-label">Cédula *</label>
                             <input type="text" class="form-input" id="cedula" value="<?= htmlspecialchars($user['cedula'] ?? '') ?>" disabled>
                             <small>Mínimo 6 dígitos, máximo 15</small>
                         </div>
                         <div class="form-group">
+                            <!-- validado por validarCampoRequerido() en perfil.js (no puede quedar vacío) -->
                             <label class="form-label">Género *</label>
                             <select class="form-input" id="genero" disabled>
                                 <option value="">Seleccionar</option>
@@ -151,10 +181,12 @@ $user = $_SESSION['user'];
                             </select>
                         </div>
                         <div class="form-group">
+                            <!-- validado por validarFechaNacimiento() en perfil.js (edad 1-120 años, no futura) -->
                             <label class="form-label">Fecha nacimiento *</label>
                             <input type="date" class="form-input" id="fechaNacimiento" value="<?= htmlspecialchars($user['fecha_nacimiento'] ?? '', ENT_QUOTES) ?>" disabled>
                         </div>
                         <div class="form-group">
+                            <!-- validado por validarTelefono() en perfil.js -->
                             <label class="form-label">Teléfono *</label>
                             <input type="tel" class="form-input" id="telefono" value="<?= htmlspecialchars($user['telefono'] ?? '') ?>" disabled>
                             <small>Mínimo 7 dígitos, máximo 15</small>
@@ -636,6 +668,7 @@ $user = $_SESSION['user'];
 </div>
 
 <footer>
+    <!-- SECCIÓN: Pie de página con contacto, ayuda, enlaces legales y redes sociales -->
     <div class="footer-content">
         <div class="footer-logo">
             <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW">
@@ -683,5 +716,6 @@ $user = $_SESSION['user'];
 <script src="<?= APP_URL ?>/assets/js/perfil.js?v=5"></script>
 <?php require __DIR__ . '/../layouts/leaflet-js.php'; ?>
 <script src="<?= APP_URL ?>/assets/js/seguimiento-perfil.js"></script>
+<!-- Controlado por perfil.js (facturas/tarjetas/favoritos) y seguimiento-perfil.js (mapa/rastreo); Leaflet viene del layout -->
 </body>
 </html>

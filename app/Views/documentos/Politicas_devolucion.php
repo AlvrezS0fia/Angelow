@@ -1,3 +1,16 @@
+<!--
+ |========================================================================
+ | VISTA: documentos/Politicas_devolucion.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Políticas de devoluciones y cambios de ANGELOW: plazos,
+ | condiciones, procedimiento, reembolsos, excepciones y garantía.
+ |
+ | ARCHIVOS EXTERNOS: politicas_devolucion.css (estilos) y back-button.css.
+ |
+ | JS QUE LA CONTROLA: un pequeño bloque <script> inline al final que solo
+ | actualiza el año del pie de página.
+ |========================================================================
+-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -13,6 +26,7 @@
 <body>
 
 <header>
+    <!-- SECCIÓN: Cabecera con el logo y el botón para volver al inicio -->
     <a href="<?= APP_URL ?>/" class="logo">
         <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="logo-img">
         <div class="logo-text">
@@ -30,6 +44,7 @@
 </header>
 
 <div class="container">
+    <!-- SECCIÓN: Banner de bienvenida y encabezado del documento -->
     <div class="banner">
         <h2>POLÍTICAS DE DEVOLUCIONES Y CAMBIOS</h2>
         <p>Lineamientos aplicables a todos los productos adquiridos a través de nuestros canales oficiales.</p>
@@ -40,6 +55,7 @@
         <p>Vigente para compras realizadas en nuestra tienda online.</p>
     </div>
 
+    <!-- SECCIÓN: Navegación interna con anclas a las secciones de la política -->
     <div class="nav">
         <a href="#plazo" class="active">Plazo</a>
         <a href="#condiciones">Condiciones</a>
@@ -49,6 +65,7 @@
         <a href="#garantia">Garantía</a>
     </div>
 
+    <!-- SECCIÓN: Contenido del documento con los apartados de la política -->
     <div class="content">
         <div class="section" id="plazo">
             <h2>1. PLAZO PARA SOLICITAR CAMBIO O DEVOLUCIÓN</h2>
@@ -56,6 +73,7 @@
             <p>Transcurrido este plazo, no se aceptarán solicitudes salvo en casos de garantía por defecto de fabricación.</p>
         </div>
 
+        <!-- (los siguientes apartados: condiciones, procedimiento, reembolsos, excepciones y garantía siguen el mismo patrón) -->
         <div class="section" id="condiciones">
             <h2>2. CONDICIONES GENERALES</h2>
             <ul>
@@ -101,6 +119,7 @@
 </div>
 
 <footer>
+    <!-- SECCIÓN: Pie de página con derechos de autor y enlaces a los demás documentos -->
     <p>&copy; <span id="currentYear"></span> ANGELOW. Todos los derechos reservados.</p>
     <div class="footer-links">
         <a href="<?= APP_URL ?>/documentos/Pedidos_envios">Pedidos y Envíos</a>
@@ -112,7 +131,9 @@
 </footer>
 
 <script>
+    // Actualiza el año actual en el pie de página
     document.getElementById('currentYear').textContent = new Date().getFullYear();
 </script>
+<!-- Fin del bloque <script>: única función es mostrar el año actual en el footer -->
 </body>
 </html>

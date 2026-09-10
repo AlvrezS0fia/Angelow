@@ -1,4 +1,14 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: ProcesarGoogleController.php — MÓDULO: Login con Google (legacy)
+ * ============================================================
+ * QUÉ HACE: Recibe el payload del botón "Iniciar con Google" (JSON en user_data),
+ *   busca o crea el usuario por email, registra actividad y guarda la sesión.
+ * MODELO(S) QUE USA: ninguno (usa conexión PDO de procesar/db.php)
+ * ENDPOINTS/RUTAS: POST procesar_google.php (formulario con campo user_data)
+ * QUIÉN LO CONSUME: El botón de Google en la vista legacy de login.
+ */
 // procesar_google.php (en la raíz)
 session_start();
 require_once 'procesar/db.php';
@@ -6,12 +16,15 @@ require_once 'procesar/db.php';
 // Verificar si recibimos datos
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_data'])) {
     
+    // Decodifica el JSON que envía Google desde el frontend.
     $userData = json_decode($_POST['user_data'], true);
     
     if ($userData && isset($userData['email'])) {
         
         $email = $userData['email'];
+        // Si no llega nombre, se deriva de la parte local del correo.
         $nombre = $userData['name'] ?? explode('@', $email)[0];
+        // Si no llega foto, se genera un avatar con los iniciales vía ui-avatars.
         $avatar_url = $userData['picture'] ?? "https://ui-avatars.com/api/?name=" . urlencode($nombre) . "&background=5E9DE6&color=fff";
         $google_id = $userData['sub'] ?? null;
         
@@ -59,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_data'])) {
             } else {
                 // Usuario existe, verificar estado
                 if ($usuario['estado'] !== 'activo') {
+                    // Control de flujo: cuenta inactiva → error específico.
                     header('Location: login.php?error=cuenta_inactiva');
                     exit();
                 }

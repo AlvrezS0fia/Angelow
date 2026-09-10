@@ -1,4 +1,21 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: admin/panel.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Panel de administración con secciones por pestañas:
+ | Dashboard (métricas y gráficas), Productos, Categorías, Facturas,
+ | Clientes, Repartidores, Analítica, Configuración y Seguimiento (mapa
+ | Leaflet). Incluye modales para agregar/editar productos y categorías.
+ |
+ | ARCHIVOS EXTERNOS: Chart.js, jsPDF, jsPDF-AutoTable, Font Awesome,
+ | layouts/leaflet-css.php, layouts/leaflet-js.php, tokens.css, panel.css,
+ | seguimiento-perfil.css, assets/js/panel.js y assets/js/seguimiento-perfil.js.
+ |
+ | JS QUE LA CONTROLA: assets/js/panel.js (navegación, datos y modales) y
+ | assets/js/seguimiento-perfil.js (mapa y rastreo) sobre Leaflet del layout.
+ |========================================================================
+*/
 // Verificar autenticación y rol de administrador
 if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
     header('Location: ' . APP_URL . '/auth/login');
@@ -33,9 +50,11 @@ $user = $_SESSION['user'];
 </head>
 <body>
 
+    <!-- SECCIÓN: Contenedor de notificaciones toast -->
     <!-- TOASTS -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- SECCIÓN: Encabezado con el logo, datos del administrador y acciones (Volver, Salir) -->
     <!-- Header del Admin -->
     <header class="admin-header">
         <div class="admin-logo">
@@ -65,9 +84,11 @@ $user = $_SESSION['user'];
     </header>
 
 
+    <!-- SECCIÓN: Layout principal con menú lateral y contenido dinámico según la sección -->
     <!-- Contenido Principal -->
     <div class="admin-container">
 
+        <!-- SECCIÓN: Menú lateral con los accesos a todas las secciones del panel -->
         <!-- Sidebar -->
         <nav class="admin-sidebar">
             <ul class="admin-menu">
@@ -83,6 +104,7 @@ $user = $_SESSION['user'];
             </ul>
         </nav>
 
+        <!-- SECCIÓN: Contenido dinámico (secciones dashboard, productos, categorías, facturas, clientes, repartidores, analítica, configuración y seguimiento) -->
         <!-- Contenido Dinámico -->
         <main class="admin-content">
 
@@ -640,6 +662,7 @@ $user = $_SESSION['user'];
         </main>
     </div>
 
+    <!-- SECCIÓN: Modal para agregar o editar un producto (imágenes, info básica, precio, tallas y descripción) -->
     <!-- MODAL PARA AGREGAR/EDITAR PRODUCTO -->
     <div class="product-modal-overlay" id="productModal">
         <div class="product-modal-container">
@@ -697,6 +720,7 @@ $user = $_SESSION['user'];
         </div>
     </div>
 
+    <!-- SECCIÓN: Modal para agregar o editar una categoría -->
     <!-- MODAL PARA CATEGORÍAS -->
     <div class="category-modal-overlay" id="categoryModal">
         <div class="category-modal-container">
@@ -721,5 +745,6 @@ $user = $_SESSION['user'];
 
     <script src="<?= APP_URL ?>/assets/js/panel.js?v=2"></script>
     <script src="<?= APP_URL ?>/assets/js/seguimiento-perfil.js"></script>
+    <!-- Controlado por panel.js (secciones, datos, gráficas y modales) y seguimiento-perfil.js (mapa/rastreo); Leaflet viene del layout -->
 </body>
 </html>

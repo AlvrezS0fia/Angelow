@@ -1,3 +1,19 @@
+<!--
+ |========================================================================
+ | VISTA: cargador/index.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Pantalla de carga animada (loader) que se muestra antes de
+ | entrar a la tienda; va descargando fuentes, estilos, scripts y recursos
+ | y muestra el progreso con una barra animada.
+ |
+ | ARCHIVOS EXTERNOS: Los estilos y la lógica de carga viven en este mismo
+ | archivo. En tiempo real carga bienvenida.css, carrusel.css, Chart.js,
+ | Leaflet, jsPDF y los assets de la tienda.
+ |
+ | JS QUE LA CONTROLA: el bloque <script> inline de este archivo (función
+ | iniciarCarga y las funciones auxiliares de precarga).
+ |========================================================================
+-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -227,6 +243,7 @@
 
 <div class="stage">
 
+  <!-- SECCIÓN: Estrellas decorativas animadas repartidas por el fondo -->
   <div class="star" style="top:12%; left:14%; animation-delay:.2s;"><svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg></div>
   <div class="star" style="top:20%; left:78%; animation-delay:1.1s;"><svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg></div>
   <div class="star" style="top:65%; left:8%; animation-delay:.6s;"><svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg></div>
@@ -235,6 +252,7 @@
   <div class="star" style="top:40%; left:5%; animation-delay:1.8s;"><svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg></div>
   <div class="star" style="top:45%; left:92%; animation-delay:.9s;"><svg viewBox="0 0 24 24"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10 Z"/></svg></div>
 
+  <!-- SECCIÓN: Capa trasera de nubes animadas -->
   <div class="cloud-layer layer-back">
     <span class="cloud"><svg width="160" height="70" viewBox="0 0 160 70"><path d="M20 60 Q0 60 0 42 Q0 26 18 26 Q20 8 42 8 Q62 8 66 24 Q80 16 96 24 Q116 20 122 38 Q142 36 142 54 Q142 60 132 60 Z" fill="#5e9de6"/></svg></span>
     <span class="cloud"><svg width="130" height="56" viewBox="0 0 130 56"><path d="M16 48 Q0 48 0 34 Q0 21 15 21 Q17 6 34 6 Q50 6 53 19 Q64 13 78 19 Q94 16 99 31 Q115 29 115 43 Q115 48 106 48 Z" fill="#5e9de6"/></svg></span>
@@ -246,6 +264,7 @@
     <span class="cloud"><svg width="150" height="64" viewBox="0 0 150 64"><path d="M20 55 Q0 55 0 39 Q0 24 17 24 Q19 8 39 8 Q59 8 62 22 Q75 15 90 22 Q109 19 114 36 Q133 34 133 49 Q133 55 122 55 Z" fill="#5e9de6"/></svg></span>
   </div>
 
+  <!-- SECCIÓN: Contenido central con el logo flotante, el texto de estado y la barra de progreso -->
   <div class="center">
     <div class="halo-wrap">
       <div class="breath-halo"></div>
@@ -272,6 +291,7 @@
     </div>
   </div>
 
+  <!-- SECCIÓN: Capa frontal de nubes animadas que cierra la escena -->
   <div class="cloud-layer layer-front">
     <span class="cloud"><svg width="260" height="110" viewBox="0 0 260 110"><path d="M34 96 Q0 96 0 68 Q0 42 30 42 Q34 12 70 12 Q104 12 112 40 Q134 26 160 40 Q194 32 206 62 Q238 58 238 86 Q238 96 220 96 Z" fill="#5e9de6"/></svg></span>
     <span class="cloud"><svg width="200" height="88" viewBox="0 0 200 88"><path d="M26 76 Q0 76 0 54 Q0 33 23 33 Q26 10 53 10 Q79 10 85 31 Q102 20 122 31 Q148 25 156 48 Q182 45 182 68 Q182 76 168 76 Z" fill="#5e9de6"/></svg></span>
@@ -284,6 +304,7 @@
 (function () {
   'use strict';
 
+  // Configuración del cargador: URL base, tiempo máximo por recurso y tiempos de espera
   var CONFIG = {
     baseUrl: '<?= APP_URL ?>',
     timeout: 8000,
@@ -297,6 +318,7 @@
   var resolvedCount = 0;
   var failedCount = 0;
 
+  // Estado del progreso: se cuentan las promesas resueltas y fallidas para mover la barra
   function updateProgress() {
     var done = resolvedCount + failedCount;
     var pct = Math.min(Math.round((done / totalPromises) * 100), 100);
@@ -509,6 +531,7 @@
     });
   }
 
+  // Lanza la descarga de todos los recursos y al terminar redirige a la tienda
   function iniciarCarga() {
     var promesas = [
       { id: 'fuentes',    fn: cargarFuentes,             critica: true,  label: 'Cargando fuentes...' },
@@ -593,5 +616,6 @@
 
 })();
 </script>
+<!-- Fin del bloque <script> del cargador: gestiona toda la precarga de recursos antes de abrir la tienda -->
 </body>
 </html>

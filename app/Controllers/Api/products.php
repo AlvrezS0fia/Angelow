@@ -1,4 +1,17 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: products.php — MÓDULO: API legacy de productos
+ * ============================================================
+ * QUÉ HACE: CRUD de productos vía script procedural (sin namespace,
+ *   sin clase). Incluye variantes de producto en GET individual.
+ *   Script legacy que probablemente coexiste con ProductsController.php.
+ * MODELO(S) QUE USA: Ninguno — usa $pdo/$conn de config.php (mysqli).
+ * ENDPOINTS/RUTAS: GET/POST/PUT/DELETE /api/products.php
+ * QUIÉN LO CONSUME: posiblemente panel admin antiguo o pruebas directas.
+ * NOTA: las variables del código se llaman $pdo pero config.php crea $conn
+ *   (mysqli). Script legacy sin namespace ni patrón MVC.
+ */
 require_once 'config.php';
 
 $method = $_SERVER['REQUEST_METHOD'];

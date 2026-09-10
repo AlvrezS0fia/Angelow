@@ -1,3 +1,21 @@
+/**
+ * ============================================================
+ * ARCHIVO: seguimiento.js
+ * QUÉ HACE: Página de seguimiento de pedido con mapa interactivo
+ *            (Leaflet). Simula el seguimiento de una entrega:
+ *            geocodifica el destino con Nominatim, traza la ruta,
+ *            mueve un marcador de repartidor a lo largo de ella y
+ *            actualiza el progreso en pasos y porcentaje.
+ * TIPO: DEMO (geocodificación real con Nominatim, resto simulado)
+ * ENDPOINTS QUE CONSUME: https://nominatim.openstreetmap.org/search
+ *            (servicio externo de geocodificación)
+ * CLÁVES localStorage QUE USA: angelow_cart, angelow_favorites,
+ *            angelow_user, destinoEntrega, angelow_ruta_guardada
+ * LIBRERÍAS EXTERNAS: Leaflet, Leaflet.Routing.Machine,
+ *            Leaflet.polylineDecorator, Font Awesome
+ * ============================================================
+ */
+
 //  VARIABLES GLOBALES DE LA TIENDA  
 const products = [
   { id: 1, name: "Conjunto Deportivo", category: "Niños", subcategory: "Edición Especial", price: 899900, imgs: ["/assets/imagenes/ninos/Frente Conjunto Deportivo.png"], stock: 15 },
@@ -12,6 +30,7 @@ const saveCart = () => localStorage.setItem("angelow_cart", JSON.stringify(cart)
 const saveFavorites = () => localStorage.setItem("angelow_favorites", JSON.stringify(favorites));
 
 //  FUNCIONES DE TOAST 
+// Muestra una notificación temporal animada en la esquina superior
 function showToast({title, message, type = "info", duration = 4000}) {
   let container = document.getElementById('toastContainer');
   if (!container) {
@@ -89,6 +108,7 @@ function showToast({title, message, type = "info", duration = 4000}) {
 }
 
 //  FUNCIONES DEL CARRITO 
+// Pinta los productos del carrito en la vista lateral con sus totales
 function renderCart() {
   const container = document.getElementById("cartItems");
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -121,6 +141,7 @@ function renderCart() {
   `).join("");
 }
 
+// Suma o resta cantidad a un producto del carrito (con límite de stock)
 function updateQty(cartId, delta) {
   let item = cart.find(i => i.cartId === cartId);
   if (!item) return;
@@ -144,6 +165,7 @@ function updateQty(cartId, delta) {
   renderCart();
 }
 
+// Elimina un producto del carrito y devuelve el stock
 function removeFromCart(cartId) {
   let item = cart.find(i => i.cartId === cartId);
   if (!item) return;
@@ -157,15 +179,18 @@ function removeFromCart(cartId) {
   showToast({ message: `${item.name} eliminado`, type: "info" });
 }
 
+// Abre el overlay del carrito lateral
 function openCart() {
   document.getElementById('cartOverlay').classList.add('active');
   renderCart();
 }
 
+// Cierra el overlay del carrito lateral
 function closeCart() {
   document.getElementById('cartOverlay').classList.remove('active');
 }
 
+// Redirige al checkout o pide iniciar sesión según el tipo de usuario
 function proceedToCheckout() {
   if (!currentUser) {
     showToast({ title: "Inicia sesión", message: "Debes iniciar sesión para finalizar tu compra", type: "warning" });
@@ -176,6 +201,7 @@ function proceedToCheckout() {
 }
 
 //(contador del corazón incluido) 
+// Actualiza los contadores de favoritos visibles en la interfaz
 function updateFavBadges() {
   let count = favorites.length;
   document.getElementById('favBadge').textContent = count;
@@ -186,6 +212,7 @@ function updateFavBadges() {
   document.getElementById('favHeaderBadge').style.display = count ? 'flex' : 'none';
 }
 
+// Pinta la lista de productos guardados en favoritos
 function renderFavorites() {
   let list = document.getElementById('favoritesList');
   let favProducts = products.filter(p => favorites.includes(p.id));
@@ -221,6 +248,7 @@ function renderFavorites() {
   `).join('');
 }
 
+// Agrega o quita un producto de favoritos y guarda el estado
 function toggleFavorite(id) {
   if (!currentUser) {
     showToast({ title: "Inicia sesión", message: "Debes iniciar sesión para agregar a favoritos", type: "warning" });
@@ -242,6 +270,7 @@ function toggleFavorite(id) {
   renderFavorites();
 }
 
+// Abre el overlay de favoritos (exige sesión iniciada)
 function openFavorites() {
   if (!currentUser) {
     showToast({ title: "Inicia sesión", message: "Debes iniciar sesión para ver favoritos", type: "warning" });
@@ -251,15 +280,19 @@ function openFavorites() {
   renderFavorites();
 }
 
+// Cierra el overlay de favoritos
 function closeFavorites() {
   document.getElementById('favoritesOverlay').classList.remove('active');
 }
 
 //  FUNCIONALIDAD AVANZADA DEL MAPA 
+// Estado global de la simulación (ruta, viaje y cálculo)
 let appState = { routeCalculated: false, journeyStarted: false, journeyCompleted: false, calculating: false };
 
+// Mapa Leaflet centrado en Medellín
 let map = L.map('map').setView([6.2442, -75.5812], 14);
 
+// Capas de mapas disponibles (calles, satélite y oscuro)
 const tileLayers = {
   street: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
@@ -315,16 +348,19 @@ let driverHeading = 0;
 
 const geocodeCache = new Map();
 
+// Devuelve la geocodificación en caché de una dirección si existe
 function getCachedGeocode(address) {
   const key = address.toLowerCase().trim();
   return geocodeCache.get(key);
 }
 
+// Guarda en caché el resultado de una geocodificación
 function setCachedGeocode(address, result) {
   const key = address.toLowerCase().trim();
   geocodeCache.set(key, result);
 }
 
+// Calcula el ángulo (rumbo) entre dos coordenadas geográficas
 function bearing(fromLat, fromLng, toLat, toLng) {
   const dLng = (toLng - fromLng) * Math.PI / 180;
   const y = Math.sin(dLng) * Math.cos(toLat * Math.PI / 180);
@@ -333,10 +369,12 @@ function bearing(fromLat, fromLng, toLat, toLng) {
   return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
 }
 
+// Curva de interpolación suave (ease-in-out)
 function easeInOut(t) {
   return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 }
 
+// Genera un marcador tipo "gota" (pin) en SVG con degradado y sombra
 function teardropSvg(color) {
   const id = color.replace('#', '');
   return `<svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
@@ -355,6 +393,7 @@ function teardropSvg(color) {
   </svg>`;
 }
 
+// Genera un marcador circular en SVG, opcionalmente con flecha de dirección
 function circleSvg(color, arrow = false, rotation = 0) {
   const id = color.replace('#', '');
   const arrowSvg = arrow
@@ -376,6 +415,7 @@ function circleSvg(color, arrow = false, rotation = 0) {
   </svg>`;
 }
 
+// Aclara u oscurece un color hexadecimal en una cantidad dada
 function adjustColor(hex, amount) {
   const num = parseInt(hex.replace('#', ''), 16);
   const r = Math.min(255, (num >> 16) + amount);
@@ -384,6 +424,7 @@ function adjustColor(hex, amount) {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
 
+// Convierte un SVG en un divIcon de Leaflet con su tamaño y anclajes
 function svgMarker(svg, size, anchor, popupAnchor) {
   return L.divIcon({
     className: 'custom-marker',
@@ -415,6 +456,7 @@ const estimatedDistance = document.getElementById('estimatedDistance');
 const clearRouteBtn = document.getElementById('clearRoute');
 const saveRouteBtn = document.getElementById('saveRoute');
 
+// Actualiza el indicador de estado de la entrega
 function updateStatus(type, title, message) {
   statusIndicator.className = 'status-indicator pulse';
   statusIndicator.classList.add(`status-${type}`);
@@ -424,6 +466,7 @@ function updateStatus(type, title, message) {
   statusTime.textContent = `Actualizado: ${now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
+// Muestra la distancia y el tiempo estimado de la ruta
 function updateRouteInfo(distance, time) {
   routeDistance.textContent = `${distance} km`;
   routeTime.textContent = `${time} min`;
@@ -431,6 +474,7 @@ function updateRouteInfo(distance, time) {
   estimatedDistance.textContent = `${distance} km`;
 }
 
+// Posiciona la barra de pasos en un paso específico del proceso
 function setStep(step) {
   currentStep = Math.min(Math.max(step, 0), totalSteps - 1);
   const steps = document.querySelectorAll('.step');
@@ -450,6 +494,7 @@ function setStep(step) {
   if (progressText) progressText.textContent = `${Math.round(progressPercentage)}%`;
 }
 
+// Actualiza la barra de progreso y marca los pasos completados
 function updateTrackingProgress(progress) {
   const progressFill = document.querySelector('.progress-fill');
   const progressText = document.querySelector('.progress-text');
@@ -468,12 +513,14 @@ function updateTrackingProgress(progress) {
   });
 }
 
+// Llena los datos (simulados) del repartidor en la interfaz
 function updateDriverInfo() {
   deliveryPerson.textContent = 'Carlos Rodríguez';
   deliveryContact.textContent = '+57 300 123 4567';
   driverName.textContent = 'Carlos Rodríguez';
 }
 
+// Anima un número en pantalla desde `start` hasta `end` con suavizado
 function animateValue(el, start, end, duration = 400) {
   const range = start - end;
   if (range === 0) return;
@@ -490,6 +537,7 @@ function animateValue(el, start, end, duration = 400) {
   requestAnimationFrame(step);
 }
 
+// Actualiza el tiempo restante estimado según el progreso del viaje
 function updateRemainingTime(progress, totalTimeMinutes) {
   const newValue = Math.round((totalTimeMinutes * (100 - progress)) / 100);
   const oldValue = parseInt(estimatedTime.textContent) || newValue;
@@ -498,6 +546,7 @@ function updateRemainingTime(progress, totalTimeMinutes) {
   }
 }
 
+// Reinicia el estado del mapa, elimina marcadores/rutas y restaura la UI
 function resetMapState() {
   appState = { routeCalculated: false, journeyStarted: false, journeyCompleted: false, calculating: false };
   if (routingControl) { map.removeControl(routingControl); routingControl = null; }
@@ -524,6 +573,8 @@ function resetMapState() {
   saveRouteBtn.disabled = true;
 }
 
+// Simula el avance del repartidor por la ruta, moviendo el marcador
+// en intervalos, dibujando la estela y actualizando el progreso
 function startTracking(totalTimeMinutes) {
   if (routeCoordinates.length === 0) return;
   const driverDivIcon = svgMarker(circleSvg('#3b82f6', true), [36, 36], [18, 18], [0, -20]);
@@ -610,6 +661,7 @@ function startTracking(totalTimeMinutes) {
   }, intervalMs);
 }
 
+// Estandariza abreviaturas comunes de direcciones colombianas (Cl, Cr, Av...)
 function normalizeAddress(address) {
   return address
     .replace(/cl(\.|e)?\s*/gi, 'Calle ')
@@ -620,6 +672,8 @@ function normalizeAddress(address) {
     .replace(/\s+/g, ' ').trim();
 }
 
+// Convierte una dirección en coordenadas (lat/lng) consultando
+// Nominatim con varias variantes y devolviendo el mejor resultado
 async function geocodeAddress(address) {
   const originalAddress = address.trim();
   if (!originalAddress) throw new Error('Dirección vacía.');
@@ -682,6 +736,7 @@ async function geocodeAddress(address) {
   return result;
 }
 
+// Dibuja la línea de ruta resaltada con flechas direccionales animadas
 function drawEnhancedRoute(coords) {
   if (routeGlowLine) map.removeLayer(routeGlowLine);
   if (routeDecorator) map.removeLayer(routeDecorator);
@@ -718,6 +773,8 @@ function drawEnhancedRoute(coords) {
   }
 }
 
+// Traza la ruta entre origen y destino usando el control de routing;
+// al encontrar la ruta, dibuja la línea y arranca la simulación
 function calculateRoute(start, end) {
   if (routingControl) map.removeControl(routingControl);
   const btn = document.getElementById('calculateRoute');

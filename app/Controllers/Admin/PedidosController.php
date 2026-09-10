@@ -1,9 +1,23 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: PedidosController.php — MÓDULO: Administración de pedidos
+ * ============================================================
+ * QUÉ HACE: Gestión admin de pedidos: listar todos, obtener detalles
+ *   completos de uno y actualizar su estado (pendiente → entregado, etc.).
+ * MODELO(S) QUE USA: PedidoModel
+ * ENDPOINTS/RUTAS: GET /admin/pedidos, GET /api/admin/pedidos,
+ *   GET /api/admin/pedidos/{id}, PUT /api/admin/pedidos/status
+ * QUIÉN LO CONSUME: panel.js (sección de pedidos del administrador)
+ */
 namespace App\Controllers\Admin;
 
 use App\Core\Controller;
 use App\Models\PedidoModel;
 
+/**
+ * Controlador admin para la gestión y seguimiento de pedidos.
+ */
 class PedidosController extends Controller
 {
     private $pedidoModel;
@@ -12,6 +26,9 @@ class PedidosController extends Controller
         $this->pedidoModel = new PedidoModel();
     }
 
+    /**
+     * Redirige al dashboard admin. Solo accesible para administradores.
+     */
     public function index()
     {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
@@ -21,6 +38,10 @@ class PedidosController extends Controller
         $this->redirect('/admin');
     }
 
+    /**
+     * Retorna todos los pedidos como JSON (solo admin).
+     * @return JSON array de pedidos
+     */
     public function obtenerPedidos()
     {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
@@ -37,6 +58,10 @@ class PedidosController extends Controller
         }
     }
 
+    /**
+     * Retorna los detalles completos de un pedido específico.
+     * @param int $pedidoId ID del pedido a consultar
+     */
     public function obtenerPedido($pedidoId)
     {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
@@ -57,6 +82,10 @@ class PedidosController extends Controller
         }
     }
 
+    /**
+     * Actualiza el estado de un pedido. Valida contra la whitelist
+     * PedidoModel::ESTADOS_VALIDOS antes de persistir.
+     */
     public function updateStatus()
     {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {

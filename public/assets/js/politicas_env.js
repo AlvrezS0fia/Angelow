@@ -1,3 +1,17 @@
+/**
+ * ============================================================
+ * ARCHIVO: politicas_env.js
+ * QUÉ HACE: Muestra el año actual en el footer, la fecha de
+ *            última actualización, permite scroll suave desde
+ *            la navegación y resalta el enlace activo según la
+ *            sección visible mientras el usuario hace scroll.
+ * TIPO: ESTÁTICO (no consume API)
+ * ENDPOINTS QUE CONSUME: Ninguno
+ * CLÁVES localStorage QUE USA: Ninguna
+ * LIBRERÍAS EXTERNAS: Ninguna
+ * ============================================================
+ */
+
 document.getElementById('currentYear').textContent = new Date().getFullYear();
     
     // Fecha de última actualización

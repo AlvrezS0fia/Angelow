@@ -1,3 +1,19 @@
+<!--
+  ==========================================================================
+  VISTA: paginas/repartidor.php
+  --------------------------------------------------------------------------
+  QUÉ MUESTRA: Panel simulado (demo) del repartidor: login con OTP, dash-
+  board con mapa (Leaflet), órdenes cercanas, orden activa con chat, y
+  navegación inferior. Las vistas (Inicio, Órdenes, Ganancias, Perfil) se
+  generan por JS y se pintan en #mainViewContainer.
+
+  ARCHIVOS EXTERNOS: Tailwind CSS, Leaflet y Lucide vía CDN; PHP session
+  del usuario repartidor si ya inició sesión en la tienda.
+
+  JS QUE LA CONTROLA: Lógica completa en un <script> inline al final del
+  cuerpo (estado global, mapas, chat y login por OTP).
+  ==========================================================================
+-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -86,6 +102,7 @@
 </head>
 <body class="bg-black text-gray-100 antialiased">
 
+  <!-- SECCIÓN: Pantalla de login simulada con OTP (demo) -->
   <!-- PANTALLA LOGIN (SIMULADA CON OTP) -->
   <div id="loginScreen" class="min-h-screen flex items-center justify-center px-5 bg-black">
     <div class="w-full max-w-md bg-[#0f0f0f] rounded-2xl p-6 shadow-xl border border-gray-800">
@@ -114,6 +131,7 @@
     </div>
   </div>
 
+  <!-- SECCIÓN: App principal (dashboard) con header, vistas dinámicas, bottom nav y orden activa -->
   <!-- APP PRINCIPAL (DASHBOARD) -->
   <div id="appContainer" class="hidden max-w-lg mx-auto bg-black min-h-screen shadow-2xl relative">
     <!-- Header superior (solo visible en vistas normales) -->
@@ -219,6 +237,7 @@
     const PHP_USER = null;
     <?php endif; ?>
     // -------------------- ESTADO GLOBAL --------------------
+    // Código del Repartidor: estado global, lógica de órdenes, mapas (Leaflet), chat y login OTP
     let isLoggedIn = <?php echo isset($_SESSION['user']) && ($_SESSION['user']['rol'] ?? '') === 'repartidor' ? 'true' : 'false'; ?>;
     let currentDriver = {
       name: "<?php echo isset($_SESSION['user']) ? htmlspecialchars(($_SESSION['user']['nombre'] ?? '') . ' ' . ($_SESSION['user']['apellido'] ?? '')) : 'Carlos Pérez'; ?>",
@@ -710,6 +729,7 @@
       refreshIcons();
     });
   </script>
+  <!-- SECCIÓN: Pie de página con créditos ANGELOW y enlaces a la tienda -->
   <footer style="background: #0a0a0a; border-top: 1px solid #1f1f1f; padding: 20px; text-align: center; margin-top: 40px;">
     <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
       <img src="https://angelow.com.co/assets/imagenes/general/logos.png" alt="ANGELOW" style="height: 24px; opacity: 0.8;" onerror="this.style.display='none'">
@@ -724,6 +744,7 @@
   </footer>
   <?php if (isset($_SESSION['user']) && ($_SESSION['user']['rol'] ?? '') === 'repartidor'): ?>
   <script>
+    // Si el repartidor ya tiene sesión en la tienda, se auto-loguea en el panel
     (function() {
       isLoggedIn = true;
       const user = PHP_USER || <?php echo json_encode($_SESSION['user']); ?>;

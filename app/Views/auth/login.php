@@ -1,4 +1,20 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: auth/login.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Página de autenticación para clientes, administradores y
+ | repartidores. Incluye inicio de sesión con Google, formulario de correo
+ | y contraseña, registro de cuenta nueva y recuperación de contraseña.
+ |
+ | ARCHIVOS EXTERNOS: login.css (estilos), back-button.css,
+ | assets/js/login.js (lógica del formulario) y el SDK de Google Identity.
+ |
+ | JS QUE LA CONTROLA: assets/js/login.js, que gestiona el login por
+ | correo, la autenticación con Google (handleCredentialResponse) y las
+ | pestañas de este formulario.
+ |========================================================================
+*/
 // Ya no se necesita session_start() porque lo hace el front controller
 // Si ya está logueado, redirigir según el rol
 if (isset($_SESSION['user'])) {
@@ -35,6 +51,7 @@ $client_id = $_ENV['GOOGLE_CLIENT_ID'] ?? '518631585090-vel52de86h7lk3uetco3dc3s
 </head>
 <body>
 
+<!-- SECCIÓN: Encabezado con el logo de ANGELOW y botón para volver al inicio -->
 <!-- HEADER (igual que original, con APP_URL) -->
 <header class="auth-header">
     <a href="<?= APP_URL ?>/" class="auth-logo">
@@ -53,6 +70,7 @@ $client_id = $_ENV['GOOGLE_CLIENT_ID'] ?? '518631585090-vel52de86h7lk3uetco3dc3s
 </header>
 
 <main class="auth-main">
+    <!-- SECCIÓN: Panel izquierdo con información promocional de la tienda -->
     <!-- LADO IZQUIERDO - INFORMACIÓN -->
     <div class="auth-left">
         <div class="auth-left-content">
@@ -75,6 +93,7 @@ $client_id = $_ENV['GOOGLE_CLIENT_ID'] ?? '518631585090-vel52de86h7lk3uetco3dc3s
         </div>
     </div>
     
+    <!-- SECCIÓN: Panel derecho con los formularios de inicio de sesión, registro y recuperación -->
     <!-- LADO DERECHO - FORMULARIO  -->
     <div class="auth-right">
         <div class="auth-container">
@@ -229,6 +248,7 @@ $client_id = $_ENV['GOOGLE_CLIENT_ID'] ?? '518631585090-vel52de86h7lk3uetco3dc3s
     </div>
 </main>
 
+<!-- SECCIÓN: Pie de página con información de contacto y redes sociales -->
 <!-- FOOTER -->
 <footer class="auth-footer">
     <div class="footer-content">
@@ -263,5 +283,6 @@ $client_id = $_ENV['GOOGLE_CLIENT_ID'] ?? '518631585090-vel52de86h7lk3uetco3dc3s
 </form>
 
 <script src="<?= APP_URL ?>/assets/js/login.js"></script>
+<!-- La lógica de login/registro/recovery está en el JS externo assets/js/login.js; este archivo solo envía el formulario oculto a /auth/google -->
 </body>
 </html>

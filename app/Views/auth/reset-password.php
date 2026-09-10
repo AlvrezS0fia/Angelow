@@ -1,4 +1,19 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: auth/reset-password.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Página para restablecer la contraseña usando el token que
+ | el usuario recibió por correo (valida el token, muestra el formulario
+ | y envía la nueva contraseña al backend).
+ |
+ | ARCHIVOS EXTERNOS: Ninguno; los estilos y la lógica JS están en este
+ | mismo archivo (bloques <style> y <script>).
+ |
+ | JS QUE LA CONTROLA: el bloque <script> inline de este archivo, que
+ | valida los requisitos de seguridad y envía el POST a /auth/reset-password.
+ |========================================================================
+*/
 // Verificar que el token existe
 $token = $_GET['token'] ?? '';
 if (empty($token)) {
@@ -282,6 +297,7 @@ $logo_url = APP_URL . '/img/logos.png';
 <body>
 
 <div class="container">
+    <!-- SECCIÓN: Cabecera con el logo y la insignia de seguridad -->
     <!-- HEADER CON LOGO -->
     <div class="header">
         <div class="logo-container">
@@ -293,6 +309,7 @@ $logo_url = APP_URL . '/img/logos.png';
         </div>
     </div>
 
+    <!-- SECCIÓN: Banner principal (hero) con el logo y el título de la vista -->
     <!-- HERO BANNER CON LOGO CENTRADO -->
     <div class="hero">
         <div class="hero-logo">
@@ -354,6 +371,7 @@ $logo_url = APP_URL . '/img/logos.png';
     const newPassword = document.getElementById('newPassword');
     const confirmPassword = document.getElementById('confirmPassword');
     
+    // Valida en tiempo real los requisitos de seguridad de la nueva contraseña
     function validatePassword() {
         const password = newPassword.value;
         const confirm = confirmPassword.value;
@@ -448,6 +466,7 @@ $logo_url = APP_URL . '/img/logos.png';
         }
     }
 </script>
+<!-- Fin del bloque <script> que valida y envía la nueva contraseña (lógica inline de este archivo) -->
 
 </body>
 </html>

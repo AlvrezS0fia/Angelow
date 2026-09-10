@@ -1,4 +1,19 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: documentos/Terminos.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Términos y condiciones de ANGELOW: información legal de la
+ | empresa, canales de atención, aceptación, servicios, requisitos,
+ | privacidad, proceso de compra, devoluciones y garantías.
+ |
+ | ARCHIVOS EXTERNOS: terminos.css (estilos), back-button.css y
+ | assets/js/terminos.js (script externo de la vista).
+ |
+ | JS QUE LA CONTROLA: assets/js/terminos.js; las secciones del documento
+ | ya están ordenadas con anclas (terms-nav) hacia cada apartado.
+ |========================================================================
+*/
 // La variable APP_URL está disponible globalmente
 ?>
 <!DOCTYPE html>
@@ -16,6 +31,7 @@
 <body>
 
 <header>
+    <!-- SECCIÓN: Cabecera con el logo y el botón para volver al inicio -->
     <a href="<?= APP_URL ?>/" class="logo"> 
         <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="logo-img">
         <div class="logo-text">
@@ -34,6 +50,7 @@
 
 <div class="terms-container">
 
+    <!-- SECCIÓN: Banner de bienvenida y encabezado del documento -->
     <div class="welcome-banner">
         <h2>TÉRMINOS Y CONDICIONES</h2>
         <p>Ropa infantil con amor, estilo y transparencia. Conoce nuestras políticas para una experiencia segura y confiable.</p>
@@ -44,6 +61,7 @@
         <p class="subtitle">Comercialización de artículos de ropa infantil</p>
     </div>
 
+    <!-- SECCIÓN: Información legal de la empresa y canales de atención al cliente -->
     <div class="company-info">
         <h2>INFORMACIÓN LEGAL DE ANGELOW</h2>
         <div class="info-grid">
@@ -98,6 +116,7 @@
         </div>
     </div>
 
+    <!-- SECCIÓN: Navegación interna con anclas a los apartados de los términos -->
     <div class="terms-nav" id="termsNav">
         <a href="#aceptacion" class="nav-link active">Aceptación</a>
         <a href="#servicios" class="nav-link">Servicios</a>
@@ -108,6 +127,7 @@
         <a href="#garantias" class="nav-link">Garantías</a>
     </div>
 
+    <!-- SECCIÓN: Contenido del documento con los apartados numerados de los términos -->
     <div class="terms-content">
         <div class="term-section" id="aceptacion">
             <h2>1. ACEPTACIÓN DE TÉRMINOS</h2>
@@ -121,6 +141,7 @@
             <p>Nos reservamos el derecho de modificar estos términos en cualquier momento. Las versiones actualizadas se publicarán en nuestro sitio web con fecha de última modificación. Te notificaremos sobre cambios importantes que puedan afectar tus derechos.</p>
         </div>
 
+        <!-- (los siguientes apartados: servicios, requisitos, privacidad, compras, devoluciones y garantías siguen el mismo patrón) -->
         <div class="term-section" id="servicios">
             <h2>2. NUESTROS SERVICIOS</h2>
             <p>ANGELOW es una plataforma especializada en <strong>moda infantil premium</strong> que ofrece:</p>
@@ -261,6 +282,7 @@
         </div>
     </div>
 
+    <!-- SECCIÓN: Llamado a la acción final con botones para volver o contactar soporte -->
     <div class="cta-section">
         <h2>¿TIENES DUDAS SOBRE NUESTROS TÉRMINOS?</h2>
         <p>Nuestro equipo está listo para ayudarte a entender nuestras políticas y resolver cualquier inquietud sobre compras, tallas o garantías.</p>
@@ -273,6 +295,7 @@
 </div>
 
 <footer>
+    <!-- SECCIÓN: Pie de página con derechos de autor y enlaces a los demás documentos -->
     <p>&copy; <span id="currentYear"></span> ANGELOW - Tienda Online de Ropa Infantil</p>
     <p>Todos los derechos reservados</p>
     
@@ -285,5 +308,6 @@
 </footer>
 
 <script src="<?= APP_URL ?>/assets/js/terminos.js"></script>
+<!-- La interacción de la vista (navegación por anclas, año actual) se controla desde el JS externo assets/js/terminos.js -->
 </body>
 </html>

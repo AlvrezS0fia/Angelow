@@ -1,3 +1,20 @@
+ /**
+ * ============================================================
+ * ARCHIVO: repartidor.js
+ * QUÉ HACE: Tablero del repartidor (demo): muestra conductor,
+ *            pedidos disponibles/activos, historial y notificaciones
+ *            con datos de prueba en memoria. Incluye un mapa Leaflet
+ *            que geocodifica destinos (Nominatim), traza la ruta con
+ *            routing y simula el desplazamiento del repartidor.
+ * TIPO: DEMO (datos de prueba; único fetch real = Nominatim)
+ * ENDPOINTS QUE CONSUME: https://nominatim.openstreetmap.org/search
+ *            (servicio externo de geocodificación)
+ * CLÁVES localStorage QUE USA: Ninguna
+ * LIBRERÍAS EXTERNAS: Leaflet, Leaflet.Routing.Machine,
+ *            Font Awesome (iconos)
+ * ============================================================
+ */
+
  // DATOS DE PRUEBA
     const datosApp = {
       conductor: {
@@ -105,16 +122,19 @@
     };
 
     // FUNCIONES ÚTILES
+    // Da formato de moneda colombiana usando puntos como separador
     function formatearDinero(monto) {
       return '$' + monto.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
 
+    // Calcula las iniciales del nombre para el avatar
     function obtenerIniciales(nombre) {
       if (!nombre) return '?';
       return nombre.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
     }
 
     // SISTEMA DE TOAST
+    // Muestra una notificación toast temporal en la esquina de la pantalla
     function mostrarToast(opciones) {
       const titulo = opciones.titulo || "";
       const mensaje = opciones.mensaje || "";
@@ -160,6 +180,8 @@
     }
 
     // FUNCIONES DEL MAPA
+    // Crea el mapa Leaflet centrado en Medellín e intenta obtener
+    // la ubicación GPS del repartidor para marcarla como punto de origen
     function iniciarMapa() {
       // Inicializar mapa centrado en Medellín
       map = L.map('map').setView([6.2442, -75.5812], 14);
@@ -205,7 +227,8 @@
       }
     }
 
-    // Función para geocodificar direcciones
+    // Convierte una dirección en coordenadas consultando el servicio
+    // externo Nominatim (limitado a Colombia / Medellín)
     async function geocodificarDireccion(direccion) {
       try {
         const response = await fetch(
@@ -231,7 +254,8 @@
       }
     }
 
-    // Función para calcular ruta
+    // Geocodifica el destino, coloca los marcadores, traza la ruta con
+    // Leaflet Routing y programa el inicio de la simulación del viaje
     function calcularRuta() {
       const endAddress = document.getElementById('endAddress').value.trim();
       
@@ -329,7 +353,8 @@
         });
     }
 
-    // Función para simular el viaje del repartidor
+    // Simula el avance del repartidor sobre la ruta moviendo el marcador
+    // en intervalos y actualizando el progreso y el estado
     function iniciarSimulacionViaje(coordenadas, tiempoTotal) {
       if (trackingInterval) clearInterval(trackingInterval);
       
@@ -386,7 +411,7 @@
       }, intervalTime);
     }
 
-    // Función para actualizar el estado del mapa
+    // Actualiza el indicador visual de estado del mapa (punto, título, mensaje)
     function actualizarEstadoMapa(tipo, titulo, mensaje) {
       const statusPoint = document.getElementById('statusPoint');
       const statusTitle = document.getElementById('statusTitle');
@@ -397,7 +422,7 @@
       statusMessage.textContent = mensaje;
     }
 
-    // Función para limpiar la ruta
+    // Detiene la simulación, elimina la ruta y los marcadores y restaura la UI
     function limpiarRuta() {
       if (trackingInterval) {
         clearInterval(trackingInterval);
@@ -435,6 +460,7 @@
     }
 
     // FUNCIONES DEL PANEL PRINCIPAL
+    // Carga los datos del conductor y pinta las secciones del tablero
     function iniciarPanel() {
       document.getElementById('driverName').textContent = datosApp.conductor.nombre;
       document.getElementById('driverAvatar').textContent = obtenerIniciales(datosApp.conductor.nombre);
@@ -459,6 +485,7 @@
       actualizarNotificaciones();
     }
 
+    // Construye las tarjetas de los pedidos disponibles
     function renderizarPedidosDisponibles() {
       const contenedor = document.getElementById('availableOrders');
       
@@ -528,6 +555,7 @@
       `}).join('');
     }
 
+    // Construye las tarjetas de los pedidos en curso
     function renderizarPedidosActivos() {
       const contenedor = document.getElementById('activeOrders');
       
@@ -585,6 +613,7 @@
       `).join('');
     }
 
+    // Construye la tabla del historial de entregas con puntuación
     function renderizarHistorial() {
       const contenedor = document.getElementById('deliveriesHistory');
       
@@ -606,12 +635,14 @@
       `}).join('');
     }
 
+    // Actualiza el contador de notificaciones no leídas
     function actualizarNotificaciones() {
       const noLeidas = datosApp.notificaciones.filter(n => !n.leida).length;
       document.getElementById('notificationCount').textContent = noLeidas;
     }
 
     // FUNCIONES DE ACCIÓN
+    // Cambia un pedido pendiente a "listo para recoger"
     function aceptarPedido(idPedido) {
       const indice = datosApp.pedidosDisponibles.findIndex(p => p.id === idPedido);
       if (indice !== -1) {
@@ -627,12 +658,14 @@
       }
     }
 
+    // Elimina un pedido de la lista de disponibles
     function rechazarPedido(idPedido) {
       datosApp.pedidosDisponibles = datosApp.pedidosDisponibles.filter(p => p.id !== idPedido);
       mostrarToast({ titulo: '❌ Pedido Rechazado', mensaje: `Has rechazado ${idPedido}`, tipo: 'info' });
       renderizarPedidosDisponibles();
     }
 
+    // Mueve un pedido a la lista de activos y registra la hora de recogida
     function recogerPedido(idPedido) {
       const indice = datosApp.pedidosDisponibles.findIndex(p => p.id === idPedido);
       if (indice !== -1) {
@@ -650,6 +683,7 @@
       }
     }
 
+    // Registra la entrega en el historial y suma ganancias al conductor
     function entregarPedido(idPedido) {
       const indice = datosApp.pedidosActivos.findIndex(p => p.id === idPedido);
       if (indice !== -1) {
@@ -672,6 +706,7 @@
       }
     }
 
+    // Muestra un aviso de llamada al cliente del pedido
     function contactarCliente(idPedido) {
       const pedido = [...datosApp.pedidosDisponibles, ...datosApp.pedidosActivos].find(p => p.id === idPedido);
       if (pedido) {
@@ -679,6 +714,7 @@
       }
     }
 
+    // Rellena el campo de destino y calcula la ruta hacia la dirección del cliente
     function usarDireccionEnMapa(direccion) {
       document.getElementById('endAddress').value = direccion;
       calcularRuta();

@@ -1,11 +1,32 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: RepartidorSeguimientoController.php — MÓDULO: API de seguimiento en tiempo real
+ * ============================================================
+ * QUÉ HACE: Recibe la ubicación GPS del repartidor (lat/lng, velocidad,
+ *   batería) y la almacena. También retorna la última ubicación conocida
+ *   de un pedido para que el cliente pueda rastrearlo en tiempo real.
+ * MODELO(S) QUE USA: Ninguno — usa Database::query() directamente.
+ * ENDPOINTS/RUTAS: POST /api/repartidor/seguimiento/ubicacion,
+ *   GET /api/repartidor/seguimiento/{pedidoId}
+ * QUIÉN LO CONSUME: app repartidor (geolocalización en segundo plano),
+ *   cliente (mapa de seguimiento de pedido)
+ */
 namespace App\Controllers\Api;
 
 use App\Core\Database;
 use App\Core\JWTHelper;
 
+/**
+ * Controlador de seguimiento en tiempo real.
+ * Almacena puntos GPS en seguimiento_tiempo_real y retorna
+ * la última posición conocida con datos del repartidor y destino.
+ */
 class RepartidorSeguimientoController
 {
+    /**
+     * Extrae el ID del repartidor desde JWT o sesión PHP.
+     */
     private function getRepartidorId()
     {
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
@@ -23,6 +44,9 @@ class RepartidorSeguimientoController
         return null;
     }
 
+    /**
+     * Retorna JSON con cabeceras HTTP y sale del script.
+     */
     private function json($data, $code = 200)
     {
         if (ob_get_length()) ob_clean();
@@ -32,6 +56,11 @@ class RepartidorSeguimientoController
         exit;
     }
 
+    /**
+     * POST /api/repartidor/seguimiento/ubicacion — Registra punto GPS.
+     * Espera JSON: { pedido_id, latitud, longitud, velocidad_kmh?, bateria_porcentaje? }.
+     * Inserta en seguimiento_tiempo_real (tabla dehistorial de ubicaciones).
+     */
     public function ubicacion()
     {
         $repartidorId = $this->getRepartidorId();
@@ -60,6 +89,11 @@ class RepartidorSeguimientoController
         $this->json(['success' => true, 'message' => 'Ubicación actualizada']);
     }
 
+    /**
+     * GET /api/repartidor/seguimiento/{pedidoId} — Última ubicación conocida.
+     * JOIN con pedidos para obtener estado, nombre del repartidor y destino.
+     * Retorna null si no hay registros de seguimiento aún.
+     */
     public function show($pedidoId)
     {
         $repartidorId = $this->getRepartidorId();

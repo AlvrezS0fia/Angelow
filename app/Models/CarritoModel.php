@@ -4,7 +4,18 @@ namespace App\Models;
 use App\Core\Database;
 use App\Core\Model;
 
-// HERENCIA: hereda el CRUD genérico y la conexión del padre Model.
+/**
+ * ============================================================
+ * ARCHIVO: CarritoModel.php — MÓDULO: Modelo de carrito de compras
+ * ============================================================
+ * QUÉ HACE: Gestiona items del carrito para usuarios logueados y
+ *           invitados (session_id), incluyendo migración al login.
+ * TABLA(S): carrito, productos (JOIN para precio/nombre)
+ * NOTA: Modelo NO utilizado en runtime — el carrito real está en
+ *       app/Controllers/Api/CarritoController.php con Database::query directo.
+ *       Este archivo queda documentado como referencia de diseño.
+ * HERENCIA: Hereda CRUD genérico de App\Core\Model ($table = 'carrito').
+ */
 class CarritoModel extends Model {
     // ENCAPSULAMIENTO: $table es protected: el padre la usa en su CRUD
     // y no se expone al exterior (solo la clase y sus hijas la ven).
@@ -14,6 +25,7 @@ class CarritoModel extends Model {
     /** @param int|string $usuario_id
      * @return array<int, array<string, mixed>> */
     public function getByUsuario($usuario_id) {
+        // JOIN con productos para traer nombre, precio vigente e imágenes
         $sql = "SELECT c.*, p.nombre, p.precio, p.imagenes 
                 FROM {$this->table} c
                 JOIN productos p ON c.producto_id = p.id
@@ -36,6 +48,8 @@ class CarritoModel extends Model {
     /** @param array<string, mixed> $data
      * @return \PDOStatement */
     public function addOrUpdate($data) {
+        // Upsert (INSERT o UPDATE según exista): busca el item equivalente
+        // combinando usuario/sesión, producto, variante y talla
         $exists = Database::query(
             "SELECT id FROM {$this->table} 
              WHERE (usuario_id = ? OR (session_id = ? AND usuario_id IS NULL))
@@ -81,6 +95,7 @@ class CarritoModel extends Model {
     }
 
     // Vaciar carrito
+    // Requiere usuario_id o session_id; si ninguno viene, no borra nada.
     /** @param int|string|null $usuario_id
      * @param string|null $session_id
      * @return \PDOStatement|false */

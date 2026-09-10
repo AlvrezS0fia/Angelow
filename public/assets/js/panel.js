@@ -1,4 +1,31 @@
+/**
+ * ============================================================
+ * ARCHIVO: panel.js
+ * QUÉ HACE: Panel de administración: CRUD de productos y categorías,
+ *            gestión de pedidos en tiempo real con mapa de entrega,
+ *            usuarios/clientes, repartidores y solicitudes, y
+ *            estadísticas del dashboard con gráficas.
+ * TIPO: HÍBRIDO (CRUD local en localStorage + APIs reales)
+ * ENDPOINTS QUE CONSUME: GET {APP_URL}/api/pedidos,
+ *            POST {APP_URL}/api/pedidos/estado,
+ *            GET {APP_URL}/api/usuarios,
+ *            POST {APP_URL}/api/usuarios/cambiar-rol,
+ *            GET {APP_URL}/api/solicitudes,
+ *            POST {APP_URL}/api/solicitudes/aprobar|rechazar,
+ *            GET {APP_URL}/api/repartidores,
+ *            POST {APP_URL}/api/repartidores/suspender|activar,
+ *            GET {APP_URL}/api/admin/metricas
+ * CLÁVES localStorage QUE USA: angelow_main_categories,
+ *            angelow_sub_categories, angelow_products,
+ *            angelow_orders, angelow_client_categories,
+ *            angelow_delivery_drivers, angelow_solicitudes
+ * LIBRERÍAS EXTERNAS: Leaflet, Chart.js, jsPDF
+ * ============================================================
+ */
+
 // ======================== DATOS GLOBALES ========================
+// Categorías principales del catálogo, cargadas desde localStorage
+// o con valores de ejemplo por defecto
 let mainCategories = JSON.parse(localStorage.getItem('angelow_main_categories')) || [
     { id: 1, nombre: "Bebés", enBarra: true, productos: 24 },
     { id: 2, nombre: "Niños", enBarra: true, productos: 32 },
@@ -9,6 +36,7 @@ let mainCategories = JSON.parse(localStorage.getItem('angelow_main_categories'))
     { id: 7, nombre: "Popular", enBarra: true, productos: 25 }
 ];
 
+// Subcategorías del catálogo, cargadas desde localStorage o con valores por defecto
 let subCategories = JSON.parse(localStorage.getItem('angelow_sub_categories')) || [
     { id: 101, nombre: "Body's", padre: "Bebés", enBarra: true, productos: 10 },
     { id: 102, nombre: "Pijamas", padre: "Bebés", enBarra: true, productos: 8 },
@@ -17,6 +45,7 @@ let subCategories = JSON.parse(localStorage.getItem('angelow_sub_categories')) |
     { id: 105, nombre: "Accesorios", padre: "Niñas", enBarra: false, productos: 7 }
 ];
 
+// Productos del catálogo, cargados desde localStorage o con valores de ejemplo
 let products = JSON.parse(localStorage.getItem('angelow_products')) || [
     { id: 1, name: "Conjunto Deportivo", category: "Niños", subcategory: "Edición Especial", price: 899900, description: "Elegancia casual en su máxima expresión.", sizes: ["2","4","6","8"], imgs: ["../assets/imagenes/ninos/Frente Conjunto Deportivo.png"], stock: 15, rating: 4.5, reviews: 28, features: ["Material: 100% Algodón","Lavable a máquina","Ideal para uso diario","Diseño unisex"] },
     { id: 2, name: "Conjunto Size", category: "Niños", subcategory: "Popular", price: 899900, description: "Conjunto moderno y cómodo para niños.", sizes: ["2","4","6","8"], imgs: ["../assets/imagenes/ninos/Frente Conjunto Size.png"], stock: 8, rating: 4.2, reviews: 15, features: ["Material: Poliéster y algodón","Lavable a máquina","Secado rápido"] },
@@ -29,8 +58,10 @@ let products = JSON.parse(localStorage.getItem('angelow_products')) || [
 ];
 
 // ======================== PEDIDOS EN TIEMPO REAL ========================
+// Lista global de pedidos cargados desde el servidor
 let orders = [];
 
+// Carga los pedidos desde la API y actualiza listas, tabla, mapa y métricas
 async function cargarPedidos() {
     try {
         const res = await fetch(`${APP_URL}/api/pedidos`, {
@@ -93,6 +124,7 @@ async function cargarPedidos() {
     }
 }
 
+// Cambia el estado de un pedido en el servidor y recarga los datos
 async function cambiarEstadoPedido(pedidoId, nuevoEstado) {
     try {
         const res = await fetch(`${APP_URL}/api/pedidos/estado`, {
@@ -121,6 +153,7 @@ let solicitudes = [];
 let dashboardStats = {};
 
 // ======================== VARIABLES GLOBALES ========================
+// Estados de las gráficas y del editor de productos
 let salesChart, productsChart, trafficChart, conversionChart;
 let editingProductId = null;
 let selectedImages = [];
@@ -138,6 +171,7 @@ let editingSubcategoryId = null;
 let currentModalType = 'categoria';
 
 // ======================== FUNCIONES DE ALMACENAMIENTO ========================
+// Guarda todas las estructuras del panel en localStorage
 function saveAllData() {
     localStorage.setItem('angelow_main_categories', JSON.stringify(mainCategories));
     localStorage.setItem('angelow_sub_categories', JSON.stringify(subCategories));
@@ -146,6 +180,7 @@ function saveAllData() {
     updateClientCategories();
 }
 
+// Sincroniza las categorías visibles con la portada del cliente
 function updateClientCategories() {
     const visibleMainCategories = mainCategories.filter(cat => cat.enBarra === true).map(cat => cat.nombre);
     const visibleSubCategories = subCategories.filter(sub => sub.enBarra === true).map(sub => sub.nombre);
@@ -153,6 +188,7 @@ function updateClientCategories() {
     localStorage.setItem('angelow_client_categories', JSON.stringify(clientCategories));
 }
 
+// Muestra una notificación tipo toast con icono según el tipo
 function showToast({ title, message, type = "success", duration = 4000 }) {
     const container = document.getElementById("toastContainer");
     const toast = document.createElement("div");
@@ -184,6 +220,7 @@ function showToast({ title, message, type = "success", duration = 4000 }) {
 }
 
 // ======================== SECCIÓN PRODUCTOS ========================
+// Registra la subida de imágenes del producto y actualiza la vista previa
 function setupImageUpload() {
     const imageInput = document.getElementById('productImages');
     if (!imageInput) return;
@@ -211,6 +248,7 @@ function setupImageUpload() {
     });
 }
 
+// Refresca la cuadrícula de vistas previas de imágenes seleccionadas
 function updateImagesPreview() {
     const container = document.getElementById('imagesPreviewGrid');
     if (!container) return;
@@ -229,15 +267,18 @@ function updateImagesPreview() {
     container.innerHTML = imagesHTML;
 }
 
+// Elimina una imagen de la lista de imágenes seleccionadas
 window.removeImage = function(index) {
     selectedImages.splice(index, 1);
     updateImagesPreview();
 };
 
+// Alterna el estado seleccionado de una talla del producto
 window.toggleSize = function(element, size) {
     element.classList.toggle('selected');
 }
 
+// Renderiza la grilla de productos del panel aplicando filtros activos
 function renderProducts() {
     const grid = document.getElementById("adminProductsGrid");
     if (!grid) return;
@@ -341,12 +382,14 @@ function renderProducts() {
     }).join("");
 }
 
+// Establece la talla seleccionada para un producto y repinta la grilla
 function selectSize(id, size) {
     event.stopPropagation();
     selectedSizes[id] = size;
     renderProducts();
 }
 
+// Abre el modal de edición de un producto existente
 window.editProduct = function(id) {
     const product = products.find(p => p.id === id);
     if (product) {
@@ -354,6 +397,7 @@ window.editProduct = function(id) {
     }
 };
 
+// Elimina un producto tras confirmación, actualizando favoritos y almacenamiento
 window.deleteProduct = function(id, productName) {
     if (event) {
         event.stopPropagation();
@@ -392,6 +436,7 @@ window.deleteProduct = function(id, productName) {
     }
 };
 
+// Abre el modal para crear (null) o editar (producto) en el formulario
 function openProductModal(product = null) {
     const modal = document.getElementById('productModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -450,6 +495,7 @@ function openProductModal(product = null) {
     document.body.style.overflow = 'hidden';
 }
 
+// Cierra el modal de producto y restaura el scroll de la página
 function closeProductModal() {
     const modal = document.getElementById('productModal');
     const saveBtn = document.getElementById('modalSaveBtn');
@@ -467,6 +513,7 @@ function closeProductModal() {
     }
 }
 
+// Valida el formulario, guarda (crea o edita) el producto y refresca la grilla
 function saveProduct() {
     const saveBtn = document.getElementById('modalSaveBtn');
     if (!saveBtn) return;
@@ -582,6 +629,7 @@ function saveProduct() {
 }
 
 // ======================== SECCIÓN CATEGORÍAS ========================
+// Renderiza la tabla de categorías principales del catálogo
 function renderMainCategories() {
     const tbody = document.getElementById('mainCategoriesTableBody');
     if (!tbody) return;
@@ -627,6 +675,7 @@ function renderMainCategories() {
     `).join('');
 }
 
+// Renderiza la tabla de subcategorías del catálogo
 function renderSubCategories() {
     const tbody = document.getElementById('subcategoriesTableBody');
     if (!tbody) return;
@@ -673,6 +722,7 @@ function renderSubCategories() {
     `).join('');
 }
 
+// Actualiza las opciones de categorías, subcategorías y filtros de productos
 function updateCategorySelects() {
     const categorySelect = document.getElementById('productCategory');
     const subcategorySelect = document.getElementById('productSubcategory');
@@ -709,6 +759,7 @@ function updateCategorySelects() {
     }
 }
 
+// Abre el modal para crear o editar una categoría/subcategoría
 function openCategoryModal(tipo, item = null) {
     const modal = document.getElementById('categoryModal');
     const modalTitle = document.getElementById('categoryModalTitle');
@@ -773,6 +824,7 @@ function openCategoryModal(tipo, item = null) {
     document.body.style.overflow = 'hidden';
 }
 
+// Cierra el modal de categoría y restaura el scroll
 function closeCategoryModal() {
     const modal = document.getElementById('categoryModal');
     if (modal) {
@@ -781,6 +833,7 @@ function closeCategoryModal() {
     }
 }
 
+// Valida y guarda (crea o edita) la categoría o subcategoría del modal
 function saveCategory() {
     const id = parseInt(document.getElementById('categoryId').value);
     const nombre = document.getElementById('categoryName').value.trim();
@@ -852,6 +905,7 @@ function saveCategory() {
     closeCategoryModal();
 }
 
+// Abre el modal de edición de una categoría principal
 window.editMainCategory = function(id) {
     const category = mainCategories.find(c => c.id === id);
     if (category) {
@@ -859,6 +913,7 @@ window.editMainCategory = function(id) {
     }
 };
 
+// Abre el modal de edición de una subcategoría
 window.editSubCategory = function(id) {
     const subcategory = subCategories.find(s => s.id === id);
     if (subcategory) {
@@ -866,6 +921,7 @@ window.editSubCategory = function(id) {
     }
 };
 
+// Elimina una categoría principal con confirmación y aviso de subcategorías
 window.deleteMainCategory = function(id) {
     const category = mainCategories.find(c => c.id === id);
     if (!category) return;
@@ -889,6 +945,7 @@ window.deleteMainCategory = function(id) {
     }
 };
 
+// Elimina una subcategoría tras confirmación
 window.deleteSubCategory = function(id) {
     const subcategory = subCategories.find(s => s.id === id);
     if (!subcategory) return;
@@ -907,6 +964,7 @@ window.closeCategoryModal = closeCategoryModal;
 window.saveCategory = saveCategory;
 
 // ======================== SECCIÓN PEDIDOS (TIEMPO REAL) ========================
+// Inicializa el mapa Leaflet centrado en Colombia
 function initMap() {
     const colombiaCenter = [4.5709, -74.2973];
 
@@ -919,6 +977,7 @@ function initMap() {
     updateMapMarkers();
 }
 
+// Pinta los pedidos filtrados como marcadores en el mapa y ajusta la vista
 function updateMapMarkers(filteredOrders = orders) {
     if (!map) return;
 
@@ -954,6 +1013,7 @@ function updateMapMarkers(filteredOrders = orders) {
     }
 }
 
+// Selecciona un pedido de la lista y lo resalta en el mapa con su popup
 window.selectOrder = function(orderId) {
     selectedOrderId = orderId;
 
@@ -975,6 +1035,7 @@ window.selectOrder = function(orderId) {
     });
 };
 
+// Traduce el estado del pedido a su etiqueta mostrada al usuario
 function getStatusText(status) {
     const statusMap = {
         'pendiente': 'Pendiente',
@@ -996,6 +1057,7 @@ function getStatusText(status) {
     return statusMap[status] || status || 'Pendiente';
 }
 
+// Devuelve la clase CSS correspondiente al estado del pedido
 function getStatusClass(status) {
     const classMap = {
         'pendiente': 'status-pending',
@@ -1017,6 +1079,7 @@ function getStatusClass(status) {
     return classMap[status] || 'status-pending';
 }
 
+// Renderiza la lista lateral de pedidos con su estado y datos principales
 function renderOrdersList(ordersToRender = orders) {
     const container = document.getElementById('ordersList');
     if (!container) return;
@@ -1086,6 +1149,7 @@ function renderOrdersList(ordersToRender = orders) {
     }).join('');
 }
 
+// Renderiza la tabla de pedidos con selector de estado por cada fila
 function renderOrdersTable(ordersToRender = orders) {
     const tbody = document.getElementById('ordersTable');
     if (!tbody) return;
@@ -1144,6 +1208,7 @@ function renderOrdersTable(ordersToRender = orders) {
     }).join('');
 }
 
+// Avanza el estado de un pedido al siguiente de la secuencia
 window.editOrder = function(id) {
     const order = orders.find(o => o.id == id);
     if (!order) return;
@@ -1155,6 +1220,8 @@ window.editOrder = function(id) {
     cambiarEstadoPedido(id, nextStatus);
 };
 
+// Muestra el detalle completo de un pedido en un modal envolvente,
+// consultando los items desde la API si es posible
 window.verDetallesPedido = async function(pedidoId) {
     const order = orders.find(o => o.id == pedidoId || o.numero_pedido == pedidoId);
     if (!order) {
@@ -1296,6 +1363,7 @@ window.verDetallesPedido = async function(pedidoId) {
     document.body.appendChild(overlay);
 };
 
+// Integra los filtros de estado, ciudad y búsqueda de la lista de pedidos
 function setupOrderFilters() {
     const statusFilter = document.getElementById('orderStatusFilter');
     const cityFilter = document.getElementById('orderCityFilter');
@@ -1333,13 +1401,16 @@ function setupOrderFilters() {
 }
 
 // ======================== REFRESCAR PEDIDOS EN TIEMPO REAL ========================
+// Recarga los pedidos desde el servidor
 async function refreshOrdersRealTime() {
     await cargarPedidos();
 }
 
 // ======================== SECCIÓN CLIENTES ========================
+// Lista global de usuarios clientes
 let usuarios = [];
 
+// Carga la lista de clientes desde la API y actualiza la tabla y métricas
 function cargarUsuarios() {
     fetch(`${APP_URL}/api/clientes`, {
         method: 'GET',
@@ -1363,6 +1434,7 @@ function cargarUsuarios() {
     .catch(err => console.error('Error al cargar usuarios:', err));
 }
 
+// Busca usuarios en el servidor por nombre y actualiza la tabla
 function buscarUsuarios(termino) {
     fetch(`${APP_URL}/api/clientes/buscar`, {
         method: 'POST',
@@ -1382,6 +1454,7 @@ function buscarUsuarios(termino) {
     .catch(err => console.error('Error al buscar usuarios:', err));
 }
 
+// Renderiza la tabla de clientes con avatar y selector de rol
 function renderCustomersTable() {
     const tbody = document.getElementById('customersTable');
     if (!tbody) return;
@@ -1436,6 +1509,7 @@ function renderCustomersTable() {
     }).join('');
 }
 
+// Cambia el rol de un usuario tras confirmación y notifica el resultado
 window.cambiarRol = function(id, nombre) {
     const select = document.querySelector(`.rol-select[data-user-id="${id}"]`);
     if (!select) return;
@@ -1475,6 +1549,7 @@ window.cambiarRol = function(id, nombre) {
     });
 };
 
+// Integra la búsqueda de clientes con debounce sobre la API
 function setupCustomerSearch() {
     const searchInput = document.getElementById('customerSearch');
     if (!searchInput) return;
@@ -1495,6 +1570,7 @@ function setupCustomerSearch() {
 }
 
 // ======================== SECCIÓN REPARTIDORES ========================
+// Carga las solicitudes de repartidor (cache local + API) y las renderiza
 async function cargarSolicitudes() {
     const cached = localStorage.getItem('angelow_solicitudes');
     if (cached) {
@@ -1516,6 +1592,7 @@ async function cargarSolicitudes() {
     }
 }
 
+// Carga la lista de repartidores activos (cache local + API)
 async function cargarRepartidoresActivos() {
     const cached = localStorage.getItem('angelow_delivery_drivers');
     if (cached) {
@@ -1536,6 +1613,7 @@ async function cargarRepartidoresActivos() {
     }
 }
 
+// Carga las estadísticas de solicitudes de repartidor desde la API
 async function cargarEstadisticasRepartidores() {
     try {
         const res = await fetch(`${APP_URL}/api/admin/repartidores/estadisticas`, {
@@ -1556,6 +1634,7 @@ async function cargarEstadisticasRepartidores() {
     }
 }
 
+// Actualiza el contador de solicitudes pendientes en el badge
 function updateDriverStats() {
     const pendientes = solicitudes.filter(s => s.estado === 'pendiente').length;
     const badge = document.getElementById('pendingBadge');
@@ -1563,6 +1642,7 @@ function updateDriverStats() {
     cargarEstadisticasRepartidores();
 }
 
+// Renderiza las solicitudes de repartidor pendientes con sus documentos
 function renderSolicitudes() {
     const container = document.getElementById('solicitudesContainer');
     if (!container) return;
@@ -1636,6 +1716,8 @@ function renderSolicitudes() {
 }
 
 // ======================== MODAL PERSONALIZADO ========================
+// Crea y muestra un modal de confirmación dinámico con botones de
+// cancelar/confirmar y campo de texto opcional
 function showPanelModal({ titulo, mensaje, icono, tipo, conTexto, placeholder, boton, onConfirm }) {
     tipo = tipo || 'success';
     var colores = { success:'var(--success)', danger:'var(--danger)', warning:'var(--warning)' };
@@ -1700,6 +1782,7 @@ function showPanelModal({ titulo, mensaje, icono, tipo, conTexto, placeholder, b
 
 // ======================== SOLICITUDES ========================
 
+// Aprueba la solicitud de un repartidor con confirmación del modal
 async function aprobarSolicitud(id) {
     showPanelModal({
         titulo: 'Aprobar solicitud',
@@ -1731,6 +1814,7 @@ async function aprobarSolicitud(id) {
     });
 }
 
+// Rechaza la solicitud de un repartidor pidiendo un motivo opcional
 async function rechazarSolicitud(id) {
     showPanelModal({
         titulo: 'Rechazar solicitud',
@@ -1764,6 +1848,7 @@ async function rechazarSolicitud(id) {
     });
 }
 
+// Suspende a un repartidor tras confirmación del modal
 async function suspenderRepartidor(id) {
     showPanelModal({
         titulo: 'Suspender repartidor',
@@ -1792,6 +1877,7 @@ async function suspenderRepartidor(id) {
     });
 }
 
+// Reactiva a un repartidor suspendido tras confirmación del modal
 async function activarRepartidor(id) {
     showPanelModal({
         titulo: 'Reactivar repartidor',
@@ -1820,6 +1906,7 @@ async function activarRepartidor(id) {
     });
 }
 
+// Renderiza la tabla de repartidores activos con estado y documentos
 function renderDeliveryTable() {
     const tbody = document.getElementById('deliveryTable');
     if (!tbody) return;
@@ -1874,6 +1961,7 @@ function renderDeliveryTable() {
 }
 
 // ======================== SECCIÓN CARRITO/FAVORITOS ========================
+// Agrega un producto al carrito local validando stock y talla
 function addToCart(pid) {
     event.stopPropagation();
     let p = products.find(p => p.id === pid);
@@ -1909,6 +1997,7 @@ function addToCart(pid) {
     showToast({ title: "¡Agregado!", message: `${p.name} (Talla ${size})`, type: "success" });
 }
 
+// Marca o desmarca un producto como favorito en el panel
 function toggleFavorite(id) {
     let p = products.find(p => p.id === id);
 
@@ -1925,6 +2014,7 @@ function toggleFavorite(id) {
 }
 
 // ======================== GRÁFICOS ========================
+// Inicializa las gráficas de ventas, productos y tráfico del dashboard
 function initCharts() {
     const salesCtx = document.getElementById('salesChart').getContext('2d');
     salesChart = new Chart(salesCtx, {
@@ -2096,6 +2186,8 @@ function initCharts() {
 }
 
 // ======================== NAVEGACIÓN ========================
+// Enlaza el menú lateral del panel con sus secciones y redimensiona
+// gráficas y mapa al cambiar de vista
 function initNavigation() {
     const menuLinks = document.querySelectorAll('.admin-menu a');
     const sections = document.querySelectorAll('.admin-section');
@@ -2149,6 +2241,7 @@ function initNavigation() {
 }
 
 // ======================== FILTROS ========================
+// Vincula las opciones de filtro (categoría, stock, orden) a la grilla
 function setupFilters() {
     const filterOptions = document.querySelectorAll('.filter-option');
     filterOptions.forEach(option => {
@@ -2175,6 +2268,7 @@ function setupFilters() {
 }
 
 // ======================== BOTONES ========================
+// Asocia las acciones de los botones principales del panel
 function setupButtons() {
     document.getElementById('addProductBtn')?.addEventListener('click', function() {
         openProductModal();
@@ -2194,6 +2288,7 @@ function setupButtons() {
 }
 
 // ======================== MODALES ========================
+// Configura los eventos de cierre y guardado del modal de producto
 function setupModal() {
     const modal = document.getElementById('productModal');
     const closeBtn = document.querySelector('.product-modal-close');
@@ -2225,6 +2320,7 @@ function setupModal() {
     }
 }
 
+// Configura los eventos de cierre y guardado del modal de categoría
 function setupCategoryModal() {
     const modal = document.getElementById('categoryModal');
     const closeBtn = document.querySelector('.category-modal-close');
@@ -2245,6 +2341,7 @@ function setupCategoryModal() {
 }
 
 // ======================== EXPORTAR A PDF ========================
+// Exporta la lista de pedidos a un archivo PDF con autoTable
 function exportOrdersToPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -2314,6 +2411,7 @@ function exportOrdersToPDF() {
     showToast({ title: "Éxito", message: "Pedidos exportados a PDF correctamente", type: "success" });
 }
 
+// Exporta la lista de clientes a un archivo PDF con autoTable
 function exportarClientesPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -2383,6 +2481,7 @@ function exportarClientesPDF() {
 }
 
 // ======================== MÉTRICAS ========================
+// Carga las estadísticas del dashboard desde la API y actualiza la vista
 async function cargarDashboardStats() {
     try {
         const res = await fetch(`${APP_URL}/api/admin/dashboard/stats`, {
@@ -2399,6 +2498,7 @@ async function cargarDashboardStats() {
     }
 }
 
+// Actualiza las tarjetas de métricas del dashboard con los datos cargados
 function updateMetrics() {
     const el = id => document.getElementById(id);
     const s = dashboardStats;
@@ -2437,6 +2537,7 @@ function updateMetrics() {
     }
 }
 
+// Actualiza las gráficas del dashboard con datos reales de la API
 function updateChartsWithRealData(data) {
     if (salesChart && data.ventasMensuales) {
         salesChart.data.datasets[0].data = data.ventasMensuales.map(v => v.total);
@@ -2462,6 +2563,8 @@ function updateChartsWithRealData(data) {
 }
 
 // ======================== ESCUCHAR CAMBIOS EN LOCALSTORAGE ========================
+// Escucha cambios de pedidos, productos, carrito y favoritos en
+// localStorage (de otras pestañas) y refresca el panel en consecuencia
 window.addEventListener('storage', function(e) {
     if (e.key === 'angelow_orders') {
         orders = JSON.parse(e.newValue) || [];
@@ -2489,6 +2592,8 @@ window.addEventListener('storage', function(e) {
 });
 
 // ======================== INICIALIZACIÓN ========================
+// Carga datos, inicializa gráficas, mapa, filtros y modales, y
+// programa los refrescos automáticos en tiempo real
 document.addEventListener('DOMContentLoaded', function() {
     mainCategories = JSON.parse(localStorage.getItem('angelow_main_categories')) || mainCategories;
     subCategories = JSON.parse(localStorage.getItem('angelow_sub_categories')) || subCategories;
@@ -2535,6 +2640,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ======================== EXPONER FUNCIONES GLOBALES ========================
+// Expone las funciones del panel para ser usadas desde el HTML
 window.selectSize = selectSize;
 window.addToCart = addToCart;
 window.toggleFavorite = toggleFavorite;

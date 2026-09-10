@@ -1,4 +1,5 @@
 <?php
+//ORGANIZA LAS CREDENCIALES DE LA BASE DE DATOS 
 define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
 define('DB_NAME', $_ENV['DB_NAME'] ?? 'angelow_db');
 define('DB_USER', $_ENV['DB_USER'] ?? 'root');

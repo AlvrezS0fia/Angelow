@@ -1,4 +1,19 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: paginas/contactenos.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Página de contacto de ANGELOW con formulario de mensaje,
+ | mapa de ubicación (OpenStreetMap), tarjetas de información (teléfono,
+ | correo, dirección, horario) y redes sociales.
+ |
+ | ARCHIVOS EXTERNOS: contactenos.css (estilos), back-button.css y
+ | assets/js/contactenos.js (valida y envía el formulario).
+ |
+ | JS QUE LA CONTROLA: assets/js/contactenos.js; en el <head> solo se
+ | define la constante APP_URL para usarla desde el JS.
+ |========================================================================
+*/
 $user = $user ?? null;
 ?>
 <!DOCTYPE html>
@@ -17,6 +32,7 @@ $user = $user ?? null;
 <body>
 
 <header>
+  <!-- SECCIÓN: Encabezado con logo (que vuelve al inicio) y botón para volver -->
   <div class="logo" onclick="window.location.href='<?= APP_URL ?>/'">
     <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="logo-img">
     <div class="logo-text">
@@ -33,12 +49,14 @@ $user = $user ?? null;
 </header>
 
 <main class="main-contact">
+  <!-- SECCIÓN: Encabezado de la página de contacto -->
   <div class="contact-header">
     <h1>Contáctenos</h1>
     <p>Estamos aquí para escucharte. Envíanos un mensaje o comunícate a través de nuestras redes sociales.</p>
   </div>
 
   <div class="contact-grid">
+    <!-- SECCIÓN: Formulario de contacto con validación por JS -->
     <!-- Formulario -->
     <div class="form-card">
       <h2><i class="fas fa-paper-plane"></i> Envíanos un mensaje</h2>
@@ -93,6 +111,7 @@ $user = $user ?? null;
       </form>
     </div>
 
+    <!-- SECCIÓN: Columna derecha con mapa de ubicación, información de contacto y redes sociales -->
     <!-- Columna derecha: mapa, info y redes -->
     <div class="info-col">
       <!-- Mapa circular -->
@@ -155,6 +174,7 @@ $user = $user ?? null;
 </main>
 
 <footer>
+  <!-- SECCIÓN: Pie de página con contacto, ayuda, enlaces legales y redes sociales -->
   <div class="footer-content">
     <div class="footer-logo">
       <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW">
@@ -201,5 +221,6 @@ $user = $user ?? null;
 </footer>
 
 <script src="<?= APP_URL ?>/assets/js/contactenos.js"></script>
+<!-- La validación y envío del formulario se controlan desde el JS externo assets/js/contactenos.js -->
 </body>
 </html>

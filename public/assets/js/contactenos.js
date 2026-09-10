@@ -1,3 +1,17 @@
+/**
+ * ============================================================
+ * ARCHIVO: contactenos.js
+ * QUÉ HACE: Valida el formulario de contacto en tiempo real y
+ *            envía los datos al backend mediante POST para
+ *            notificar los mensajes. Muestra el resultado del
+ *            envío en un mensaje temporal.
+ * TIPO: HÍBRIDO (APIs reales)
+ * ENDPOINTS QUE CONSUME: POST {APP_URL}/contacto/enviar
+ * CLÁVES localStorage QUE USA: Ninguna (usa APP_URL global)
+ * LIBRERÍAS EXTERNAS: Font Awesome (spinner)
+ * ============================================================
+ */
+
 document.addEventListener('DOMContentLoaded', function () {
   // Año en footer
   document.getElementById('currentYear').textContent = new Date().getFullYear();
@@ -14,11 +28,17 @@ document.addEventListener('DOMContentLoaded', function () {
     mensaje:  (v) => v.trim().length >= 10
   };
 
+  // Muestra u oculta el mensaje de error de un campo según la validación
+  // @param {string} id - Identificador del campo
+  // @param {boolean} isValid - True si el campo es válido
   function showFieldError(id, isValid) {
     const errDiv = document.getElementById('err-' + id);
     if (errDiv) errDiv.style.display = isValid ? 'none' : 'block';
   }
 
+  // Valida un campo concreto usando su regla de validación
+  // @param {string} id - Identificador del campo
+  // @returns {boolean} - True si el campo pasa la validación
   function validateField(id) {
     const input = document.getElementById(id);
     const isValid = rules[id](input.value);
@@ -87,6 +107,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  // Muestra un mensaje temporal de éxito o error bajo el formulario
+  // @param {string} msg - Texto a mostrar
+  // @param {boolean} isSuccess - True si es mensaje de éxito
   function showMessage(msg, isSuccess) {
     msgDiv.style.display = 'block';
     msgDiv.className = isSuccess ? 'form-message success' : 'form-message error';

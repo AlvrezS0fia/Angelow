@@ -4,14 +4,30 @@ namespace App\Models;
 use App\Core\Database;
 use PDO;
 
+/**
+ * ============================================================
+ * ARCHIVO: ProductoModel.php — MÓDULO: Modelo de productos
+ * ============================================================
+ * QUÉ HACE: CRUD de productos del catálogo. Serializa arrays a JSON
+ *           (tallas, colores, imágenes, características) al guardar.
+ *           Incluye generación de slug y actualización parcial de campos.
+ * TABLA(S): productos, categorias (JOIN para nombres de categoría/sub)
+ * QUIÉN LO USA: Api\ProductsController
+ */
 class ProductoModel {
+    /** @var \PDO Conexión PDO obtenida del Singleton Database */
     private $db;
 
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
     }
 
+    /**
+     * Lista todos los productos con nombre de categoría y subcategoría.
+     * @return array<int, array<string, mixed>>
+     */
     public function getAll() {
+        // JOIN doble con categorias para traer los nombres legibles
         $sql = "SELECT p.*, c.nombre as categoria_nombre, sc.nombre as subcategoria_nombre
                 FROM productos p
                 LEFT JOIN categorias c ON p.categoria_id = c.id
@@ -21,6 +37,7 @@ class ProductoModel {
         return $stmt->fetchAll();
     }
 
+    /** Obtiene un producto con nombres de categoría/subcategoría. */
     public function getById($id) {
         $sql = "SELECT p.*, c.nombre as categoria_nombre, sc.nombre as subcategoria_nombre
                 FROM productos p
@@ -32,6 +49,11 @@ class ProductoModel {
         return $stmt->fetch();
     }
 
+    /**
+     * Inserta un producto. Los arrays (tallas, colores, imágenes, características)
+     * se serializan a JSON para almacenarse en columnas tipo TEXT/JSON.
+     * @return array{id: int}|false ID insertado o false
+     */
     public function create($data) {
         $sql = "INSERT INTO productos (
             nombre, slug, descripcion, descripcion_corta,
@@ -84,6 +106,10 @@ class ProductoModel {
         return false;
     }
 
+    /**
+     * Actualización parcial dinámica: solo campos presentes en $data.
+     * Los campos JSON se codifican antes de guardar (whitelist $camposJson).
+     */
     public function update($id, $data) {
         $campos = [];
         $params = ['id' => $id];
@@ -123,11 +149,16 @@ class ProductoModel {
         return $stmt->execute($params);
     }
 
+    /** Elimina un producto por ID. */
     public function delete($id) {
         $stmt = $this->db->prepare("DELETE FROM productos WHERE id = :id");
         return $stmt->execute(['id' => $id]);
     }
 
+    /**
+     * Similar a CategoriaModel::generarSlug: genera un slug lower-case
+     * con guiones; fallback 'producto-' + timestamp si queda vacío.
+     */
     private function generarSlug($texto) {
         $slug = strtolower(trim($texto));
         $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);

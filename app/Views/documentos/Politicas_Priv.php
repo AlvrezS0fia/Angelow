@@ -1,4 +1,19 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: documentos/Politicas_Priv.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Política de privacidad y protección de datos de ANGELOW:
+ | responsable del tratamiento, datos recopilados, finalidad, protección
+ | de menores, derechos del titular, seguridad y marco legal.
+ |
+ | ARCHIVOS EXTERNOS: politicas_priv.css (estilos), back-button.css y
+ | assets/js/politicas_priv.js (script externo de la vista).
+ |
+ | JS QUE LA CONTROLA: assets/js/politicas_priv.js; las secciones del
+ | documento ya están marcadas con comentarios <!-- SECCIÓN N: ... -->.
+ |========================================================================
+*/
 // La variable APP_URL está disponible globalmente
 ?>
 <!DOCTYPE html>
@@ -34,6 +49,7 @@
 
 <div class="terms-container">
 
+    <!-- SECCIÓN: Banner de bienvenida y encabezado del documento -->
     <div class="welcome-banner">
         <h2>POLÍTICA DE PRIVACIDAD Y PROTECCIÓN DE DATOS</h2>
         <p>Protegemos la información de nuestros clientes y sus familias con los más altos estándares de seguridad</p>
@@ -44,6 +60,7 @@
         <p>En cumplimiento de la normativa colombiana vigente para la protección de datos personales</p>
     </div>
 
+    <!-- SECCIÓN: Navegación interna con anclas a los apartados de la política -->
     <div class="terms-nav">
         <a href="#responsable" class="nav-link active">Responsable</a>
         <a href="#datos" class="nav-link">Datos Recopilados</a>
@@ -184,6 +201,7 @@
 </div>
 
 <footer>
+    <!-- SECCIÓN: Pie de página con derechos de autor y enlaces a los demás documentos -->
     <p>&copy; <span id="currentYear"></span> ANGELOW - Tienda Online de Ropa Infantil</p>
     <p>Todos los derechos reservados</p>
     <div class="footer-links">
@@ -195,5 +213,6 @@
 </footer>
 
 <script src="<?= APP_URL ?>/assets/js/politicas_priv.js"></script>
+<!-- La interacción de la vista se controla desde el JS externo assets/js/politicas_priv.js -->
 </body>
 </html>

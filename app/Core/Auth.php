@@ -1,6 +1,16 @@
 <?php
 namespace App\Core;
 
+/**
+ * ============================================================
+ * ARCHIVO: Auth.php — MÓDULO: Autenticación por sesión PHP
+ * ============================================================
+ * QUÉ HACE: Gestiona el estado de autenticación del usuario actual
+ *           a través de $_SESSION. Ofrece verificadores de rol y estado,
+ *           y la ruta de inicio según el rol (homeForRole).
+ * SESIÓN: $_SESSION['user'] escrita por AuthController::login.
+ * QUIÉN LO USA: Todos los controladores para verificar permisos.
+ */
 class Auth
 {
     // --- OBTENER USUARIO ACTUAL ---
@@ -46,7 +56,6 @@ class Auth
     }
 
     // --- VERIFICADORES POR ROL ---
-    // Cada controlador usa estos helpers como "gate" de entrada:
     //   if (!Auth::isAdmin()) → devolver 403 o redirigir.
     public static function isCliente()
     {

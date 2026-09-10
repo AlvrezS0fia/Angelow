@@ -1,3 +1,21 @@
+/**
+ * ============================================================
+ * ARCHIVO: login.js
+ * QUÉ HACE: Controla toda la autenticación de la tienda: login
+ *            con email, registro, recuperación de contraseña,
+ *            login con Google, validación de contraseña en
+ *            tiempo real y la alerta de bienvenida según el rol.
+ * TIPO: HÍBRIDO (autenticación real con fetch)
+ * ENDPOINTS QUE CONSUME: POST {APP_URL}/auth/login,
+ *            POST {APP_URL}/auth/register,
+ *            POST {APP_URL}/auth/forgot-password,
+ *            POST {APP_URL}/auth/google
+ * CLÁVES localStorage QUE USA: Ninguna (solo APP_URL global)
+ * LIBRERÍAS EXTERNAS: Font Awesome (iconos), Google Identity
+ *            Services (login con Google)
+ * ============================================================
+ */
+
 // ELEMENTOS DEL DOM
 const messageBox = document.getElementById('messageBox');
 const loginForm = document.getElementById('loginForm');
@@ -30,7 +48,7 @@ tabs.forEach(tab => {
     });
 });
 
-// MOSTRAR/OCULTAR CONTRASEÑA 
+// INTERRUPTOR PARA MOSTRAR/OCULTAR LA CONTRASEÑA DE UN CAMPO
 window.togglePassword = function(inputId, button) {
     const input = document.getElementById(inputId);
     const icon = button.querySelector('i');
@@ -52,6 +70,8 @@ if (registerPassword) {
     registerPassword.addEventListener('input', validatePasswordStrength);
 }
 
+// Evalúa la fortaleza de la contraseña (longitud, mayúscula, número,
+// carácter especial) y actualiza las reglas y la barra de fuerza
 function validatePasswordStrength() {
     const password = registerPassword.value;
     const rules = {
@@ -92,6 +112,7 @@ if (confirmPassword) {
     confirmPassword.addEventListener('input', validatePasswordMatch);
 }
 
+// Comprueba en tiempo real que las contraseñas de registro coincidan
 function validatePasswordMatch() {
     const password = document.getElementById('registerPassword');
     const confirm = document.getElementById('confirmPassword');
@@ -115,6 +136,7 @@ function validatePasswordMatch() {
 }
 
 // MOSTRAR MENSAJES 
+// Coloca un mensaje de error/info/éxito en la caja de mensajes
 function showMessage(message, type = 'error') {
     if (!messageBox) return;
     messageBox.style.display = 'flex';
@@ -127,6 +149,7 @@ function showMessage(message, type = 'error') {
     setTimeout(hideMessage, 5000);
 }
 
+// Oculta la caja de mensajes
 function hideMessage() {
     if (messageBox) messageBox.style.display = 'none';
 }
@@ -134,6 +157,8 @@ function hideMessage() {
 // =============================================
 // ALERTA DE BIENVENIDA PROFESIONAL
 // =============================================
+// Construye y muestra una alerta de bienvenida ajustada al rol del
+// usuario (cliente, repartidor, administrador o solicitud pendiente)
 function mostrarAlertaBienvenida(opts) {
     const { nombre, esRepartidor, pending, rol, redirectUrl } = opts;
     const primerNombre = (nombre || '').split(' ')[0];
@@ -246,6 +271,7 @@ function mostrarAlertaBienvenida(opts) {
     document.head.appendChild(styleTag);
 }
 
+// Convierte una ruta relativa en una URL absoluta base APP_URL
 function buildRedirectUrl(raw) {
     if (!raw) return APP_URL + '/';
     if (raw.startsWith('http')) return raw;
@@ -428,6 +454,7 @@ window.handleForgotPassword = async function() {
 };
 
 // CONTROL DE LOADING 
+// Muestra/oculta el estado de carga en un botón durante las peticiones
 function showLoading(buttonId, show) {
     const button = document.getElementById(buttonId);
     if (!button) return;
@@ -528,6 +555,7 @@ if (window.location.protocol === 'file:') {
 }
 
 // SOPORTE PARA ENTER KEY 
+// Permite enviar el formulario presionando Enter en los campos indicados
 function setupEnterKey(inputId, buttonId) {
     const input = document.getElementById(inputId);
     const button = document.getElementById(buttonId);

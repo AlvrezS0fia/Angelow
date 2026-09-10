@@ -1,11 +1,33 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: RepartidorRastreoController.php — MÓDULO: API de rastreo de pedidos
+ * ============================================================
+ * QUÉ HACE: Lista pedidos en curso del repartidor con información de
+ *   rastreo, búsqueda por número, historial (timeline) y actualización
+ *   de estado con máquina de estados validada (asignado → entregado).
+ *   Registra historial y ganancias al entregar.
+ * MODELO(S) QUE USA: Ninguno — usa Database::query() directamente.
+ * ENDPOINTS/RUTAS: GET /api/repartidor/rastreo, GET /api/repartidor/rastreo/buscar,
+ *   GET /api/repartidor/rastreo/{id}/historial,
+ *   PUT /api/repartidor/rastreo/{id}/actualizar
+ * QUIÉN LO CONSUME: app repartidor (sección de rastreo y seguimiento de envíos)
+ */
 namespace App\Controllers\Api;
 
 use App\Core\Database;
 use App\Core\JWTHelper;
 
+/**
+ * Controlador de rastreo de pedidos para repartidores.
+ * Incluye máquina de estados estricta, timeline de historial
+ * y serialización enriquecida con ubicación del repartidor.
+ */
 class RepartidorRastreoController
 {
+    /**
+     * Extrae el ID del repartidor desde JWT o sesión PHP.
+     */
     private function getRepartidorId()
     {
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
@@ -23,6 +45,9 @@ class RepartidorRastreoController
         return null;
     }
 
+    /**
+     * Retorna JSON con cabeceras HTTP y sale del script.
+     */
     private function json($data, $code = 200)
     {
         if (ob_get_length()) ob_clean();
@@ -32,6 +57,10 @@ class RepartidorRastreoController
         exit;
     }
 
+    /**
+     * GET /api/repartidor/rastreo — Lista pedidos en curso (asignado/aceptado/recogido/en_camino).
+     * Serializa cada pedido con ubicación actual del repartidor y destino.
+     */
     public function listar()
     {
         $repartidorId = $this->getRepartidorId();
@@ -54,6 +83,10 @@ class RepartidorRastreoController
         $this->json(['success' => true, 'pedidos' => $resultado]);
     }
 
+    /**
+     * GET /api/repartidor/rastreo/buscar?numero=... — Busca un pedido por número.
+     * Verifica que pertenezca al repartidor autenticado (anti-IDOR).
+     */
     public function buscar()
     {
         $repartidorId = $this->getRepartidorId();
@@ -86,6 +119,10 @@ class RepartidorRastreoController
         $this->json(['success' => true, 'pedido' => $this->serializar($pedido, $repartidorId)]);
     }
 
+    /**
+     * Serializa un pedido con sus ítems, destino geográfico y
+     * última ubicación conocida del repartidor.
+     */
     private function serializar($p, $repartidorId)
     {
         $items = Database::query(
@@ -134,6 +171,10 @@ class RepartidorRastreoController
         ];
     }
 
+    /**
+     * GET /api/repartidor/rastreo/{id}/historial — Timeline de estados del pedido.
+     * Construye la línea de tiempo comparando el estado actual con cada transición.
+     */
     public function historial($id)
     {
         $repartidorId = $this->getRepartidorId();
@@ -169,6 +210,10 @@ class RepartidorRastreoController
         $this->json(['success' => true, 'estado' => $pedido['estado'], 'timeline' => $timeline]);
     }
 
+    /**
+     * Construye el timeline de estados del pedido: marca cada paso
+     * como completado o pendiente según el estado actual.
+     */
     private function construirTimeline($pedido, $registros)
     {
         $tl = [];
@@ -197,6 +242,12 @@ class RepartidorRastreoController
         return $tl;
     }
 
+    /**
+     * PUT /api/repartidor/rastreo/{id}/actualizar — Cambia estado del pedido.
+     * Máquina de estados validada: solo permite transiciones ascendentes
+     * (asignado → aceptado → recogido → en_camino → entregado).
+     * Al entregar, registra ganancia y tiempo en historial_entregas.
+     */
     public function actualizar($id)
     {
         $repartidorId = $this->getRepartidorId();

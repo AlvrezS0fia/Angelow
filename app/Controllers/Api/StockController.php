@@ -1,10 +1,30 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: StockController.php — MÓDULO: API de gestión de stock (admin)
+ * ============================================================
+ * QUÉ HACE: CRUD de inventario: listar stock de todos los productos,
+ *   actualizar stock directamente, ajustar (add/subtract/set) y eliminar
+ *   producto. Solo accesible para administradores.
+ * MODELO(S) QUE USA: Ninguno — usa Database::getInstance() directamente.
+ * ENDPOINTS/RUTAS: GET /api/stock, PUT /api/stock/{id},
+ *   POST /api/stock/{id}/ajustar, DELETE /api/stock
+ * QUIÉN LO CONSUME: panel.js (sección de inventario del administrador)
+ */
 namespace App\Controllers\Api;
 
 use App\Core\Controller;
 
+/**
+ * Controlador de gestión de stock para el panel administrativo.
+ * Valida que cada acción requiera sesión de administrador.
+ */
 class StockController extends Controller
 {
+    /**
+     * GET /api/stock — Lista todos los productos con su stock actual,
+     *   stock mínimo, categoría, imagen y total vendidos.
+     */
     public function index()
     {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
@@ -45,6 +65,10 @@ class StockController extends Controller
         echo json_encode($resultado);
     }
 
+    /**
+     * PUT /api/stock/{id} — Actualiza el stock_total de un producto.
+     * No permite stock negativo.
+     */
     public function update($id)
     {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
@@ -81,6 +105,10 @@ class StockController extends Controller
         }
     }
 
+    /**
+     * POST /api/stock/{id}/ajustar — Ajusta stock con operación aritmética.
+     * Tipos: 'add' (sumar), 'subtract' (restar, mínimo 0), 'set' (establecer).
+     */
     public function ajustar($id)
     {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
@@ -134,6 +162,10 @@ class StockController extends Controller
         }
     }
 
+    /**
+     * DELETE /api/stock — Elimina un producto por ID (recibido en body JSON).
+     * No elimina variantes ni imágenes (a diferencia de products.php legacy).
+     */
     public function destroy()
     {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {

@@ -1,19 +1,39 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: CompraController.php — MÓDULO: Controlador de compra/checkout
+ * ============================================================
+ * QUÉ HACE: Muestra la página de compra (solo para clientes logueados) y
+ *   procesa la creación del pedido cuando el checkout envía la compra.
+ * MODELO(S) QUE USA: PedidoModel
+ * ENDPOINTS/RUTAS: GET /compra, POST /procesar-compra
+ * QUIÉN LO CONSUME: La vista 'paginas.compra' y el JS del checkout (carrito).
+ */
 namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Models\PedidoModel;
 
+/**
+ * Controlador del flujo de compra. Extiende la clase base Controller.
+ * Patrón MVC: restringe el acceso por sesión/rol y delega la persistencia
+ * del pedido en PedidoModel (que ejecuta la transacción en MySQL).
+ */
 class CompraController extends Controller
 {
-   
+    /**
+     * Muestra la vista de compra al cliente autenticado.
+     * Valida sesión y redirige por rol (administrador → /admin, repartidor → su dashboard).
+     */
     public function index()
     {
+        // Si no hay sesión, se obliga a iniciar sesión antes de comprar.
         if (!isset($_SESSION['user'])) {
             $this->redirect('/auth/login');
             return;
         }
 
+        // El acceso a la compra queda restringido por rol: solo clientes.
         $rol = $_SESSION['user']['rol'] ?? 'cliente';
         if ($rol === 'administrador') {
             $this->redirect('/admin');

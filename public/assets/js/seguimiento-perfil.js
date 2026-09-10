@@ -1,9 +1,26 @@
+/**
+ * ============================================================
+ * ARCHIVO: seguimiento-perfil.js
+ * QUÉ HACE: Igual que seguimiento.js pero integrado dentro de la
+ *            página de perfil del cliente. Todo el código está
+ *            escopado con prefijos "seg" dentro de initSeguimiento()
+ *            para no chocar con el resto del perfil.
+ * TIPO: DEMO (geocodificación real con Nominatim, resto simulado)
+ * ENDPOINTS QUE CONSUME: https://nominatim.openstreetmap.org/search
+ *            (servicio externo de geocodificación)
+ * CLÁVES localStorage QUE USA: angelow_ruta_guardada
+ * LIBRERÍAS EXTERNAS: Leaflet, Leaflet.Routing.Machine,
+ *            Leaflet.polylineDecorator, Font Awesome
+ * ============================================================
+ */
+
 /* ============================================================
    SEGUIMIENTO DENTRO DE PERFIL - JS ESCOPADO
    Funcionalidad de mapa, ruta y seguimiento en tiempo real.
    Todo envuelto en initSeguimiento() para evitar conflictos.
    ============================================================ */
 
+// Variables escopadas del estado del mapa de seguimiento
 let segMapInitialized = false;
 let segMap = null;
 let segState = { routeCalculated: false, journeyStarted: false, journeyCompleted: false, calculating: false };
@@ -26,6 +43,8 @@ let segDashAnimationInterval = null;
 let segDriverHeading = 0;
 const segGeocodeCache = new Map();
 
+// Inicializa el seguimiento (mapa + listeners) una sola vez; si ya
+// fue inicializado, solo refresca el tamaño del mapa
 function initSeguimiento() {
   if (segMapInitialized) {
     if (segMap) {
@@ -38,6 +57,7 @@ function initSeguimiento() {
   initSegEventListeners();
 }
 
+// Crea el mapa Leaflet, configura las capas y los marcadores SVG
 function initSegMap() {
   const mapEl = document.getElementById('segMap');
   if (!mapEl || typeof L === 'undefined') return;
@@ -71,6 +91,7 @@ function initSegMap() {
   tileLayers.street.addTo(segMap);
 
   /* --- SVG Markers --- */
+  // Aclara u oscurece un color hexadecimal
   function segAdjustColor(hex, amount) {
     const num = parseInt(hex.replace('#', ''), 16);
     const r = Math.min(255, (num >> 16) + amount);
@@ -79,6 +100,7 @@ function initSegMap() {
     return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
   }
 
+  // Crea un marcador tipo "gota" (pin) en SVG para origen/destino
   function segTeardropSvg(color) {
     const id = color.replace('#', '');
     return `<svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
@@ -97,6 +119,7 @@ function initSegMap() {
     </svg>`;
   }
 
+  // Crea un marcador circular SVG, opcionalmente con flecha direccional
   function segCircleSvg(color, arrow = false, rotation = 0) {
     const id = color.replace('#', '');
     const arrowSvg = arrow
@@ -118,6 +141,7 @@ function initSegMap() {
     </svg>`;
   }
 
+  // Convierte un SVG en un divIcon de Leaflet configurado
   function segSvgMarker(svg, size, anchor, popupAnchor) {
     return L.divIcon({
       className: 'custom-marker',
@@ -151,6 +175,7 @@ function initSegMap() {
   const segSaveRouteBtn = sec.querySelector('#segSaveRoute');
 
   /* --- Helper functions --- */
+  // Actualiza el indicador de estado de la entrega
   function segUpdateStatus(type, title, message) {
     segStatusIndicator.className = 'seg-status-indicator seg-pulse';
     segStatusIndicator.classList.add(`seg-status-${type}`);
@@ -160,6 +185,7 @@ function initSegMap() {
     segStatusTime.textContent = `Actualizado: ${now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`;
   }
 
+  // Muestra distancia y tiempo estimado de la ruta calculada
   function segUpdateRouteInfo(distance, time) {
     segRouteDistance.textContent = `${distance} km`;
     segRouteTime.textContent = `${time} min`;
@@ -167,6 +193,7 @@ function initSegMap() {
     segEstimatedDistance.textContent = `${distance} km`;
   }
 
+  // Mueve la barra de pasos a un paso específico del proceso
   function segSetStep(step) {
     segCurrentStep = Math.min(Math.max(step, 0), segTotalSteps - 1);
     const steps = sec.querySelectorAll('.seg-step');
@@ -186,6 +213,7 @@ function initSegMap() {
     if (progressText) progressText.textContent = `${Math.round(progressPercentage)}%`;
   }
 
+  // Actualiza barra de progreso y pasos completados según el porcentaje
   function segUpdateTrackingProgress(progress) {
     const progressFill = sec.querySelector('.seg-progress-fill');
     const progressText = sec.querySelector('.seg-progress-text');
@@ -204,12 +232,14 @@ function initSegMap() {
     });
   }
 
+  // Llena los datos (simulados) del repartidor
   function segUpdateDriverInfo() {
     segDeliveryPerson.textContent = 'Carlos Rodríguez';
     segDeliveryContact.textContent = '+57 300 123 4567';
     segDriverName.textContent = 'Carlos Rodríguez';
   }
 
+  // Anima un número de start a end usando requestAnimationFrame
   function segAnimateValue(el, start, end, duration = 400) {
     const range = start - end;
     if (range === 0) return;
@@ -225,6 +255,7 @@ function initSegMap() {
     requestAnimationFrame(step);
   }
 
+  // Actualiza el tiempo restante estimado según el progreso
   function segUpdateRemainingTime(progress, totalTimeMinutes) {
     const newValue = Math.round((totalTimeMinutes * (100 - progress)) / 100);
     const oldValue = parseInt(segEstimatedTime.textContent) || newValue;
@@ -233,6 +264,7 @@ function initSegMap() {
     }
   }
 
+  // Limpia el mapa y restaura la interfaz al estado inicial
   function segResetMapState() {
     segState = { routeCalculated: false, journeyStarted: false, journeyCompleted: false, calculating: false };
     if (segRoutingControl) { segMap.removeControl(segRoutingControl); segRoutingControl = null; }
@@ -259,6 +291,7 @@ function initSegMap() {
     segSaveRouteBtn.disabled = true;
   }
 
+  // Simula el avance del repartidor por la ruta calculada
   function segStartTracking(totalTimeMinutes) {
     if (segRouteCoordinates.length === 0) return;
     const driverDivIcon = segSvgMarker(segCircleSvg('#3b82f6', true), [36, 36], [18, 18], [0, -20]);
@@ -355,6 +388,7 @@ function initSegMap() {
     }, intervalMs);
   }
 
+  // Convierte abreviaturas comunes de calles (Cl, Cr, Av...) a texto normal
   function segNormalizeAddress(address) {
     return address
       .replace(/cl(\.|e)?\s*/gi, 'Calle ')
@@ -365,6 +399,7 @@ function initSegMap() {
       .replace(/\s+/g, ' ').trim();
   }
 
+  // Convierte una dirección en coordenadas consultando Nominatim
   async function segGeocodeAddress(address) {
     const originalAddress = address.trim();
     if (!originalAddress) throw new Error('Direcci\u00f3n vac\u00eda.');
@@ -426,6 +461,7 @@ function initSegMap() {
     return result;
   }
 
+  // Dibuja la ruta con resaltado y flechas de dirección animadas
   function segDrawEnhancedRoute(coords) {
     if (segRouteGlowLine) segMap.removeLayer(segRouteGlowLine);
     if (segRouteDecorator) segMap.removeLayer(segRouteDecorator);
@@ -456,6 +492,8 @@ function initSegMap() {
     }
   }
 
+  // Calcula la ruta entre origen y destino e inicia la simulación al
+// obtener el resultado desde el router de Leaflet
   function segCalculateRoute(start, end) {
     if (segRoutingControl) segMap.removeControl(segRoutingControl);
     const btn = sec.querySelector('#segCalculateRoute');
@@ -518,6 +556,8 @@ function initSegMap() {
   }
 
   /* --- Event Listeners --- */
+  // Vincula todos los controles del panel de seguimiento (origen,
+  // ruta, guardar, autocompletado, capas, compartir, etc.)
   function initSegEventListeners() {
     const sec = document.getElementById('seguimientoSection');
 

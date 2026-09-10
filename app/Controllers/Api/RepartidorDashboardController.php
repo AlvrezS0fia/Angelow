@@ -1,11 +1,31 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: RepartidorDashboardController.php — MÓDULO: Dashboard del repartidor
+ * ============================================================
+ * QUÉ HACE: Retorna estadísticas y datos del dashboard del repartidor:
+ *   pedidos de hoy, pendientes, en tránsito, entregados, ganancias,
+ *   clientes únicos, calificación promedio, pedidos recientes y notificaciones.
+ * MODELO(S) QUE USA: Ninguno — usa Database::query() directamente.
+ * ENDPOINTS/RUTAS: GET /api/repartidor/dashboard/stats,
+ *   GET /api/repartidor/dashboard/recent, GET /api/repartidor/dashboard/low-stock,
+ *   GET /api/repartidor/dashboard/notificaciones
+ * QUIÉN LO CONSUME: app repartidor (dashboard principal de la app)
+ */
 namespace App\Controllers\Api;
 
 use App\Core\Database;
 use App\Core\JWTHelper;
 
+/**
+ * Controlador del dashboard del repartidor. Consulta métricas personales
+ * de pedidos, ganancias y calificaciones desde la BD.
+ */
 class RepartidorDashboardController
 {
+    /**
+     * Extrae el ID del repartidor desde JWT o sesión PHP.
+     */
     private function getRepartidorId()
     {
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
@@ -23,6 +43,9 @@ class RepartidorDashboardController
         return null;
     }
 
+    /**
+     * Retorna JSON con cabeceras HTTP y sale del script.
+     */
     private function json($data, $code = 200)
     {
         if (ob_get_length()) ob_clean();
@@ -32,6 +55,11 @@ class RepartidorDashboardController
         exit;
     }
 
+    /**
+     * GET /api/repartidor/dashboard/stats — Estadísticas del repartidor:
+     *   pedidos hoy, pendientes, en tránsito, entregados, ganancias del día,
+     *   total clientes y calificación promedio.
+     */
     public function stats()
     {
         $repartidorId = $this->getRepartidorId();
@@ -92,6 +120,9 @@ class RepartidorDashboardController
         ]);
     }
 
+    /**
+     * GET /api/repartidor/dashboard/recent — Últimos 10 pedidos del repartidor.
+     */
     public function recentOrders()
     {
         $repartidorId = $this->getRepartidorId();
@@ -115,11 +146,20 @@ class RepartidorDashboardController
         $this->json($result);
     }
 
+    /**
+     * GET /api/repartidor/dashboard/low-stock — Retorna array vacío (stub).
+     * Los repartidores no manejan inventario directamente.
+     */
     public function lowStock()
     {
         $this->json([]);
     }
 
+    /**
+     * GET /api/repartidor/dashboard/notificaciones — Últimas 20 notificaciones.
+     * Mapea tipos internos (aprobacion, rechazo, suspension, nuevo_pedido)
+     * a títulos legibles para la app.
+     */
     public function notificaciones()
     {
         $repartidorId = $this->getRepartidorId();

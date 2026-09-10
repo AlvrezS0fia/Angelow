@@ -1,4 +1,20 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: layouts/leaflet-js.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: No renderiza secciones visibles; solo declara los <script>
+ | CDN de Leaflet (mapa, routing, marker cluster y decoradores) que otras
+ | vistas incluyen para cargar la librería del mapa.
+ |
+ | ARCHIVOS EXTERNOS: Leaflet 1.9.4, Leaflet Routing Machine, Marker
+ | Cluster y Leaflet PolylineDecorator vía CDN de unpkg/cdnjs.
+ |
+ | JS QUE LA CONTROLA: Las librerías que carga habilitan los mapas en las
+ | vistas; el control real de cada mapa está en el JS de la vista que
+ | incluye este layout.
+ |========================================================================
+*/
 // ============================================================================
 // ANGELOW — Assets compartidos de LEAFLET (JS)
 // ----------------------------------------------------------------------------

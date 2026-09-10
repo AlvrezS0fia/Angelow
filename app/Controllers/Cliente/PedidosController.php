@@ -1,4 +1,16 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: PedidosController.php — MÓDULO: API de pedidos del cliente
+ * ============================================================
+ * QUÉ HACE: API de los pedidos del cliente autenticado: listar sus pedidos,
+ *   ver el detalle de uno, cancelarlo y consultar el seguimiento en tiempo real
+ *   (ubicación GPS del repartidor). Todas las respuestas son JSON.
+ * MODELO(S) QUE USA: PedidoModel, Database (App\Core), UsuarioModel (importado)
+ * ENDPOINTS/RUTAS: GET /api/mis-pedidos, GET /api/mis-pedidos/{id},
+ *   POST /api/mis-pedidos/{id}/cancelar, GET /api/mis-pedidos/{id}/seguimiento
+ * QUIÉN LO CONSUME: Vista "mis pedidos" y mapa de seguimiento del cliente (fetch/fetch() en JS).
+ */
 namespace App\Controllers\Cliente;
 
 use App\Core\Controller;
@@ -9,11 +21,13 @@ use App\Models\UsuarioModel;
 // HERENCIA: controlador API de cliente que hereda la respuesta JSON de la base.
 class PedidosController extends Controller
 {
+    /** Instancia del modelo de pedidos. */
     private PedidoModel $pedidoModel;
 
     public function __construct() {
         $this->pedidoModel = new PedidoModel();
     }
+    /** Lista los pedidos del cliente logueado (el id sale de la sesión). */
     public function index() {
         if (!isset($_SESSION['user'])) {
             $this->json(['error' => 'No autorizado'], 403);

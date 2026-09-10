@@ -1,4 +1,18 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: RepartidorAuthController.php — MÓDULO: Autenticación del repartidor
+ * ============================================================
+ * QUÉ HACE: Gestiona login, registro (solicitud), logout y token JWT del repartidor.
+ *   Incluye límite de intentos de login, validación exhaustiva del registro,
+ *   subida de documentos (SOAT, tarjeta, licencia, tecnomecánica) y notificación
+ *   a los administradores de cada nueva solicitud.
+ * MODELO(S) QUE USA: UsuarioModel, Database (App\Core), JWTHelper (App\Core)
+ * ENDPOINTS/RUTAS: GET/POST /repartidor/login, POST /repartidor/registro,
+ *   POST /repartidor/logout, GET /repartidor/me, POST /repartidor/refresh-token
+ * QUIÉN LO CONSUME: La app web del repartidor (vistas repartidor.login y el formulario
+ *   de registro de la app movil/web del repartidor).
+ */
 namespace App\Controllers;
 
 use App\Core\Controller;
@@ -6,16 +20,23 @@ use App\Core\Database;
 use App\Core\JWTHelper;
 use App\Models\UsuarioModel;
 
+/**
+ * Controlador de autenticación del repartidor. Extiende la clase base Controller.
+ * Patrón MVC con manejo de sesión propia y tokens JWT (JWTHelper) para la app del repartidor.
+ */
 class RepartidorAuthController extends Controller
 {
+    /** Instancia del modelo de usuarios. */
     private $usuarioModel;
 
     public function __construct() {
         $this->usuarioModel = new UsuarioModel();
     }
 
+    /** Envía salida JSON limpia (sin salida previa) y termina la ejecución. */
     private function jsonResponse($data, $code = 200)
     {
+        // Limpia cualquier salida previa (ej. warnings) para no romper el JSON.
         if (ob_get_length()) ob_clean();
         http_response_code($code);
         header('Content-Type: application/json; charset=utf-8');
@@ -25,6 +46,7 @@ class RepartidorAuthController extends Controller
 
     public function showLogin()
     {
+        // Si ya hay un repartidor en sesión, se va directo a su dashboard.
         if (isset($_SESSION['user']) && ($_SESSION['user']['rol'] ?? '') === 'repartidor') {
             $this->redirect('/repartidor');
         }
@@ -33,6 +55,7 @@ class RepartidorAuthController extends Controller
 
     public function login()
     {
+        // Lee el JSON del formulario y lo normaliza (quita espacios del email).
         $data = json_decode(file_get_contents('php://input'), true);
         $email = trim($data['email'] ?? '');
         $password = $data['password'] ?? '';
@@ -45,6 +68,7 @@ class RepartidorAuthController extends Controller
             $this->jsonResponse(['success' => false, 'message' => 'Formato de correo inválido']);
         }
 
+        // Contador de intentos fallidos por email (5 máx en 15 min) guardado en sesión.
         $loginKey = 'login_attempts_' . md5($email);
         $attempts = $_SESSION[$loginKey]['count'] ?? 0;
         $lastAttempt = $_SESSION[$loginKey]['last'] ?? 0;
@@ -55,6 +79,7 @@ class RepartidorAuthController extends Controller
             $this->jsonResponse(['success' => false, 'message' => "Demasiados intentos. Espera {$minutes} minuto(s)."]);
         }
 
+        // Verifica credenciales con password_verify (hash bcrypt almacenado).
         $user = $this->usuarioModel->findByEmail($email);
         if (!$user || !password_verify($password, $user['password_hash'])) {
             $attempts++;
@@ -68,10 +93,12 @@ class RepartidorAuthController extends Controller
 
         unset($_SESSION[$loginKey]);
 
+        // Si el rol no es repartidor, se rechaza el acceso.
         if (($user['rol'] ?? '') !== 'repartidor') {
             $this->jsonResponse(['success' => false, 'message' => 'No tienes acceso como repartidor']);
         }
 
+        // Estado "pendiente": se guarda sesión parcial y se informa que está en revisión.
         if (($user['estado'] ?? '') === 'pendiente') {
             $_SESSION['user'] = [
                 'id' => $user['id'],
@@ -85,10 +112,12 @@ class RepartidorAuthController extends Controller
             $this->jsonResponse(['success' => false, 'message' => 'Tu solicitud está pendiente de aprobación por el administrador', 'pending' => true, 'redirect' => '/repartidor/dashboard']);
         }
 
+        // Estado inactivo o suspendido: no se permite ingresar.
         if (($user['estado'] ?? '') !== 'activo') {
             $this->jsonResponse(['success' => false, 'message' => 'Tu cuenta no está activa. Contacta al administrador.']);
         }
 
+        // Guarda todos los datos del repartidor en la sesión.
         $_SESSION['user'] = [
             'id' => $user['id'],
             'email' => $user['email'],
@@ -110,10 +139,12 @@ class RepartidorAuthController extends Controller
         session_regenerate_id(true);
 
         try {
+            // Marca último acceso y pone al repartidor en línea en la BD.
             Database::query("UPDATE usuarios SET ultima_sesion = NOW(), en_linea = 1 WHERE id = ?", [$user['id']]);
         } catch (\Exception $e) {
         }
 
+        // Devuelve un token JWT (JWTHelper) con expiración de 24 h para la app del repartidor.
         $token = JWTHelper::encode([
             'sub' => $user['id'],
             'email' => $user['email'],
@@ -130,17 +161,26 @@ class RepartidorAuthController extends Controller
         ]);
     }
 
+    /**
+     * Registra la solicitud de un nuevo repartidor (POST multipart).
+     * Valida todos los campos (incl. edad, vehículo, SOAT/tecnomecánica vigentes),
+     * crea/actualiza al usuario y su solicitud, sube los documentos de soporte y
+     * notifica a los administradores. Salida: JSON con estado "pendiente".
+     */
     public function registro()
     {
+        // Limpia buffers y fija respuesta JSON para el formulario.
         if (ob_get_length()) ob_clean();
         header('Content-Type: application/json; charset=utf-8');
 
+        // Solo se acepta el método POST.
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo json_encode(['success' => false, 'message' => 'Metodo no permitido']);
             exit;
         }
 
+        // Lee todos los campos del formulario (multipart) y normaliza placa/categoría a mayúsculas.
         $nombre = trim($_POST['nombres'] ?? '');
         $apellido = trim($_POST['apellidos'] ?? '');
         $email = trim($_POST['correo'] ?? '');
@@ -162,6 +202,7 @@ class RepartidorAuthController extends Controller
         $soatVencimiento = trim($_POST['soat_vencimiento'] ?? '');
         $tecnomeVencimiento = trim($_POST['tecnomecanica_vencimiento'] ?? '');
 
+        // Arreglo acumulador de errores de validación (uno por regla incumplida).
         $errors = [];
         if (!$nombre || mb_strlen($nombre) < 2) $errors[] = 'Nombres requeridos (mín. 2 caracteres)';
         if (!preg_match('/^[a-zA-ZáéíóúñÁÉÍÓÚÑ\s]+$/', $nombre)) $errors[] = 'Nombres solo pueden contener letras';
@@ -214,12 +255,15 @@ class RepartidorAuthController extends Controller
         if (!$aceptaTerminos) $errors[] = 'Debes aceptar los Términos y Condiciones';
         if (!$aceptaPrivacidad) $errors[] = 'Debes aceptar la Política de Privacidad';
 
+        // Si hay errores de validación, responde 400 con todos juntos.
         if (!empty($errors)) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => implode(' | ', $errors)], JSON_UNESCAPED_UNICODE);
             exit;
         }
 
+        // Si el correo ya existe e inactivo/eliminado con solicitud rechazada,
+        // se reactiva el registro con el mismo usuario (re-registro).
         $existingUser = $this->usuarioModel->findByEmail($email);
         if ($existingUser) {
             $existingEstado = $existingUser['estado'] ?? '';
@@ -251,8 +295,10 @@ class RepartidorAuthController extends Controller
             exit;
         }
 
+        // Crea el hash bcrypt de la contraseña del repartidor.
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
+        // Inserta el usuario con rol 'repartidor' y estado 'pendiente' de aprobación.
         $userId = $this->usuarioModel->create([
             'email' => $email,
             'nombre' => $nombre,
@@ -277,6 +323,8 @@ class RepartidorAuthController extends Controller
             exit;
         }
 
+        // Se intenta guardar cédula y fecha de nacimiento; si falla (duplicado de cédula),
+        // se elimina el usuario recién creado y se informa del conflicto.
         try {
             Database::query("UPDATE usuarios SET cedula = ?, fecha_nacimiento = ? WHERE id = ?", [$numdoc, $fechaNacimiento ?: null, $userId]);
         } catch (\Exception $e) {
@@ -289,6 +337,7 @@ class RepartidorAuthController extends Controller
         $this->ensureSolicitudesTable();
         $solicitudId = null;
         try {
+            // Crea la solicitud de repartidor en estado 'pendiente'.
             Database::query(
                 "INSERT INTO solicitudes_repartidores (usuario_id, nombres, apellidos, email, telefono, tipo_documento, numero_documento, tipo_vehiculo, placa_vehiculo, numero_licencia, categoria_licencia, numero_tarjeta, direccion, ciudad, fecha_nacimiento, estado, fecha_solicitud) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', NOW())",
                 [$userId, $nombre, $apellido, $email, preg_replace('/\s+/', '', $celular), $tipodoc, $numdoc, $vehiculo, $placa, $licencia, $catlicencia, $tarjeta, $direccion, $ciudad, $fechaNacimiento ?: null]
@@ -298,6 +347,7 @@ class RepartidorAuthController extends Controller
         }
 
         try {
+            // Registra el vehículo del repartidor como activo.
             Database::query(
                 "INSERT INTO vehiculos_repartidores (repartidor_id, tipo_vehiculo, placa, activo) VALUES (?, ?, ?, 1)",
                 [$userId, $vehiculo, $placa]
@@ -306,6 +356,7 @@ class RepartidorAuthController extends Controller
         }
 
         try {
+            // Deja trazabilidad: historial de la solicitud de registro.
             Database::query(
                 "INSERT INTO historial_repartidores (repartidor_id, solicitud_id, accion, estado_nuevo, observaciones, fecha_accion) VALUES (?, ?, 'registro', 'pendiente', 'Solicitud de registro creada', NOW())",
                 [$userId, $solicitudId]
@@ -313,6 +364,7 @@ class RepartidorAuthController extends Controller
         } catch (\Exception $e) {
         }
 
+        // Notifica a cada administrador activo sobre la nueva solicitud.
         $adminUsers = Database::query("SELECT id FROM usuarios WHERE rol = 'administrador' AND estado = 'activo'")->fetchAll();
         foreach ($adminUsers as $admin) {
             try {
@@ -328,11 +380,13 @@ class RepartidorAuthController extends Controller
             }
         }
 
+        // Carpeta destino de los documentos subidos (se crea si no existe).
         $uploadDir = __DIR__ . '/../../../public/uploads/documentos/';
         if (!is_dir($uploadDir)) {
             @mkdir($uploadDir, 0777, true);
         }
 
+        // Mapa entre el name del input del formulario y el tipo de documento.
         $tiposDocs = [
             'tarjeta-file' => 'tarjeta_propiedad',
             'licencia-file' => 'licencia_conduccion',
@@ -341,6 +395,7 @@ class RepartidorAuthController extends Controller
         ];
 
         $uploadedFiles = [];
+        // Procesa cada archivo opcional: solo los que llegaron sin error de subida.
         foreach ($tiposDocs as $inputName => $tipo) {
             if (!isset($_FILES[$inputName]) || $_FILES[$inputName]['error'] !== UPLOAD_ERR_OK) {
                 continue;
@@ -350,19 +405,23 @@ class RepartidorAuthController extends Controller
             $originalName = $_FILES[$inputName]['name'];
             $fileSize = $_FILES[$inputName]['size'];
 
+            // Límite de tamaño: hasta 10 MB.
             if ($fileSize <= 0 || $fileSize > 10 * 1024 * 1024) {
                 continue;
             }
 
+            // Detecta el MIME real del archivo (no confía en lo que manda el navegador).
             $finfo = @finfo_open(FILEINFO_MIME_TYPE);
             $mimeType = $finfo ? @finfo_file($finfo, $tmpName) : ($_FILES[$inputName]['type'] ?? '');
             if ($finfo) finfo_close($finfo);
 
+            // Solo se aceptan PDF, JPG o PNG.
             $allowedMimes = ['application/pdf', 'image/jpeg', 'image/png'];
             if (!in_array($mimeType, $allowedMimes)) {
                 continue;
             }
 
+            // Genera un nombre único para evitar colisiones y prevenir paths maliciosos.
             $extMap = ['application/pdf' => 'pdf', 'image/jpeg' => 'jpg', 'image/png' => 'png'];
             $ext = $extMap[$mimeType] ?? pathinfo($originalName, PATHINFO_EXTENSION);
             $filename = $userId . '_' . $tipo . '_' . time() . '.' . $ext;
@@ -371,11 +430,13 @@ class RepartidorAuthController extends Controller
             if (@move_uploaded_file($tmpName, $destPath)) {
                 $relativePath = 'uploads/documentos/' . $filename;
 
+                // SOAT y tecnomecánica guardan su fecha de vencimiento si fue enviada.
                 $fechaVenc = null;
                 if ($tipo === 'soat' && $soatVencimiento) $fechaVenc = $soatVencimiento;
                 if ($tipo === 'tecnomecanica' && $tecnomeVencimiento) $fechaVenc = $tecnomeVencimiento;
 
                 try {
+                    // Registra el documento en la BD como 'pendiente' de revisión.
                     if ($fechaVenc) {
                         Database::query(
                             "INSERT INTO documentos (repartidor_id, solicitud_id, tipo, archivo_url, fecha_vencimiento, estado) VALUES (?, ?, ?, ?, ?, 'pendiente')",
@@ -388,6 +449,7 @@ class RepartidorAuthController extends Controller
                         );
                     }
                 } catch (\Exception $e) {
+                    // Si la tabla no existe aún, se crea y se reintenta el INSERT.
                     $this->ensureDocumentosTable();
                     if ($fechaVenc) {
                         Database::query(
@@ -431,10 +493,17 @@ class RepartidorAuthController extends Controller
         exit;
     }
 
+    /**
+     * Re-registro: reactiva a un repartidor previamente rechazado aprovechando su id.
+     * Cancela la solicitud rechazada anterior, crea una nueva 'pendiente', actualiza
+     * vehículo, historial, notificaciones y vuelve a subir los documentos.
+     */
     private function reRegisterFlow($userId, $nombre, $apellido, $email, $celular, $tipodoc, $numdoc, $vehiculo, $placa, $licencia, $catlicencia, $tarjeta, $direccion, $ciudad, $fechaNacimiento, $soatVencimiento, $tecnomeVencimiento)
     {
+        // Invalida la solicitud rechazada anterior para que solo quede la nueva.
         Database::query("UPDATE solicitudes_repartidores SET estado = 'cancelada' WHERE usuario_id = ? AND estado = 'rechazada'", [$userId]);
 
+        // Crea la nueva solicitud de repartidor en estado 'pendiente'.
         Database::query(
             "INSERT INTO solicitudes_repartidores (usuario_id, nombres, apellidos, email, telefono, tipo_documento, numero_documento, tipo_vehiculo, placa_vehiculo, numero_licencia, categoria_licencia, numero_tarjeta, direccion, ciudad, fecha_nacimiento, estado, fecha_solicitud) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente', NOW())",
             [$userId, $nombre, $apellido, $email, preg_replace('/\s+/', '', $celular), $tipodoc, $numdoc, $vehiculo, $placa, $licencia, $catlicencia, $tarjeta, $direccion, $ciudad, $fechaNacimiento ?: null]
@@ -534,6 +603,7 @@ class RepartidorAuthController extends Controller
 
     private function ensureDocumentosTable()
     {
+        // Si la tabla `documentos` no existe, se crea (autocuración de esquema).
         try {
             Database::query("SELECT 1 FROM documentos LIMIT 1");
         } catch (\Exception $e) {
@@ -558,6 +628,7 @@ class RepartidorAuthController extends Controller
 
     private function ensureSolicitudesTable()
     {
+        // Si la tabla `solicitudes_repartidores` no existe, se crea.
         try {
             Database::query("SELECT 1 FROM solicitudes_repartidores LIMIT 1");
         } catch (\Exception $e) {
@@ -593,6 +664,7 @@ class RepartidorAuthController extends Controller
         }
     }
 
+    /** Cierra la sesión del repartidor: limpia la sesión y responde para redirigir al login. */
     public function logout()
     {
         $_SESSION = [];
@@ -600,8 +672,10 @@ class RepartidorAuthController extends Controller
         $this->jsonResponse(['success' => true, 'redirect' => '/repartidor/login']);
     }
 
+    /** Devuelve los datos del repartidor en sesión (endpoint de perfil para la app). */
     public function me()
     {
+        // Solo repartidores con sesión activa pueden consultar sus datos.
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'repartidor') {
             $this->jsonResponse(['success' => false, 'message' => 'No autorizado']);
         }
@@ -612,18 +686,21 @@ class RepartidorAuthController extends Controller
         ]);
     }
 
+    /** Renueva el token JWT del repartidor cuando está por vencer (24 h). */
     public function refreshToken()
     {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'repartidor') {
             $this->jsonResponse(['success' => false, 'message' => 'No autorizado'], 401);
         }
 
+        // Recarga al usuario de la BD para validar que sigue activo antes de renovar el token.
         $user = Database::query("SELECT * FROM usuarios WHERE id = ?", [$_SESSION['user']['id']])->fetch();
 
         if (!$user || ($user['estado'] ?? '') !== 'activo') {
             $this->jsonResponse(['success' => false, 'message' => 'Tu cuenta no está activa'], 403);
         }
 
+        // Emite un JWT nuevo con vigencia de 24 horas.
         $token = JWTHelper::encode([
             'sub' => $user['id'],
             'email' => $user['email'],

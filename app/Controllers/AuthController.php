@@ -1,4 +1,18 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: AuthController.php — MÓDULO: Controlador de autenticación
+ * ============================================================
+ * QUÉ HACE: Gestiona todo el ciclo de vida de autenticación del usuario:
+ *   login por email, registro, login vía Google OAuth2, recuperación y
+ *   cambio de contraseña, y cierre de sesión.
+ * MODELO(S) QUE USA: UsuarioModel
+ * ENDPOINTS/RUTAS: POST /auth/login, POST /auth/register, POST /auth/google,
+ *   POST /auth/forgot-password, GET/POST /auth/reset, POST /auth/change-password, GET /auth/logout
+ * QUIÉN LO CONSUME: Formularios de login/registro (vista auth.login),
+ *   OAuth de Google (botón "Iniciar con Google"), formularios de recuperación
+ *   de contraseña, vista de cambio de contraseña para usuario logueado.
+ */
 
 namespace App\Controllers;
 
@@ -6,7 +20,13 @@ use App\Core\Controller;
 use App\Core\RateLimiter;
 use App\Models\UsuarioModel;
 
+/**
+ * Controlador de autenticación. Extiende la clase base Controller.
+ * Trabaja con el patrón MVC: recibe peticiones HTTP, delega la lógica
+ * de datos en UsuarioModel y devuelve JSON (API) o vistas PHP.
+ */
 class AuthController extends Controller {
+    /** Instancia del modelo de usuarios, usada en toda la clase. */
     private UsuarioModel $usuarioModel;
 
     public function __construct() {
@@ -22,9 +42,9 @@ class AuthController extends Controller {
     }
 
     // Procesar login con email
-    public function login() {
-        $data = json_decode(file_get_contents('php://input'), true);
-        $email = $data['email'] ?? '';
+    public function login() { //Aquí PHP recibe la información enviada por el frontend.
+        $data = json_decode(file_get_contents('php://input'), true); //PHP los procesa mediante json_decode()
+        $email = $data['email'] ?? ''; 
         $password = $data['password'] ?? '';
         $remember = $data['remember'] ?? false;
 
@@ -61,7 +81,8 @@ class AuthController extends Controller {
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_regenerate_id(true);
         }
-
+        
+        //Como se sabe si es repartidor o administrador o cliente, se hace la redirección según el rol.
         // Redirección según el rol
         $rol = $_SESSION['user']['rol'] ?? 'cliente';
         $redirectUrl = '/';
@@ -114,6 +135,7 @@ class AuthController extends Controller {
             return;
         }
 
+        // Genera el hash de la contraseña con bcrypt (la BD nunca guarda texto plano).
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
         
         // Crear usuario sin google_id (tu tabla no tiene esa columna)
@@ -341,6 +363,7 @@ class AuthController extends Controller {
             return;
         }
         
+        // Aplica la nueva contraseña (con hash bcrypt) e invalida el token de reutilización.
         $passwordHash = password_hash($password, PASSWORD_DEFAULT);
         $this->usuarioModel->updatePassword($user['email'], $passwordHash);
         $this->usuarioModel->clearResetToken($user['email']);

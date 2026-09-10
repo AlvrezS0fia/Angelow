@@ -4,6 +4,18 @@ namespace App\Models;
 use App\Core\Database;
 use PDO;
 
+/**
+ * ============================================================
+ * ARCHIVO: UsuarioModel.php — MÓDULO: Modelo de usuarios
+ * ============================================================
+ * QUÉ HACE: CRUD de usuarios con gestión de autenticación (login por email,
+ *           tokens de recuperación, cambio de contraseña). getAll() NO expone
+ *           password_hash ni reset_token por seguridad.
+ * TABLA(S): usuarios
+ * QUIÉN LO USA: AuthController, Admin\ClientesController,
+ *               Cliente\PerfilApiController, RepartidorAuthController,
+ *               Api\RepartidorRegistroController
+ */
 // ENCAPSULAMIENTO: la conexión queda oculta a los controladores; solo se la
 // usa aquí dentro, aislando el acceso a la tabla `usuarios`.
 class UsuarioModel {
@@ -36,11 +48,11 @@ class UsuarioModel {
         return $stmt->fetch();
     }
 
+    // El modelo consulta la tabla:usuarios
     // --- CREAR USUARIO ---
     // Entrada: array $data con email, nombre, password_hash, rol, estado, etc.
     // Procesamiento: INSERT con sentencia preparada (valores nunca en el SQL).
     //   Si no se pasa rol → 'cliente' por defecto. Si no se pasa estado → 'activo'.
-    // Salida: id del nuevo registro (int) o false.
     // ROLES: el rol lo define quien crea (register → 'cliente', admin store → el que elija).
     /** @param array<string, mixed> $data
      * @return int|false */
@@ -150,7 +162,7 @@ class UsuarioModel {
         return $stmt->fetchAll();
     }
 
-    // === PUNTO ÚNICO DE CAMBIO DE ROL DEL SISTEMA ===
+    //  PUNTO ÚNICO DE CAMBIO DE ROL DEL SISTEMA 
     // --- CAMBIAR ROL DE UN USUARIO ---
     // Entrada: id del usuario objetivo + nuevo rol válido.
     // Procesamiento: UPDATE usuarios SET rol = :rol WHERE id = :id.
@@ -159,9 +171,7 @@ class UsuarioModel {
     //     (solo el rol administrador puede invocarlo).
     //   - RepartidorAuthController::registro() → cliente que se convierte en
     //     repartidor.
-    // ESTO AFECTA A (consecuencias del cambio de rol):
-    //   - Auth::rol() / Auth::isAdmin() / Auth::isRepartidor() en la próxima sesión.
-    //   - Acceso a /admin*, /repartidor*, /perfil y /api/mis-pedidos*.
+
     //   - La redirección post-login (AuthController::login()).
     //   - El login JWT de la app de repartidor (filtra rol='repartidor').
     // Salida: bool del UPDATE.

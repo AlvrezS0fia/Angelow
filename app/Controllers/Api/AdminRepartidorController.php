@@ -1,11 +1,32 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: AdminRepartidorController.php — MÓDULO: API de administración de repartidores
+ * ============================================================
+ * QUÉ HACE: Permite al administrador revisar solicitudes de repartidores
+ *   (aprobar, rechazar, suspender, reactivar), gestionar documentos,
+ *   ver estadísticas y dashboard. Usa Database::query directamente.
+ * MODELO(S) QUE USA: Ninguno — usa Database::query() directamente.
+ * ENDPOINTS/RUTAS: GET/POST solicitudes, aprobar, rechazar, suspender,
+ *   activar, estadisticas, activos, revisarDocumento, dashboardStats
+ * QUIÉN LO CONSUME: panel.js (sección de repartidores del administrador)
+ */
 namespace App\Controllers\Api;
 
 use App\Core\Controller;
 use App\Core\Database;
 
+/**
+ * Controlador admin para todo el ciclo de vida de repartidores:
+ * solicitudes de registro, aprobación/rechazo, suspensión y documentos.
+ * No extiende Controller base; define sus propios helpers json() y requireAdmin().
+ */
 class AdminRepartidorController extends Controller
 {
+    /**
+     * Verifica que haya sesión de administrador. Si no, retorna 403 y false.
+     * Diferente al guardián de otros controladores: retorna bool en vez de salir.
+     */
     private function requireAdmin()
     {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
@@ -15,6 +36,10 @@ class AdminRepartidorController extends Controller
         return true;
     }
 
+    /**
+     * Retorna JSON con cabeceras HTTP y sale del script.
+     * Usa ob_clean para evitar basura de output buffering.
+     */
     private function jsonOut($data, $code = 200)
     {
         if (ob_get_length()) ob_clean();
@@ -24,6 +49,10 @@ class AdminRepartidorController extends Controller
         exit;
     }
 
+    /**
+     * Lista solicitudes de repartidor con paginación y filtro por estado.
+     * Adjunta documentos y vehículo a cada solicitud.
+     */
     public function solicitudes()
     {
         if (!$this->requireAdmin()) return;
@@ -82,6 +111,10 @@ class AdminRepartidorController extends Controller
         ]);
     }
 
+    /**
+     * Obtiene los documentos asociados a una solicitud de repartidor.
+     * Adjunta la URL pública de descarga a cada documento.
+     */
     private function getDocumentos($solicitudId)
     {
         try {
@@ -100,6 +133,9 @@ class AdminRepartidorController extends Controller
         }
     }
 
+    /**
+     * Obtiene el vehículo activo de un repartidor por su usuario_id.
+     */
     private function getVehiculo($usuarioId)
     {
         try {
@@ -113,6 +149,11 @@ class AdminRepartidorController extends Controller
         }
     }
 
+    /**
+     * Aprueba una solicitud de repartidor dentro de una transacción:
+     * activa el usuario, aprueba la solicitud, aprueba documentos,
+     * otorga permisos por defecto, registra historial y notifica.
+     */
     public function aprobar()
     {
         if (!$this->requireAdmin()) return;
@@ -184,6 +225,11 @@ class AdminRepartidorController extends Controller
         }
     }
 
+    /**
+     * Rechaza una solicitud de repartidor dentro de una transacción:
+     * marca la solicitud como rechazada, desactiva al usuario,
+     * registra historial y envía notificación de rechazo.
+     */
     public function rechazar()
     {
         if (!$this->requireAdmin()) return;
@@ -242,6 +288,10 @@ class AdminRepartidorController extends Controller
         }
     }
 
+    /**
+     * Otorga permisos por defecto a un repartidor aprobado.
+     * Inserta permisos con ON DUPLICATE KEY para ser idempotente.
+     */
     private function grantDefaultPermissions($usuarioId, $adminId = null)
     {
         $permissions = [
@@ -262,6 +312,10 @@ class AdminRepartidorController extends Controller
         }
     }
 
+    /**
+     * Suspende un repartidor activo: cambia estado a 'suspendido',
+     * registra en historial_repartidores. No envía notificación.
+     */
     public function suspender()
     {
         if (!$this->requireAdmin()) return;
@@ -293,6 +347,10 @@ class AdminRepartidorController extends Controller
         }
     }
 
+    /**
+     * Reactiva un repartidor suspendido: limpia motivo de suspensión,
+     * otorga permisos por defecto, registra historial y notifica.
+     */
     public function activar()
     {
         if (!$this->requireAdmin()) return;
@@ -333,6 +391,10 @@ class AdminRepartidorController extends Controller
         }
     }
 
+    /**
+     * Retorna estadísticas generales de repartidores: pendientes,
+     * total, activos, suspendidos, rechazadas y total de entregas.
+     */
     public function estadisticas()
     {
         if (!$this->requireAdmin()) return;
@@ -384,6 +446,10 @@ class AdminRepartidorController extends Controller
         $this->jsonOut(['success' => true] + $stats);
     }
 
+    /**
+     * Lista todos los repartidores con estado 'activo'.
+     * Retorna campos seleccionados (sin password_hash ni datos sensibles).
+     */
     public function activos()
     {
         if (!$this->requireAdmin()) return;
@@ -396,6 +462,10 @@ class AdminRepartidorController extends Controller
         $this->jsonOut(['success' => true, 'repartidores' => $stmt->fetchAll()]);
     }
 
+    /**
+     * Permite al admin aprobar o rechazar individualmente un documento
+     * de repartidor, actualizando estado y observaciones.
+     */
     public function revisarDocumento()
     {
         if (!$this->requireAdmin()) return;
@@ -428,6 +498,10 @@ class AdminRepartidorController extends Controller
         }
     }
 
+    /**
+     * Retorna estadísticas del dashboard admin: pedidos pendientes,
+     * totales, ingresos y repartidores activos.
+     */
     public function dashboardStats()
     {
         if (!$this->requireAdmin()) return;

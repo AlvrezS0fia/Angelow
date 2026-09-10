@@ -1,9 +1,23 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: CategoriesController.php — MÓDULO: API de categorías (OOP)
+ * ============================================================
+ * QUÉ HACE: CRUD de categorías usando patrón MVC con Modelo y Controller.
+ *   Versión OOP del script legacy categories.php. Requiere sesión admin.
+ * MODELO(S) QUE USA: CategoriaModel
+ * ENDPOINTS/RUTAS: GET/POST /api/categorias, GET/PUT/DELETE /api/categorias/{id}
+ * QUIÉN LO CONSUME: panel.js (gestión de categorías del administrador)
+ */
 namespace App\Controllers\Api;
 
 use App\Core\Controller;
 use App\Models\CategoriaModel;
 
+/**
+ * Controlador OOP para categorías. Requiere autenticación de administrador.
+ * Cada método delega la lógica de persistencia a CategoriaModel.
+ */
 class CategoriesController extends Controller {
     private $categoriaModel;
 
@@ -11,6 +25,9 @@ class CategoriesController extends Controller {
         $this->categoriaModel = new CategoriaModel();
     }
 
+    /**
+     * Verifica sesión de administrador. Si no, retorna 403 JSON y sale.
+     */
     private function checkAdmin() {
         if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
             http_response_code(403);
@@ -19,6 +36,9 @@ class CategoriesController extends Controller {
         }
     }
 
+    /**
+     * GET /api/categorias — Lista todas las categorías y subcategorías.
+     */
     public function index() {
         $this->checkAdmin();
         $categorias = $this->categoriaModel->getAll();
@@ -30,6 +50,9 @@ class CategoriesController extends Controller {
         ]);
     }
 
+    /**
+     * GET /api/categorias/{id} — Detalle de una categoría específica.
+     */
     public function show($id) {
         $this->checkAdmin();
         $categoria = $this->categoriaModel->getById($id);
@@ -43,6 +66,9 @@ class CategoriesController extends Controller {
         echo json_encode($categoria);
     }
 
+    /**
+     * POST /api/categorias — Crea una nueva categoría. Nombre es obligatorio.
+     */
     public function store() {
         $this->checkAdmin();
         $data = json_decode(file_get_contents('php://input'), true);
@@ -63,6 +89,9 @@ class CategoriesController extends Controller {
         }
     }
 
+    /**
+     * PUT /api/categorias/{id} — Actualiza los datos de una categoría existente.
+     */
     public function update($id) {
         $this->checkAdmin();
         $data = json_decode(file_get_contents('php://input'), true);
@@ -84,6 +113,9 @@ class CategoriesController extends Controller {
         }
     }
 
+    /**
+     * DELETE /api/categorias/{id} — Elimina una categoría si existe.
+     */
     public function destroy($id) {
         $this->checkAdmin();
         $existing = $this->categoriaModel->getById($id);

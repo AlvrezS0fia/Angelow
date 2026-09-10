@@ -1,4 +1,19 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: repartidor/perfil.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Perfil del repartidor con tarjeta de identidad (avatar,
+ | estado y estadísticas), información personal, datos del vehículo y
+ | licencia, y los documentos cargados.
+ |
+ | ARCHIVOS EXTERNOS: Font Awesome, fuentes Google, tokens.css y estilos
+ | propios en un <style> del <head>.
+ |
+ | JS QUE LA CONTROLA: <script> inline al final (carga del perfil vía
+ | API, refresco de token y gestión de documentos).
+ |========================================================================
+*/
 if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'repartidor') {
     header('Location: ' . APP_URL . '/repartidor/login');
     exit();
@@ -585,6 +600,7 @@ $user = $_SESSION['user'];
 <body>
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- SECCIÓN: Encabezado con logo, datos del conductor y acciones (Dashboard, Tienda, Cerrar sesión) -->
     <header class="header-repartidor">
         <div class="header-contenido">
             <div class="logo-area">
@@ -619,6 +635,7 @@ $user = $_SESSION['user'];
         </div>
     </header>
 
+    <!-- SECCIÓN: Contenedor del perfil con tarjeta de datos y secciones de información -->
     <div class="contenedor-principal">
         <div class="back-area">
             <a href="<?= APP_URL ?>/repartidor/dashboard" class="btn-back-header">
@@ -627,6 +644,7 @@ $user = $_SESSION['user'];
             </a>
         </div>
 
+        <!-- SECCIÓN: Tarjeta del perfil (avatar, nombre, contacto y estadísticas) -->
         <div class="perfil-card">
             <div class="perfil-banner"></div>
             <div class="perfil-info-wrapper">
@@ -664,6 +682,7 @@ $user = $_SESSION['user'];
             </div>
         </div>
 
+        <!-- SECCIÓN: Información personal del repartidor -->
         <div class="info-seccion">
             <div class="info-seccion-header">
                 <div class="info-seccion-titulo">
@@ -699,6 +718,7 @@ $user = $_SESSION['user'];
             </div>
         </div>
 
+        <!-- SECCIÓN: Información del vehículo y licencia -->
         <div class="info-seccion">
             <div class="info-seccion-header">
                 <div class="info-seccion-titulo">
@@ -726,6 +746,7 @@ $user = $_SESSION['user'];
             </div>
         </div>
 
+        <!-- SECCIÓN: Documentos cargados (generados por JS) -->
         <div class="info-seccion">
             <div class="info-seccion-header">
                 <div class="info-seccion-titulo">
@@ -741,6 +762,7 @@ $user = $_SESSION['user'];
     </div>
 
     <script>
+        // Lógica del perfil del repartidor: autenticación con token, carga de datos y documentos
         const APP_URL = '<?= APP_URL ?>';
         const userData = <?= json_encode($user) ?>;
         let token = localStorage.getItem('repartidor_token') || '';
@@ -1085,5 +1107,6 @@ $user = $_SESSION['user'];
             await loadDocuments();
         });
     </script>
+    <!-- Fin de la lógica del perfil de repartidor -->
 </body>
 </html>

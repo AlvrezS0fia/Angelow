@@ -1,10 +1,29 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: CuponController.php — MÓDULO: API de validación de cupones
+ * ============================================================
+ * QUÉ HACE: Valida un código de cupón contra la BD: verifica que esté
+ *   activo, vigente, no exceda usos máximos y cumpla monto mínimo.
+ *   Calcula el descuento según tipo (porcentaje, monto fijo, envío gratis).
+ * MODELO(S) QUE USA: Ninguno — usa Database::query() directamente.
+ * ENDPOINTS/RUTAS: POST /api/cupon/validar
+ * QUIÉN LO CONSUME: compra.js (paso de checkout antes de confirmar pedido)
+ */
 namespace App\Controllers\Api;
 
 use App\Core\Database;
 
+/**
+ * Controlador para la validación y cálculo de descuentos de cupones.
+ */
 class CuponController {
 
+    /**
+     * POST /api/cupon/validar — Valida un cupón y retorna el descuento.
+     * Espera JSON: { codigo: string, subtotal: float }.
+     * Retorna: { success, descuento, tipo, valor, descripcion }.
+     */
     public function validar() {
         if (ob_get_length()) ob_clean();
         header('Content-Type: application/json');

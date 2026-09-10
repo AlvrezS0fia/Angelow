@@ -6,6 +6,16 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+/**
+ * ============================================================
+ * ARCHIVO: EmailService.php — MÓDULO: Servicio de envío de correos
+ * ============================================================
+ * QUÉ HACE: Envía correos electrónicos usando PHPMailer con SMTP (STARTTLS).
+ *           Soporta plantillas HTML (bienvenida, recuperación, notificación)
+ *           con logo incrustado vía CID, y versión texto plano como fallback.
+ *           Configuración SMTP viene de $_ENV (cargado desde .env).
+ * QUIÉN LO USA: AuthController (bienvenida, recuperación, cambio de contraseña)
+ */
 class EmailService {
     
     /**

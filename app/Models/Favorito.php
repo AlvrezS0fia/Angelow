@@ -3,12 +3,24 @@ namespace App\Models;
 
 use App\Core\Database;
 
+/**
+ * ============================================================
+ * ARCHIVO: Favorito.php — MÓDULO: Modelo de productos favoritos
+ * ============================================================
+ * QUÉ HACE: Gestiona la lista de favoritos por usuario: agregar,
+ *           eliminar y verificar existencia. Usa Database::query() estático.
+ * TABLA(S): favoritos
+ * NOTA: No lleva sufijo «Model» por convención de este proyecto.
+ * QUIÉN LO USA: Api\FavoritoController
+ */
 class Favorito
 {
     protected $table = 'favoritos';
 
     /**
      * Obtiene los IDs de productos favoritos de un usuario
+     * @param int|string $usuarioId
+     * @return array<int, mixed> Lista de producto_id del usuario
      */
     public function getByUsuario($usuarioId)
     {
@@ -29,7 +41,7 @@ class Favorito
     }
 
     /**
-     * Agrega un favorito
+     * Agrega un favorito. Necesita iniciar sesión (usuarioId real).
      */
     public function agregar($usuarioId, $productoId)
     {

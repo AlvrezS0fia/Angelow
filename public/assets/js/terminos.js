@@ -1,3 +1,17 @@
+/**
+ * ============================================================
+ * ARCHIVO: terminos.js
+ * QUÉ HACE: Coloca el año actual en el footer, detecta la
+ *            sección visible al hacer scroll para resaltar el
+ *            enlace correspondiente y aplica scroll suave al
+ *            navegar por los enlaces de la página.
+ * TIPO: ESTÁTICO (no consume API)
+ * ENDPOINTS QUE CONSUME: Ninguno
+ * CLÁVES localStorage QUE USA: Ninguna
+ * LIBRERÍAS EXTERNAS: Ninguna
+ * ============================================================
+ */
+
 // Año actual en el footer
         document.getElementById('currentYear').textContent = new Date().getFullYear();
 
@@ -5,6 +19,7 @@
         const sections = document.querySelectorAll('.term-section');
         const navLinks = document.querySelectorAll('.nav-link');
 
+        // Actualiza el enlace activo según la sección visible actualmente
         function updateActiveNav() {
             let current = '';
             

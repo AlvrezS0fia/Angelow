@@ -163,7 +163,7 @@ $this->redirect('/auth/login');
 
 ## 4. ROLES DE USUARIO
 
-La columna `rol` de `usuarios` es `ENUM('cliente','repartidor','administrador','vendedor')` con valor por defecto `'cliente'` (`angelow.sql:53`). La columna `estado` es `ENUM('pendiente','activo','inactivo','suspendido','eliminado')` (`angelow.sql:99`).
+La columna `rol` de `usuarios` es `ENUM('cliente','repartidor','administrador','vendedor')` con valor por defecto `'cliente'` (`angelow.sql:50`). La columna `estado` es `ENUM('pendiente','activo','inactivo','suspendido','eliminado')` (`angelow.sql:97`).
 
 ### 4.1 Matriz de acceso por rol (verificado en controladores)
 
@@ -926,7 +926,7 @@ Convención de estado: ✅ implementada · ⚠️ inconsistencia/parcial · ❌ 
 
 ## 20. ESTADOS DE LA APLICACIÓN
 
-### 20.1 Estados de usuario (`usuarios.estado`, `angelow.sql:99`)
+### 20.1 Estados de usuario (`usuarios.estado`, `angelow.sql:97`)
 
 `pendiente` → `activo` → (`inactivo | suspendido | eliminado`). Transiciones repartidor: registro → `pendiente`; admin `aprobar()` → `activo`; `rechazar()` → `inactivo`; `suspender()` → `suspendido`; `activar()` → `activo`.
 

@@ -1,12 +1,33 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: RepartidorAuthController.php — MÓDULO: API de autenticación de repartidores
+ * ============================================================
+ * QUÉ HACE: Login, logout y perfil (me) para repartidores. Login con
+ *   JWT, rate limiting, verificación de rol y estado. Logout stateless.
+ *   me() reconsulta la BD para datos frescos. No extiende Controller base.
+ * MODELO(S) QUE USA: Ninguno — usa Database::query() directamente.
+ * ENDPOINTS/RUTAS: POST /api/repartidor/auth/login,
+ *   POST /api/repartidor/auth/logout, GET /api/repartidor/auth/me
+ * QUIÉN LO CONSUME: app repartidor (login.js, sesión de la app móvil/SPA)
+ */
 namespace App\Controllers\Api;
 
 use App\Core\Database;
 use App\Core\JWTHelper;
 use App\Core\RateLimiter;
 
+/**
+ * Controlador de autenticación exclusivo para repartidores.
+ * No comparte login con clientes ni admin; cada rol tiene su propio flujo.
+ */
 class RepartidorAuthController
 {
+    /**
+     * POST /api/repartidor/auth/login — Autentica repartidor y retorna JWT.
+     * Verifica: credenciales, rol='repartidor' en SQL, estado activo,
+     *   rate limiting por IP+email (5 intentos / 15 min).
+     */
     public function login()
     {
         if (ob_get_length()) ob_clean();

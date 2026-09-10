@@ -1,7 +1,14 @@
 /**
  * ============================================================
- * GUÍA DE TALLAS - ANGELOW
- * JavaScript para navegación suave y resaltado de secciones
+ * ARCHIVO: guia_tallas.js
+ * QUÉ HACE: Coloca el año actual en el footer, habilita el
+ *            scroll suave desde la navegación y resalta la
+ *            sección activa al hacer scroll. Incluye soporte
+ *            para el botón "volver" de la página.
+ * TIPO: ESTÁTICO (no consume API)
+ * ENDPOINTS QUE CONSUME: Ninguno
+ * CLÁVES localStorage QUE USA: Ninguna
+ * LIBRERÍAS EXTERNAS: Ninguna
  * ============================================================
  */
 

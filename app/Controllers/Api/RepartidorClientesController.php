@@ -1,11 +1,29 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: RepartidorClientesController.php — MÓDULO: API de clientes del repartidor
+ * ============================================================
+ * QUÉ HACE: Permite al repartidor ver los clientes asociados a sus pedidos
+ *   (quienes le han comprado). Búsqueda por nombre/email/teléfono.
+ * MODELO(S) QUE USA: Ninguno — usa Database::query() directamente.
+ * ENDPOINTS/RUTAS: GET /api/repartidor/clientes, GET /api/repartidor/clientes/{id}
+ * QUIÉN LO CONSUME: app repartidor (sección de clientes en la interfaz de reparto)
+ */
 namespace App\Controllers\Api;
 
 use App\Core\Database;
 use App\Core\JWTHelper;
 
+/**
+ * Controlador para consultar clientes del repartidor.
+ * Filtra por pedidos asignados al repartidor autenticado.
+ */
 class RepartidorClientesController
 {
+    /**
+     * Extrae el ID del repartidor desde JWT (Authorization header)
+     * o desde sesión PHP como fallback.
+     */
     private function getRepartidorId()
     {
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
@@ -23,6 +41,9 @@ class RepartidorClientesController
         return null;
     }
 
+    /**
+     * Retorna JSON con cabeceras HTTP y sale del script.
+     */
     private function json($data, $code = 200)
     {
         if (ob_get_length()) ob_clean();
@@ -32,6 +53,10 @@ class RepartidorClientesController
         exit;
     }
 
+    /**
+     * GET /api/repartidor/clientes — Lista clientes que tienen pedidos
+     *   asignados a este repartidor. Soporta búsqueda por nombre/email/teléfono.
+     */
     public function index()
     {
         $repartidorId = $this->getRepartidorId();
@@ -73,6 +98,9 @@ class RepartidorClientesController
         $this->json($result);
     }
 
+    /**
+     * GET /api/repartidor/clientes/{id} — Detalle de un cliente específico.
+     */
     public function show($id)
     {
         $repartidorId = $this->getRepartidorId();

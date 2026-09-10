@@ -1,4 +1,15 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: DashboardController.php — MÓDULO: Panel "Mi Cuenta" (legacy)
+ * ============================================================
+ * QUÉ HACE: Página de cuenta del usuario (HTML+PHP embebido). Protege el acceso
+ *   verificando la sesión y muestra los datos del usuario logueado.
+ * MODELO(S) QUE USA: ninguno (usa datos de $_SESSION)
+ * ENDPOINTS/RUTAS: acceso directo vía URL (dashboard.php)
+ * QUIÉN LO CONSUME: Usuarios que entraron por el flujo legacy (procesar/login.php,
+ *   ProcesarGoogleController), tras redirigir desde index.php.
+ */
 // dashboard.php
 session_start();
 
@@ -8,6 +19,7 @@ if (!isset($_SESSION['user'])) {
     exit();
 }
 
+// Recupera los datos del usuario desde la sesión para mostrarlos en la página.
 $user = $_SESSION['user'];
 ?>
 <!DOCTYPE html>

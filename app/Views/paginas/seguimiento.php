@@ -1,4 +1,19 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: paginas/seguimiento.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Rastreo en tiempo real de las entregas: mapa Leaflet con
+ | planificador de ruta (origen/destino), panel de estado con repartidor,
+ | línea de progreso del pedido y overlays de carrito/favoritos.
+ |
+ | ARCHIVOS EXTERNOS: layouts/leaflet-css.php, layouts/leaflet-js.php,
+ | seguimiento.css, back-button.css y assets/js/seguimiento.js.
+ |
+ | JS QUE LA CONTROLA: assets/js/seguimiento.js (mapa, rutas, autocomple-
+ | tado, estado GPS y simulador) sobre Leaflet cargado desde el layout.
+ |========================================================================
+*/
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['user'])) {
     header('Location: ' . APP_URL . '/auth/login');
@@ -26,6 +41,7 @@ $user = $_SESSION['user'];
 </head>
 <body>
 
+  <!-- SECCIÓN: Encabezado con logo, buscador e iconos de carrito/favoritos -->
   <!-- HEADER original -->
   <header>
     <div class="logo" onclick="window.location.href='<?= APP_URL ?>/'">
@@ -58,6 +74,7 @@ $user = $_SESSION['user'];
     </div>
   </header>
 
+  <!-- SECCIÓN: Main content con mapa, controles flotantes y panel de seguimiento -->
   <!-- MAIN CONTENT -->
   <div class="main-content">
     <div class="page-header">
@@ -241,6 +258,7 @@ $user = $_SESSION['user'];
     </div>
   </div>
 
+  <!-- SECCIÓN: Overlays flotantes del carrito de compras y favoritos -->
   <!-- OVERLAYS de carrito y favoritos -->
   <div id="cartOverlay" class="overlay">
     <div class="cart">
@@ -266,6 +284,7 @@ $user = $_SESSION['user'];
     </div>
   </div>
 
+  <!-- SECCIÓN: Pie de página con contacto, ayuda, enlaces legales y redes sociales -->
   <!-- FOOTER con enlaces corregidos -->
   <footer>
     <div class="footer-content">
@@ -278,7 +297,7 @@ $user = $_SESSION['user'];
     <div class="footer-bottom"><p>&copy; <span id="currentYear"></span> ANGELOW. Todos los derechos reservados.</p></div>
   </footer>
 
-  <!-- SCRIPTS -->
+  <!-- SCRIPTS: Leaflet viene del layout compartido; la lógica está en assets/js/seguimiento.js -->
   <?php require __DIR__ . '/../layouts/leaflet-js.php'; ?>
   <script src="<?= APP_URL ?>/assets/js/seguimiento.js"></script>
 </body>

@@ -3,13 +3,29 @@ namespace App\Models;
 
 use App\Core\Database;
 
+/**
+ * ============================================================
+ * ARCHIVO: DireccionModel.php — MÓDULO: Modelo de direcciones de envío
+ * ============================================================
+ * QUÉ HACE: CRUD de direcciones de envío por usuario. Garantiza una sola
+ *           dirección predeterminada por usuario (clearPredeterminada /
+ *           ensureOnePredeterminada).
+ * TABLA(S): direcciones
+ * QUIÉN LO USA: Cliente\DireccionController
+ */
 class DireccionModel {
+    /** @var \PDO Conexión PDO obtenida del Singleton Database */
     private $db;
 
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
     }
 
+    /**
+     * Direcciones de un usuario, con la predeterminada primero.
+     * @param int|string $usuarioId
+     * @return array<int, array<string, mixed>>
+     */
     public function getByUsuario($usuarioId) {
         $stmt = $this->db->prepare(
             "SELECT * FROM direcciones WHERE usuario_id = :uid ORDER BY es_predeterminada DESC, fecha_creacion DESC"
@@ -18,6 +34,13 @@ class DireccionModel {
         return $stmt->fetchAll();
     }
 
+    /**
+     * Busca una dirección por ID verificando que pertenezca al usuario
+     * (evita IDOR: un usuario no puede leer direcciones ajenas).
+     * @param int|string $id
+     * @param int|string $usuarioId
+     * @return array<string, mixed>|false
+     */
     public function getById($id, $usuarioId) {
         $stmt = $this->db->prepare(
             "SELECT * FROM direcciones WHERE id = :id AND usuario_id = :uid"
@@ -26,7 +49,15 @@ class DireccionModel {
         return $stmt->fetch();
     }
 
+    /**
+     * Crea una dirección. Si es predeterminada, primero quita la condición
+     * a las demás del usuario (solo hay una predeterminada).
+     * @param int|string $usuarioId
+     * @param array<string, mixed> $data
+     * @return int|false ID insertado o false
+     */
     public function crear($usuarioId, $data) {
+        // Solo una predeterminada por usuario: se limpia antes de marcar
         if (!empty($data['es_predeterminada'])) {
             $this->clearPredeterminada($usuarioId);
         }
@@ -53,6 +84,14 @@ class DireccionModel {
         return $result ? (int)$this->db->lastInsertId() : false;
     }
 
+    /**
+     * Actualiza una dirección. Conserva los valores existentes cuando el campo
+     * no viene en $data (merge con la fila actual).
+     * @param int|string $id
+     * @param int|string $usuarioId
+     * @param array<string, mixed> $data
+     * @return bool
+     */
     public function actualizar($id, $usuarioId, $data) {
         $existing = $this->getById($id, $usuarioId);
         if (!$existing) return false;
@@ -85,6 +124,10 @@ class DireccionModel {
         ]);
     }
 
+    /**
+     * Elimina una dirección. Si se borra la predeterminada y no queda ninguna,
+     * ensureOnePredeterminada promueve la más antigua.
+     */
     public function eliminar($id, $usuarioId) {
         $stmt = $this->db->prepare("DELETE FROM direcciones WHERE id = :id AND usuario_id = :uid");
         $result = $stmt->execute(['id' => (int)$id, 'uid' => (int)$usuarioId]);
@@ -95,17 +138,23 @@ class DireccionModel {
         return false;
     }
 
+    /** Marca una dirección como predeterminada (quita la anterior del usuario). */
     public function setPredeterminada($id, $usuarioId) {
         $this->clearPredeterminada($usuarioId);
         $stmt = $this->db->prepare("UPDATE direcciones SET es_predeterminada = 1 WHERE id = :id AND usuario_id = :uid");
         return $stmt->execute(['id' => (int)$id, 'uid' => (int)$usuarioId]);
     }
 
+    /** Quita el flag predeterminada a todas las direcciones del usuario. */
     private function clearPredeterminada($usuarioId) {
         $stmt = $this->db->prepare("UPDATE direcciones SET es_predeterminada = 0 WHERE usuario_id = :uid");
         $stmt->execute(['uid' => (int)$usuarioId]);
     }
 
+    /**
+     * Garantiza que el usuario conserve al menos una predeterminada:
+     * si no tiene ninguna, promueve la de creación más antigua.
+     */
     private function ensureOnePredeterminada($usuarioId) {
         $has = $this->db->prepare("SELECT COUNT(*) FROM direcciones WHERE usuario_id = :uid AND es_predeterminada = 1");
         $has->execute(['uid' => (int)$usuarioId]);

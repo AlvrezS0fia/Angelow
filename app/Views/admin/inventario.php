@@ -1,4 +1,19 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: admin/inventario.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Panel de administrador para la gestión completa del
+ | inventario de productos (consultar stock, filtrar, editar y eliminar).
+ |
+ | ARCHIVOS EXTERNOS: inventario.css (estilos), back-button.css,
+ | jsPDF para exportar el reporte a PDF y la API ficticia /api/inventario.
+ |
+ | JS QUE LA CONTROLA: el bloque <script> de este mismo archivo, que se
+ | encarga de cargar productos, aplicar filtros, actualizar stock,
+ | eliminar productos y exportar el listado a PDF.
+ |========================================================================
+*/
 // Verificar autenticación y rol de administrador
 if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
     header('Location: ' . APP_URL . '/auth/login');
@@ -23,6 +38,7 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
 </head>
 <body>
 
+<!-- SECCIÓN: Encabezado de la página con el logo de ANGELOW y botón para volver al inicio -->
 <header class="angelow-header">
     <a href="<?= APP_URL ?>/" class="logo">
         <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="logo-img">
@@ -40,6 +56,7 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
 </header>
 
 <main class="main-container">
+    <!-- SECCIÓN: Título de la vista y botones para exportar el inventario a PDF o actualizar los datos -->
     <div class="section-header">
         <h2 class="section-title">Gestion de Inventario</h2>
         <div class="action-buttons">
@@ -48,6 +65,7 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
         </div>
     </div>
 
+    <!-- SECCIÓN: Filtros para buscar productos por estado del stock, categoría o nombre -->
     <div class="inventory-filters">
         <div class="filter-group">
             <div class="filter-title">Estado del Stock</div>
@@ -70,6 +88,7 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
         </div>
     </div>
 
+    <!-- SECCIÓN: Tarjetas resumen con métricas del inventario (totales, unidades, agotados y stock bajo) -->
     <div class="inventory-summary">
         <div class="metric-card">
             <div class="metric-header">
@@ -106,9 +125,10 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
                 </div>
                 <div class="metric-icon inv-icon-low"><i class="fas fa-bell"></i></div>
             </div>
-        </div>
-        </div>
+</div>
+    </div>
 
+    <!-- SECCIÓN: Tabla con el listado de productos del inventario que se rellena desde JavaScript -->
     <div class="inventory-table-container">
         <table class="admin-table">
             <thead>
@@ -176,6 +196,7 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
     </div>
 </footer>
 
+<!-- SECCIÓN: Modal para editar el stock de un producto (establecer, agregar o quitar unidades) -->
 <!-- Modal Editar Stock - Profesional -->
 <div class="modal-overlay" id="stockEditModal">
     <div class="modal-container modal-stock">
@@ -264,6 +285,7 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
     </div>
 </div>
 
+<!-- SECCIÓN: Modal de confirmación antes de eliminar un producto del inventario -->
 <!-- Modal Confirmar Eliminación -->
 <div class="modal-overlay" id="deleteConfirmModal">
     <div class="modal-container modal-delete">
@@ -307,6 +329,7 @@ if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administr
 <script>
 const APP_URL_BASE = APP_URL;
 
+// Notificaciones emergentes (toast) que se usan en toda la vista para informar al administrador
 function showToast({title, message, type = "info", duration = 4000}) {
     let container = document.getElementById("toastContainer");
     if (!container) {
@@ -344,6 +367,7 @@ let deletingProductId = null;
 let currentMaxLimit = 9999;
 let currentStockOp = 'set';
 
+// Carga inicial de los productos desde la API cuando se abre la vista
 async function loadInitialProducts() {
     try {
         const res = await fetch(`${APP_URL_BASE}/api/inventario`, { headers: { 'Accept': 'application/json' } });
@@ -620,6 +644,7 @@ async function confirmDeleteProduct() {
 }
 
 async function exportToPDF() {
+    // Exporta el listado filtrado a un PDF con reporte de inventario
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     doc.setFontSize(18);
@@ -683,6 +708,7 @@ function initQuantityButtons() {
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
+    // Al cargar la página se piden los productos, se asignan los filtros y botones, y se muestra el año actual
     await loadInitialProducts();
     initFilters();
     initQuantityButtons();
@@ -709,6 +735,7 @@ window.closeDeleteModal = closeDeleteModal;
 window.confirmDeleteProduct = confirmDeleteProduct;
 window.setStockOp = setStockOp;
 </script>
+<!-- Fin del bloque <script> que controla el inventario: está alimentado únicamente por este archivo (no hay JS externo) -->
 
 </body>
 </html>

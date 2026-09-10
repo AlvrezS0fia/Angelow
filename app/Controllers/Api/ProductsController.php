@@ -1,10 +1,26 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: ProductsController.php — MÓDULO: API de productos (admin)
+ * ============================================================
+ * QUÉ HACE: CRUD de productos para el panel administrativo: listar todos,
+ *   ver detalle, crear, actualizar y eliminar. Solo accesible para admin.
+ * MODELO(S) QUE USA: ProductoModel
+ * ENDPOINTS/RUTAS: GET /api/productos, GET /api/productos/{id},
+ *   POST /api/productos, PUT /api/productos/{id}, DELETE /api/productos/{id}
+ * QUIÉN LO CONSUME: panel.js (gestión de productos del administrador)
+ */
 namespace App\Controllers\Api;
 
 use App\Core\Controller;
 use App\Models\ProductoModel;
 
 // HERENCIA: controlador concreto que hereda la respuesta JSON de la base.
+/**
+ * Controlador admin de productos. Todas las acciones requieren sesión admin.
+ * Decodifica campos JSON (imágenes, tallas, colores, características) del modelo
+ * antes de retornarlos, normalizando tipos para el frontend.
+ */
 class ProductsController extends Controller {
     private ProductoModel $productoModel;
 
@@ -29,10 +45,6 @@ class ProductsController extends Controller {
     }
 
     // GET /api/productos → Lista todos los productos (solo admin).
-    //   ↓ Los datos vienen de: tabla `productos` (JOIN categorias/subcategorias)
-    //   ↓ Se procesan en: checkAdmin() + ProductoModel::getAll()
-    //   ↓ Se transforman en: campos planos (JSON de tallas/colores/imágenes decodificados)
-    //   ↓ Retorna a: fetch() del panel admin (JSON array)
     public function index() {
         $this->checkAdmin();
         $productos = $this->productoModel->getAll();
@@ -80,9 +92,6 @@ class ProductsController extends Controller {
     }
 
     // GET /api/productos/{id} → Detalle de un producto (solo admin).
-    //   ↓ Los datos vienen de: tabla `productos` WHERE id = {id}
-    //   ↓ Se procesan en: checkAdmin() + ProductoModel::getById($id)
-    //   ↓ Retorna: JSON con el producto o 404 si no existe
     public function show(int $id) {
         $this->checkAdmin();
         $producto = $this->productoModel->getById($id);
@@ -127,10 +136,6 @@ class ProductsController extends Controller {
     }
 
     // POST /api/productos → Crea un producto nuevo (solo admin).
-    //   ↓ Datos recibidos desde: formulario del panel (JSON en el body)
-    //   ↓ Validación en: checkAdmin() + nombre y precio obligatorios
-    //   ↓ Se guarda en: tabla `productos` (INSERT) vía ProductoModel::create
-    //   ↓ Retorna: JSON {success, id}
     public function store() {
         $this->checkAdmin();
         $data = json_decode(file_get_contents('php://input'), true);
@@ -152,10 +157,6 @@ class ProductsController extends Controller {
     }
 
     // PUT /api/productos/{id} → Actualiza un producto (solo admin).
-    //   ↓ Datos recibidos desde: formulario de edición (JSON en el body)
-    //   ↓ Validación en: checkAdmin() + existencia del producto (404 si no está)
-    //   ↓ Se guarda en: tabla `productos` (UPDATE) vía ProductoModel::update
-    //   ↓ Retorna: JSON {success}
     public function update(int $id) {
         $this->checkAdmin();
         $data = json_decode(file_get_contents('php://input'), true);
@@ -178,9 +179,6 @@ class ProductsController extends Controller {
     }
 
     // DELETE /api/productos/{id} → Elimina un producto (solo admin).
-    //   ↓ Validación en: checkAdmin() + existencia del producto
-    //   ↓ Se procesa en: ProductoModel::delete (DELETE de `productos`)
-    //   ↓ Retorna: JSON {success}
     public function destroy(int $id) {
         $this->checkAdmin();
         $existing = $this->productoModel->getById($id);

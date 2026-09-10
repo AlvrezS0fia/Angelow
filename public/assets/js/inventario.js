@@ -1,3 +1,17 @@
+/**
+ * ============================================================
+ * ARCHIVO: inventario.js
+ * QUÉ HACE: Gestiona el inventario de productos del panel admin
+ *            con CRUD en memoria: filtros (todos/en stock/stock
+ *            bajo/sin stock), búsqueda, edición de stock y
+ *            exportación del reporte a PDF.
+ * TIPO: DEMO (usa datos en memoria con APP_URL en imágenes)
+ * ENDPOINTS QUE CONSUME: Ninguno (datos forzados en el navegador)
+ * CLÁVES localStorage QUE USA: Ninguna
+ * LIBRERÍAS EXTERNAS: jsPDF + jspdf-autotable (exportar PDF)
+ * ============================================================
+ */
+
 // Toast notifications system
 function showToast({title, message, type = "info", duration = 4000}) {
     let container = document.getElementById("toastContainer");
@@ -34,6 +48,7 @@ function showToast({title, message, type = "info", duration = 4000}) {
 }
 
 // Inventory Products Data
+// Listado de productos de ejemplo con el que se inicializa la tabla
 let inventoryProducts = [];
 let currentFilter = 'all';
 let currentCategory = 'all';
@@ -41,6 +56,7 @@ let currentSearch = '';
 let editingProductId = null;
 let currentMaxLimit = 9999;
 
+// Devuelve la lista inicial de productos de demostración
 function loadInitialProducts() {
     return [
         { id: 1, name: "Conjunto Deportivo", category: "Ninos", price: 89990, stock: 15, image: APP_URL + "/assets/imagenes/ninos/Frente Conjunto Deportivo.png" },
@@ -54,6 +70,7 @@ function loadInitialProducts() {
     ];
 }
 
+// Llena el select de categorías con las categorías únicas de los productos
 function updateCategoryFilter() {
     const categories = [...new Set(inventoryProducts.map(p => p.category))];
     const select = document.getElementById('inventoryCategoryFilter');
@@ -65,6 +82,8 @@ function updateCategoryFilter() {
     }
 }
 
+// Aplica los filtros activos (estado de stock, categoría y búsqueda)
+// y devuelve los productos que coinciden
 function getFilteredProducts() {
     let filtered = [...inventoryProducts];
     if (currentFilter !== 'all') {
@@ -82,6 +101,7 @@ function getFilteredProducts() {
     return filtered;
 }
 
+// Pinta las filas de la tabla de inventario según los filtros activos
 function renderInventoryTable() {
     const tbody = document.getElementById('inventoryTableBody');
     if (!tbody) return;
@@ -110,6 +130,7 @@ function renderInventoryTable() {
     }).join('');
 }
 
+// Actualiza las tarjetas de resumen (total productos, unidades, sin stock, stock bajo)
 function updateSummary() {
     const totalProducts = inventoryProducts.length;
     const totalStock = inventoryProducts.reduce((sum, p) => sum + p.stock, 0);
@@ -121,6 +142,8 @@ function updateSummary() {
     document.getElementById('lowStockInventory').innerText = lowStock;
 }
 
+// Ajusta el límite máximo de unidades según el tipo de cambio elegido
+// (aumentar, disminuir o fijar stock) y muestra la pista al usuario
 function updateMaxLimit(changeType, currentStock) {
     let max = 9999;
     let hint = '';
@@ -147,6 +170,7 @@ function updateMaxLimit(changeType, currentStock) {
     if (hintSpan) hintSpan.innerText = hint;
 }
 
+// Abre el modal de edición de stock para el producto indicado
 function openStockEditModal(productId) {
     const product = inventoryProducts.find(p => p.id === productId);
     if (!product) return;
@@ -160,11 +184,14 @@ function openStockEditModal(productId) {
     document.getElementById('stockEditModal').classList.add('active');
 }
 
+// Cierra el modal de edición de stock y limpia el producto en edición
 function closeStockEditModal() {
     document.getElementById('stockEditModal').classList.remove('active');
     editingProductId = null;
 }
 
+// Aplica el cambio de stock según el tipo (aumentar/disminuir/fijar)
+// y refresca la tabla, el resumen y el modal
 function updateStock() {
     const product = inventoryProducts.find(p => p.id === editingProductId);
     if (!product) return;
@@ -186,6 +213,7 @@ function updateStock() {
     showToast({ title: "Stock actualizado", message: `${product.name} ahora tiene ${newStock} unidades.`, type: "success" });
 }
 
+// Genera y descarga un PDF con el reporte del inventario filtrado
 async function exportToPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -207,6 +235,8 @@ async function exportToPDF() {
     showToast({ title: "Exito", message: "Inventario exportado a PDF", type: "success" });
 }
 
+// Conecta los botones de filtro, el select de categorías, el buscador
+// y los botones de refrescar y exportar a sus respectivas acciones
 function initFilters() {
     document.querySelectorAll('[data-inventory-filter]').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -240,6 +270,8 @@ function initFilters() {
     document.getElementById('exportInventoryBtn')?.addEventListener('click', exportToPDF);
 }
 
+// Vincula los botones +/-, el campo de cantidad y el selector de
+// tipo de cambio para limitar la cantidad según el máximo permitido
 function initQuantityButtons() {
     const decrementBtn = document.getElementById('decrementQty');
     const incrementBtn = document.getElementById('incrementQty');

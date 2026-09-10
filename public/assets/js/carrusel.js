@@ -1,5 +1,20 @@
+/**
+ * ============================================================
+ * ARCHIVO: carrusel.js
+ * QUÉ HACE: Construye el carrusel hero de la portada (tarjetas
+ *            de regalo, promos y ofertas), el contador de ofertas
+ *            relámpago, los temporizadores de descuento y una
+ *            tarjeta rasca-gana que revela un cupón.
+ * TIPO: DEMO (usa datos estáticos en el navegador; sin fetch)
+ * ENDPOINTS QUE CONSUME: Ninguno
+ * CLÁVES localStorage QUE USA: Ninguna (usa APP_URL global)
+ * LIBRERÍAS EXTERNAS: Font Awesome (iconos de las ofertas)
+ * ============================================================
+ */
+
 // ======================== HERO CAROUSEL PROFESIONAL ========================
 (function() {
+  // Definición de los datos de las tarjetas de regalo (montos y colores)
   const cardsData = [
     { amount: "$140.000", bg: "linear-gradient(135deg, #1E40AF, #3B82F6)", label: "#BAE6FD", val: "#FFFFFF" },
     { amount: "$120.000", bg: "linear-gradient(135deg, #FFFFFF, #EFF6FF)", label: "#1E40AF", val: "#0A1628" },
@@ -7,6 +22,7 @@
     { amount: "$80.000",  bg: "linear-gradient(135deg, #DBEAFE, #F0F9FF)", label: "#1E40AF", val: "#0A1628" }
   ];
 
+  // Definición de las diapositivas (tarjetas de regalo, promos, flash y envío)
   const slides = [
     { type: "cards", title: "Tarjetas de Regalo", sub: "El regalo perfecto para cada ocasión" },
     { type: "promo", badge: "Nueva colección", title: "Color Dreamers", subtitle: "Viste la temporada con estilo, comodidad y color", btnText: "Explorar colección", link: "/compra" },
@@ -26,12 +42,14 @@
   let carouselSection = null;
   const totalSlides = slides.length;
 
+  // Muestra una notificación toast si el carrusel global está disponible
   function notify(title, message, type = "info") {
     if (typeof window.showToast === "function") {
       window.showToast({ title, message, type });
     }
   }
 
+  // Construye el HTML de una tarjeta de bono regalo
   function createGiftCard(card) {
     const el = document.createElement("div");
     el.className = "gift-card";
@@ -50,6 +68,7 @@
     return el;
   }
 
+  // Genera el DOM de todas las diapositivas del carrusel en un fragmento
   function buildSlides() {
     const fragment = document.createDocumentFragment();
     slides.forEach((slide) => {
@@ -83,6 +102,7 @@
     return fragment;
   }
 
+  // Inicia un contador regresivo de 2 horas para la oferta relámpago
   function initCountdown() {
     const timerDiv = document.getElementById("countdownTimer");
     if (!timerDiv) return;
@@ -110,6 +130,7 @@
     setInterval(update, 1000);
   }
 
+  // Mueve el carrusel a la diapositiva indicada (con límites válidos)
   function goToSlide(index) {
     if (!wrapper) return;
     if (index < 0) index = 0;
@@ -124,6 +145,7 @@
     }
   }
 
+  // Reinicia la barra de progreso que indica el tiempo de cada diapositiva
   function resetProgressBar() {
     if (!progressBar) return;
     progressBar.style.transition = "none";
@@ -133,10 +155,12 @@
     setTimeout(() => { if (progressBar && !isPaused) progressBar.style.width = "100%"; }, 20);
   }
 
+  // Avanza automáticamente a la siguiente diapositiva (si no está en pausa)
   function autoSlide() {
     if (!isPaused) goToSlide((currentIndex + 1) % totalSlides);
   }
 
+  // Pausa la rotación automática y detiene la barra de progreso
   function pauseCarousel() {
     if (isPaused) return;
     isPaused = true;
@@ -145,6 +169,7 @@
     if (carouselSection) carouselSection.classList.add("paused");
   }
 
+  // Reanuda la rotación automática y reinicia la barra de progreso
   function resumeCarousel() {
     if (!isPaused) return;
     isPaused = false;
@@ -153,6 +178,7 @@
     if (carouselSection) carouselSection.classList.remove("paused");
   }
 
+  // Vincula los botones de acción de cada diapositiva para navegar al enlace
   function bindSlideActions() {
     document.querySelectorAll(".slide-action").forEach(btn => btn.addEventListener("click", (e) => {
       e.preventDefault();
@@ -161,6 +187,8 @@
     }));
   }
 
+  // Construye el carrusel: viewport, wrapper, barras de progreso, botones,
+  // puntos de navegación, gestos táctiles y rotación automática
   function initHeroCarousel() {
     const container = document.getElementById("heroCarouselContainer");
     if (!container) return;
@@ -258,6 +286,7 @@
 // ======================== OFERTAS RELÁMPAGO PROFESIONALES ========================
 (function() {
   const baseUrl = (typeof window.APP_URL === "string") ? window.APP_URL : "";
+  // Datos de las ofertas con descuento y tiempo de vigencia relativo
   const offersData = [
     { id: 1, productId: 1, name: "Conjunto deportivo", oldPrice: 129900, newPrice: 89900, discount: "31%", icon: "Moda", endTimeOffset: 2.5 * 3600 * 1000 },
     { id: 2, productId: 6, name: "Conjunto infantil", oldPrice: 119900, newPrice: 85900, discount: "28%", icon: "Niñas", endTimeOffset: 5 * 3600 * 1000 },
@@ -273,6 +302,7 @@
   const grid = document.getElementById("dynamicOffersGrid");
   if (!grid) return;
 
+  // Convierte milisegundos en formato HH:MM:SS
   function formatTime(ms) {
     if (ms <= 0) return "00:00:00";
     const hours = Math.floor(ms / 3600000);
@@ -281,6 +311,7 @@
     return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   }
 
+  // Actualiza los temporizadores y marca las ofertas vencidas como expiradas
   function updateTimers() {
     const now = Date.now();
     offersData.forEach(offer => {
@@ -294,6 +325,7 @@
     });
   }
 
+  // Abre la vista rápida o redirige al detalle/compra del producto
   function openProduct(id) {
     if (typeof window.openProductDetail === "function") {
       window.openProductDetail(id);
@@ -304,6 +336,7 @@
     }
   }
 
+  // Construye las tarjetas de ofertas en la grilla e inicia sus temporizadores
   function initOffers() {
     const nowBase = Date.now();
     offersData.forEach(offer => { offer.endTime = nowBase + offer.endTimeOffset; });
@@ -349,12 +382,14 @@
 })();
 
 // ======================== SCRATCH CARD SIMPLE ========================
+// Tarjeta rasca-gana: selecciona un cupón aleatorio al hacer clic
 (function() {
   const surface = document.getElementById("scratchSurface");
   const coupon = document.getElementById("couponResult");
   const text = document.getElementById("scratchText");
   if (!surface || !coupon) return;
 
+  // Cupones posibles y selección aleatoria del premio
   const coupons = ["10% OFF", "15% OFF", "Envío gratis", "Bono $20.000"];
   const selected = coupons[Math.floor(Math.random() * coupons.length)];
   let revealed = false;

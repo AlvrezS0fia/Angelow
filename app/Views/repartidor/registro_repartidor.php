@@ -1,3 +1,18 @@
+<!--
+  ==========================================================================
+  VISTA: repartidor/registro_repartidor.php
+  --------------------------------------------------------------------------
+  QUÉ MUESTRA: Registro de repartidores en 4 pasos (datos personales,
+  vehículo, documentos y confirmación). Incluye validación en vivo, carga
+  de documentos y envío final del formulario por fetch.
+
+  ARCHIVOS EXTERNOS: back-button.css, Font Awesome y fuentes Google;
+  estilos propios en un <style> del <head>.
+
+  JS QUE LA CONTROLA: <script> inline al final (pasos, validación, subida
+  de archivos y envío del formulario).
+  ==========================================================================
+-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -131,6 +146,7 @@ input::placeholder{color:var(--text-secondary);font-weight:400;}
 </head>
 <body>
 <div class="toast-container" id="toastContainer"></div>
+<!-- SECCIÓN: Barra superior con logo ANGELOW y botón Volver al login -->
 <header class="topbar">
   <div class="topbar-logo" title="ANGELOW">
     <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="#5E9DE6" stroke-width="2"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#5E9DE6" stroke-width="2" stroke-linecap="round"/></svg>
@@ -147,6 +163,7 @@ input::placeholder{color:var(--text-secondary);font-weight:400;}
   </a>
 </header>
 
+<!-- SECCIÓN: Wrapper con panel lateral (navegación de los 4 pasos) y formulario por pasos -->
 <div class="page-body">
   <div class="wrapper">
     <aside class="sidebar">
@@ -174,7 +191,9 @@ input::placeholder{color:var(--text-secondary);font-weight:400;}
       </nav>
     </aside>
 
+    <!-- SECCIÓN: Formulario de registro en 4 pasos (Datos Personales, Vehiculo, Documentos, Confirmacion) -->
     <main class="main">
+      <!-- STEP 1: Datos Personales -->
       <!-- STEP 1: Datos Personales -->
       <div class="step-panel active" id="step1">
         <div class="step-heading">
@@ -406,9 +425,11 @@ input::placeholder{color:var(--text-secondary);font-weight:400;}
   </div>
 </div>
 
+<!-- SECCIÓN: Pie de página -->
 <footer class="footer">&copy; 2026 ANGELOW. Todos los derechos reservados.</footer>
 
 <script>
+// Lógica del registro de repartidor: toasts, navegación por pasos, validación en vivo y envío por fetch (submitForm)
 function showToast({title, message, type = "info", duration = 4000}) {
   const container = document.getElementById("toastContainer");
   if (!container) return;
@@ -775,5 +796,6 @@ function submitForm() {
   });
 }
 </script>
+<!-- Fin de la lógica del registro de repartidor -->
 </body>
 </html>

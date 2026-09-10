@@ -1,3 +1,21 @@
+/**
+ * ============================================================
+ * ARCHIVO: compra.js
+ * QUÉ HACE: Implementa el checkout de 3 pasos (datos personales,
+ *            envío y pago), valida los campos en tiempo real,
+ *            aplica cupones de descuento contra el backend,
+ *            calcula totales y guarda el pedido en el servidor.
+ * TIPO: HÍBRIDO (carrito local + APIs reales)
+ * ENDPOINTS QUE CONSUME: POST {APP_URL}/api/cupones/validar,
+ *            POST {APP_URL}/procesar-compra,
+ *            POST {APP_URL}/api/carrito/vaciar
+ * CLÁVES localStorage QUE USA: angelow_cart, cart,
+ *            angelow_cart_guest, promoCode, angelow_orders,
+ *            nuevoPedido (sessionStorage)
+ * LIBRERÍAS EXTERNAS: Font Awesome (iconos)
+ * ============================================================
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
     cargarCarrito();
     seleccionarOpcionesPorDefecto();
@@ -20,6 +38,7 @@ let datosUsuario = {};
 let ultimoPedido = null;
 
 // ======================== VALIDACIONES EN TIEMPO REAL ========================
+// Asocia las validaciones blurear/escribir a los campos del paso 1 y 2
 function inicializarValidaciones() {
     const camposPaso1 = ['nombre', 'apellidos', 'email', 'cedula', 'telefono'];
     camposPaso1.forEach(id => {
@@ -52,6 +71,7 @@ function inicializarValidaciones() {
     });
 }
 
+// Marca un campo como válido o inválido según tenga contenido
 function validarCampo(input) {
     if (!input.value.trim()) {
         input.classList.add('error');
@@ -64,21 +84,25 @@ function validarCampo(input) {
     }
 }
 
+// Verifica que el texto tenga formato de correo electrónico
 function validarEmail(email) {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
 }
 
+// Valida que el teléfono tenga entre 7 y 15 dígitos
 function validarTelefono(telefono) {
     const regex = /^[0-9]{7,15}$/;
     return regex.test(telefono);
 }
 
+// Valida que la cédula tenga entre 6 y 15 dígitos
 function validarCedula(cedula) {
     const regex = /^[0-9]{6,15}$/;
     return regex.test(cedula);
 }
 
+// Devuelve la geolocalización del usuario (lat/lng) o null si no la permite
 function obtenerUbicacionUsuario() {
     return new Promise((resolve) => {
         if (!navigator.geolocation) {
@@ -93,6 +117,7 @@ function obtenerUbicacionUsuario() {
     });
 }
 
+// Valida todos los campos del paso 1 (datos del cliente y términos)
 function validarPaso1() {
     let valido = true;
     const nombre = document.getElementById('nombre');
@@ -127,6 +152,7 @@ function validarPaso1() {
     return valido;
 }
 
+// Valida todos los campos del paso 2 (dirección de envío)
 function validarPaso2() {
     let valido = true;
     const depto = document.getElementById('departamento');
@@ -153,6 +179,7 @@ function validarPaso2() {
     return valido;
 }
 
+// Precarga los datos del usuario logueado en los campos del paso 1
 function cargarDatosUsuario() {
     if (window.CURRENT_USER && window.CURRENT_USER.nombre) {
         datosUsuario = window.CURRENT_USER;
@@ -164,6 +191,7 @@ function cargarDatosUsuario() {
     }
 }
 
+// Muestra una notificación toast temporal en la esquina de la pantalla
 function showToast(mensaje, tipo = 'info') {
     const contenedor = document.getElementById('toastContainer');
     if (!contenedor) {
@@ -196,6 +224,8 @@ function calcularDescuento(codigo, subtotal) {
 }
 
 // ======================== CARGAR CARRITO ========================
+// Lee el carrito desde las claves almacenadas (por prioridad) y lo
+// carga en la variable global para renderizar el resumen
 function cargarCarrito() {
     let cartData = null;
     
@@ -240,6 +270,7 @@ function cargarCarrito() {
 }
 
 // ======================== RENDERIZAR RESUMEN ========================
+// Dibuja los productos del carrito en la vista de resumen de la compra
 function renderizarResumen() {
     const contenedor = document.getElementById('summaryItems');
     if (!contenedor) return;
@@ -291,6 +322,7 @@ function renderizarResumen() {
     actualizarTotales();
 }
 
+// Calcula subtotal, descuento, envío y total; actualiza la interfaz
 function actualizarTotales() {
     let subtotal = carrito.reduce((sum, p) => sum + (p.price || p.precio || 0) * (p.quantity || p.cantidad || 1), 0);
     let total = subtotal - descuentoAplicado + costoEnvio;
@@ -317,6 +349,8 @@ function actualizarTotales() {
 }
 
 // ======================== CUPONES ========================
+// Valida el cupón contra el backend y, si es válido, aplica el descuento
+// y guarda el código en localStorage para reutilizarlo en el próximo paso
 window.applyPromo = async function() {
     const input = document.getElementById('promoInput');
     if (!input) return;
@@ -356,6 +390,7 @@ window.applyPromo = async function() {
     actualizarTotales();
 };
 
+// Reaplica automáticamente un cupón guardado al cargar la página
 async function aplicarPromoGuardado() {
     const input = document.getElementById('promoInput');
     if (input && input.value) {
@@ -380,6 +415,7 @@ async function aplicarPromoGuardado() {
 }
 
 // ======================== ENVÍO Y PAGO ========================
+// Selecciona una opción de envío (normal o express) y fija su costo
 window.selectShipping = function(element) {
     document.querySelectorAll('.shipping-option').forEach(opt => opt.classList.remove('selected'));
     element.classList.add('selected');
@@ -390,6 +426,7 @@ window.selectShipping = function(element) {
     actualizarTotales();
 };
 
+// Selecciona un método de pago entre las opciones mostradas
 window.selectPayment = function(element) {
     document.querySelectorAll('.payment-option').forEach(opt => opt.classList.remove('selected'));
     element.classList.add('selected');
@@ -397,6 +434,7 @@ window.selectPayment = function(element) {
     if (radio) radio.checked = true;
 };
 
+// Preselecciona opciones de envío y pago si no hay una elegida aún
 function seleccionarOpcionesPorDefecto() {
     const normal = document.querySelector('.shipping-option[data-shipping="normal"]');
     if (normal) window.selectShipping(normal);
@@ -405,6 +443,8 @@ function seleccionarOpcionesPorDefecto() {
 }
 
 // ======================== PASOS ========================
+// Cambia entre los pasos del checkout validando el paso anterior,
+// actualizando la barra de progreso y los estilos de los pasos
 window.goToStep = function(step) {
     if (step === 2) {
         if (!validarPaso1()) return;
@@ -442,11 +482,15 @@ window.goToStep = function(step) {
 };
 
 // ======================== GENERAR NUMERO DE PEDIDO (temporal solo para UI local) ========================
+// Número de pedido temporal usado solo por la UI local
+// (el servidor asigna el número definitivo)
 function generarNumeroPedidoLocal() {
     return 'PENDIENTE';
 }
 
 // ======================== GUARDAR PEDIDO ========================
+// Envía el pedido completo al backend y, si es exitoso, lo registra
+// en localStorage/sessionStorage y devuelve el pedido creado
 async function guardarPedido(pedidoInfo) {
     const usuarioId = window.CURRENT_USER?.id || window.APP_USER_ID || 0;
 
@@ -550,6 +594,8 @@ async function guardarPedido(pedidoInfo) {
 }
 
 // ======================== COMPLETAR COMPRA ========================
+// Valida todos los pasos, arma el pedido, lo guarda en el servidor y
+// limpia el carrito; al final muestra la confirmación del pedido
 window.completePurchase = async function() {
     if (!document.getElementById('acceptTerms')?.checked) {
         showToast('Debes aceptar los terminos y condiciones', 'error');
@@ -669,6 +715,8 @@ window.completePurchase = async function() {
 };
 
 // ======================== MOSTRAR CONFIRMACION DE PEDIDO ========================
+// Sustituye el contenido del contenedor por la vista de confirmación
+// del pedido con los datos del cliente, envío, productos y totales
 function mostrarConfirmacionPedido(data) {
     document.querySelectorAll('.step-content').forEach(c => c.classList.remove('active'));
     const progress = document.querySelector('.progress-container');
@@ -799,6 +847,7 @@ function mostrarConfirmacionPedido(data) {
     ultimoPedido = data;
 }
 
+// Actualiza el año actual en el footer
 function actualizarAnioFooter() {
     const yearSpan = document.getElementById('currentYear');
     if (yearSpan) yearSpan.textContent = new Date().getFullYear();

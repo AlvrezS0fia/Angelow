@@ -1,22 +1,42 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: ContactoController.php — MÓDULO: Controlador de contacto
+ * ============================================================
+ * QUÉ HACE: Muestra la página de "Contáctenos" y procesa el formulario de
+ *   contacto que llega por AJAX, validando cada campo y respondiendo en JSON.
+ *   IMPORTANTE: el envío real de correo está en un bloque comentado; por ahora
+ *   el método solo responde éxito sin persistir ni enviar nada.
+ * MODELO(S) QUE USA: ninguno
+ * ENDPOINTS/RUTAS: GET /contacto, POST /contacto/enviar
+ * QUIÉN LO CONSUME: La página de contacto (vista paginas.contactenos) y su
+ *   formulario con fetch() en JavaScript.
+ */
 namespace App\Controllers;
 
 use App\Core\Controller;
 
+/**
+ * Controlador de la sección de contacto. Extiende la clase base Controller.
+ * Patrón MVC: recibe la petición y devuelve una vista o una respuesta JSON.
+ */
 class ContactoController extends Controller
 {
+    /** Muestra la vista de contacto, pasando el usuario logueado (si existe). */
     public function index()
     {
         $user = $_SESSION['user'] ?? null;
         $this->view('paginas.contactenos', ['user' => $user]);
     }
 
+    /** Procesa el formulario de contacto: valida los campos y responde JSON. */
     public function enviar()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->json(['success' => false, 'message' => 'Método no permitido']);
         }
 
+        // Lee el JSON enviado por el frontend y limpia espacios en los campos.
         $data = json_decode(file_get_contents('php://input'), true);
         $nombre = trim($data['nombre'] ?? '');
         $email = trim($data['email'] ?? '');

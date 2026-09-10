@@ -1,4 +1,19 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: admin/repartidor.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Panel del administrador para gestionar repartidores:
+ | revisar solicitudes, aprobar/rechazar, ver documentos (soat, licencia,
+ | etc.) y administrar estados (activo, suspendido, inactivo).
+ |
+ | ARCHIVOS EXTERNOS: panel.css (estilos compartidos), Font Awesome
+ | (iconos) y la API ficticia /api/admin/repartidores/*.
+ |
+ | JS QUE LA CONTROLA: un único bloque <script> en este archivo que
+ | consume las APIs de repartidores y renderiza las tarjetas/tablas.
+ |========================================================================
+*/
 if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'administrador') {
     header('Location: ' . APP_URL . '/auth/login');
     exit();
@@ -162,6 +177,7 @@ $user = $_SESSION['user'];
 <body>
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- SECCIÓN: Encabezado de la vista con logo, usuario y accesos rápidos (volver y abrir la app del repartidor) -->
     <header class="admin-header">
         <div class="admin-logo">
             <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="admin-logo-img">
@@ -193,6 +209,7 @@ $user = $_SESSION['user'];
     </header>
 
     <div class="admin-container">
+        <!-- SECCIÓN: Menú lateral con los accesos al panel de administración -->
         <nav class="admin-sidebar">
             <ul class="admin-menu">
                 <li><a href="<?= APP_URL ?>/admin"><i class="fas fa-gauge-high admin-menu-icon icon-dashboard"></i><span>Dashboard</span></a></li>
@@ -211,6 +228,7 @@ $user = $_SESSION['user'];
                         <h2 class="section-title">Gestión de Repartidores</h2>
                     </div>
 
+                    <!-- SECCIÓN: Tarjetas resumen con total de repartidores, activos, pendientes y entregas -->
                     <div class="rp-metrics">
                         <div class="rp-metric">
                             <div class="rp-metric-icon blue"><i class="fas fa-truck"></i></div>
@@ -230,6 +248,7 @@ $user = $_SESSION['user'];
                         </div>
                     </div>
 
+                    <!-- SECCIÓN: Pestañas para alternar entre solicitudes pendientes, repartidores activos y todos los repartidores -->
                     <div class="rp-tabs">
                         <button class="rp-tab active" onclick="switchTab('solicitudes')" id="tab-solicitudes">
                             <i class="fas fa-clipboard-check"></i> Solicitudes
@@ -251,6 +270,7 @@ $user = $_SESSION['user'];
                         <div class="rp-drivers-grid" id="driversGrid"></div>
                     </div>
 
+                    <!-- SECCIÓN: Panel "Todos" con una tabla completa del listado de repartidores -->
                     <div class="rp-panel" id="panel-todos">
                         <div class="rp-table-wrap">
                             <table class="rp-table">
@@ -277,8 +297,10 @@ $user = $_SESSION['user'];
     </div>
 
     <script>
+        // Utilidad para escapar texto HTML y evitar inyección al pintar datos en pantalla
         function escapeHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
 
+        // Notificaciones emergentes (toast) usadas en toda la vista
         function showToast(opts) {
             const c = document.getElementById('toastContainer');
             if (!c) return;
@@ -349,6 +371,7 @@ $user = $_SESSION['user'];
 
         let allDrivers=[];
 
+        // Variable global con el listado de repartidores traído de la API de clientes
         function docPreview(doc, label){
             if(!doc) return '<div class="rp-doc missing" style="height:200px;"><div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-soft);"><i class="fas fa-exclamation-triangle" style="color:#f59e0b;font-size:22px;margin-bottom:6px;"></i><div style="font-size:12px;color:var(--text-secondary);font-weight:500;">'+label+'</div><div style="font-size:11px;color:#9ca3af;">No subido</div></div></div>';
             const estado=doc.estado||'pendiente';
@@ -484,6 +507,7 @@ $user = $_SESSION['user'];
             document.getElementById('totalEntregasRepartidores').textContent=drivers.reduce((s,d)=>s+(d.total_entregas||0),0);
         }
 
+        // Carga inicial: trae repartidores (API de clientes), estadísticas y solicitudes pendientes
         async function loadAll(){
             try{
                 const res=await fetch(APP_URL+'/api/clientes',{headers:{'Accept':'application/json'}});
@@ -579,5 +603,6 @@ $user = $_SESSION['user'];
         style.textContent='@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}';
         document.head.appendChild(style);
     </script>
+    <!-- Fin del bloque <script> que controla la gestión de repartidores: se alimenta de /api/admin/repartidores/* -->
 </body>
 </html>

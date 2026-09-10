@@ -1,3 +1,28 @@
+/**
+ * ============================================================
+ * ARCHIVO: bienvenida.js
+ * QUÉ HACE: Lógica principal de la portada: catálogo de productos
+ *            con filtros y búsqueda, carrito y favoritos sincronizados
+ *            con el backend, sesión de invitado, panel de usuario y
+ *            tarjeta rasca-gana que desbloquea novedades.
+ * TIPO: HÍBRIDO (carrito/favoritos local + APIs reales)
+ * ENDPOINTS QUE CONSUME: GET {APP_URL}/api/carrito,
+ *            POST {APP_URL}/api/carrito/agregar,
+ *            DELETE {APP_URL}/api/carrito/eliminar,
+ *            POST {APP_URL}/api/carrito/actualizar,
+ *            POST {APP_URL}/api/carrito/sincronizar,
+ *            POST {APP_URL}/api/carrito/vaciar,
+ *            GET {APP_URL}/api/favoritos,
+ *            POST {APP_URL}/api/favoritos/agregar,
+ *            DELETE {APP_URL}/api/favoritos/eliminar
+ * CLÁVES localStorage QUE USA: angelow_client_categories,
+ *            ceil_cart, angelow_cart, angelow_favorites (y por
+ *            usuario), angelow_pending_favorite, cart_session_id,
+ *            angelow_user
+ * LIBRERÍAS EXTERNAS: Font Awesome (iconos)
+ * ============================================================
+ */
+
 // ======================== DATOS DE PRODUCTOS Y CATEGORÍAS ========================
 const products = [
   { id: 1, name: "Conjunto Deportivo", category: "Niños", subcategory: "Edición Especial", price: 49900, description: "Elegancia casual en su máxima expresión. Presentamos este conjunto deportivo de dos piezas perfecto para los peques que quieren verse modernos y sentirse cómodos todo el día.", sizes: ["2","4","6","8"], imgs: ["assets/imagenes/ninos/Frente Conjunto Deportivo.png"], stock: 15, rating: 4.5, reviews: 28, features: ["Material: 100% Algodón","Lavable a máquina","Ideal para uso diario","Diseño unisex"] },
@@ -21,6 +46,7 @@ const defaultProductConfig = {
   8: { price: 39900, stock: 10, imgs: ["assets/imagenes/ninas/Frente Set Falda.png"] }
 };
 
+// Aplica la configuración por defecto (precio, stock, imágenes) a los productos
 function normalizeProducts() {
   products.forEach((product) => {
     const config = defaultProductConfig[product.id];
@@ -44,6 +70,7 @@ let searchQuery = "";
 let currentUser = null;
 
 // ======================== FUNCIONES PARA SESIÓN INVITADO Y API ========================
+// Obtiene o crea un id de sesión para carritos de invitado
 function getSessionId() {
     let sessionId = localStorage.getItem('cart_session_id');
     if (!sessionId) {
@@ -57,12 +84,15 @@ function getSessionId() {
     return sessionId;
 }
 
+// Devuelve la clave de localStorage para favoritos según el usuario
 function getFavoritesStorageKey(user = currentUser) {
     if (user?.email) return `angelow_favorites_${user.email}`;
     if (user?.id) return `angelow_favorites_${user.id}`;
     return 'angelow_favorites';
 }
 
+// Envuelve fetch para manejar JSON, errores HTTP y errores de negocio;
+// muestra un toast de error y relanza la excepción
 async function apiFetch(url, options = {}) {
     try {
         const response = await fetch(url, {
@@ -82,6 +112,8 @@ async function apiFetch(url, options = {}) {
 }
 
 // ======================== FUNCIÓN DE NORMALIZACIÓN DEL CARRITO ========================
+// Uniforma los items del carrito (locales o del servidor) para que
+// todos tengan la misma estructura esperada por la interfaz
 function normalizeCart() {
     if (!cart || cart.length === 0) return;
     
@@ -158,6 +190,7 @@ function normalizeCart() {
     cart = normalizedCart;
 }
 
+// Escapa caracteres HTML para evitar inyecciones al renderizar texto
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -167,6 +200,7 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+// Construye la URL absoluta de una imagen a partir de una ruta relativa
 function resolveImageUrl(imagePath) {
   if (!imagePath) return "";
   const path = String(imagePath).trim();
@@ -176,6 +210,7 @@ function resolveImageUrl(imagePath) {
   return `${APP_URL}/${path.replace(/^\.?\//, "")}`;
 }
 
+// Garantiza que un producto tenga una talla seleccionada (la primera disponible)
 function ensureSelectedSize(productId) {
   const product = products.find((p) => p.id === Number(productId));
   if (!product) return null;
@@ -186,6 +221,8 @@ function ensureSelectedSize(productId) {
 }
 
 // ======================== FUNCIÓN PARA ACTUALIZAR STOCK ========================
+// Ajusta el stock local de un producto; devuelve false si no existe o
+// el stock quedaría negativo
 function updateProductStock(productId, change) {
     const product = products.find(p => p.id === productId);
     if (!product) return false;
@@ -198,6 +235,7 @@ function updateProductStock(productId, change) {
 }
 
 // ======================== CARRITO ========================
+// Carga el carrito desde el servidor (si falla, usa el local)
 async function loadCartFromServer() {
     try {
         const data = await apiFetch(`${APP_URL}/api/carrito`);
@@ -222,6 +260,7 @@ async function loadCartFromServer() {
     }
 }
 
+// Actualiza el contador de artículos del carrito en la cabecera
 function updateCartBadge() {
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     const cartCountElem = document.getElementById("cartCount");
@@ -231,6 +270,7 @@ function updateCartBadge() {
     }
 }
 
+// Crea un objeto de item de carrito con la estructura normalizada
 function createCartItem(product, size, cartId, quantity = 1) {
     return {
         id: product.id,
@@ -251,6 +291,7 @@ function createCartItem(product, size, cartId, quantity = 1) {
     };
 }
 
+// Devuelve la URL resuelta de la primera imagen del item del carrito
 function getProductImageUrl(item) {
     const product = products.find((p) => p.id === Number(item.id));
     const images = Array.isArray(item.imgs) && item.imgs.length ? item.imgs : product?.imgs;
@@ -260,6 +301,8 @@ function getProductImageUrl(item) {
     return "";
 }
 
+// Pinta los productos del carrito en el overlay lateral y enlaza los
+// botones de cantidad y eliminación
 function renderCart() {
   const container = document.getElementById("cartItems");
   if (!container) return;
@@ -330,6 +373,7 @@ function renderCart() {
   });
 }
 
+// Agrega un producto al carrito (servidor si hay sesión, local si es invitado)
 async function addToCart(pid) {
   if (event) event.stopPropagation();
   
@@ -381,6 +425,7 @@ async function addToCart(pid) {
   }
 }
 
+// Elimina un item del carrito (por su cartId) del servidor o local
 async function removeFromCart(cartId) {
   console.log('removeFromCart llamado con:', cartId);
   
@@ -416,6 +461,7 @@ async function removeFromCart(cartId) {
   }
 }
 
+// Suma o resta cantidad a un item del carrito respetando el stock
 async function updateQty(cartId, delta) {
   console.log(`updateQty llamado con cartId: ${cartId}, delta: ${delta}`);
   
@@ -504,10 +550,12 @@ async function updateQty(cartId, delta) {
 }
 
 // ======================== FAVORITOS ========================
+// Guarda los favoritos en localStorage bajo la clave del usuario
 function saveFavoritesToLocal() {
     localStorage.setItem(getFavoritesStorageKey(), JSON.stringify(favorites));
 }
 
+// Carga los favoritos guardados en localStorage
 function loadFavoritesFromLocal() {
     const key = getFavoritesStorageKey();
     const localFavs = JSON.parse(localStorage.getItem(key) || localStorage.getItem("angelow_favorites") || "[]");
@@ -517,6 +565,7 @@ function loadFavoritesFromLocal() {
     renderProducts();
 }
 
+// Carga los favoritos desde el servidor (o de forma local si no hay sesión)
 async function loadFavoritesFromServer() {
     if (!currentUser) {
         loadFavoritesFromLocal();
@@ -536,6 +585,7 @@ async function loadFavoritesFromServer() {
     }
 }
 
+// Sube al servidor los favoritos guardados mientras estaba en modo invitado
 async function syncLocalFavoritesToServer() {
     if (!currentUser) return;
     const localFavs = JSON.parse(localStorage.getItem(getFavoritesStorageKey()) || localStorage.getItem("angelow_favorites") || "[]");
@@ -556,6 +606,7 @@ async function syncLocalFavoritesToServer() {
     localStorage.removeItem("angelow_favorites");
 }
 
+// Actualiza los badges de favoritos en la interfaz
 function updateFavBadges() {
   let count = favorites.length;
   const favBadge = document.getElementById('favBadge');
@@ -566,6 +617,8 @@ function updateFavBadges() {
   if (favTotal) favTotal.textContent = count;
 }
 
+// Marca o desmarca un producto como favorito;
+// usa el servidor si hay sesión y el localStorage en modo invitado
 async function toggleFavorite(id) {
   let p = products.find(p => p.id === id);
   const isFav = favorites.includes(id);
@@ -610,6 +663,7 @@ async function toggleFavorite(id) {
   renderFavorites();
 }
 
+// Pinta la lista de productos favoritos del usuario
 function renderFavorites() {
   let list = document.getElementById('favoritesList');
   if (!list) return;
@@ -635,6 +689,7 @@ function renderFavorites() {
   `).join('');
 }
 
+// Agrega al carrito de compras un producto guardado en favoritos
 async function addFavoriteToCart(id) {
   let p = products.find(p => p.id === id);
   if (!p) return;
@@ -676,6 +731,7 @@ async function addFavoriteToCart(id) {
 }
 
 // ======================== TOAST NOTIFICATIONS ========================
+// Muestra una notificación tipo toast con icono según el tipo y cierre automático
 function showToast({title, message, type = "info", duration = 4000}) {
   const container = document.getElementById("toastContainer");
   if (!container) return;
@@ -705,6 +761,7 @@ function showToast({title, message, type = "info", duration = 4000}) {
 }
 
 // ======================== FUNCIONES DE USUARIO ========================
+// Carga las categorías de productos desde localStorage o usa las locales
 function loadCategories() {
   const storedCategories = localStorage.getItem('angelow_client_categories');
   if (storedCategories) {
@@ -715,6 +772,8 @@ function loadCategories() {
 }
 window.addEventListener('storage', e => { if (e.key === 'angelow_client_categories') loadCategories(); });
 
+// Carga el usuario activo (PHP inyectado o guardado en localStorage) y
+// sincroniza carrito y favoritos al iniciar sesión
 function loadUser() {
   if (window.phpUser && window.phpUser !== null) {
     const wasLoggedOut = !currentUser;
@@ -741,6 +800,7 @@ function loadUser() {
   }
 }
 
+// Crea un elemento de menú desplegable (dropdown item)
 function crearMenuItem(id, href, etiqueta, icono) {
   const item = document.createElement('a');
   item.href = href;
@@ -755,6 +815,7 @@ function crearMenuItem(id, href, etiqueta, icono) {
   return item;
 }
 
+// Inserta el enlace de "Facturas" en el menú desplegable del usuario
 function insertarFacturas(ancla) {
   let facturasLink = document.getElementById('facturasLink');
   if (!facturasLink) {
@@ -768,6 +829,8 @@ function insertarFacturas(ancla) {
   return facturasLink;
 }
 
+// Actualiza la interfaz de cabecera según el rol del usuario
+// (administrador, repartidor o cliente) y monta el menú correspondiente
 function updateUserUI() {
   const loginLink = document.getElementById('loginLink');
   const dropdownMenu = document.getElementById('dropdownMenu');
@@ -828,6 +891,7 @@ function updateUserUI() {
   }
 }
 
+// Cierra la sesión local y redirige al endpoint de logout del servidor
 function logout() {
     if (currentUser && (currentUser.id || currentUser.email)) {
         localStorage.setItem(getFavoritesStorageKey(currentUser), JSON.stringify(favorites));
@@ -847,6 +911,7 @@ function logout() {
 }
 
 // ======================== FILTRADO Y RENDERIZADO DE PRODUCTOS ========================
+// Devuelve los productos filtrados por categoría y término de búsqueda
 function getFilteredProducts() {
   const normalizedCategory = activeCategory.trim().toLowerCase();
   return products.filter(p => {
@@ -866,6 +931,7 @@ function getFilteredProducts() {
   });
 }
 
+// Dibuja de forma repetida las categorías de la portada en la lista horizontal
 function renderCategories() {
   let html = [...categories, ...categories, ...categories].map(c => 
     `<span class="cat-item ${activeCategory === c ? 'active' : ''}" onclick="setCategory('${c}')">${c}</span>`
@@ -873,6 +939,7 @@ function renderCategories() {
   document.getElementById("categoriesList").innerHTML = html;
 }
 
+// Pinta la cuadrícula de tarjetas de producto en la portada
 function renderProducts() {
   const grid = document.getElementById("productsGrid");
   const filtered = getFilteredProducts();
@@ -912,7 +979,9 @@ function renderProducts() {
   }).join("");
 }
 
+// Marca una categoría activa y repinta la cuadrícula de productos
 function setCategory(cat) { activeCategory = cat; renderCategories(); renderProducts(); }
+// Establece la talla seleccionada para un producto y repinta
 function selectSize(id, size) { 
     if (event) event.stopPropagation(); 
     selectedSizes[id] = size; 
@@ -920,15 +989,18 @@ function selectSize(id, size) {
 }
 
 // ======================== UI: ABRIR/CERRAR CARRITO, FAVORITOS, DETALLE ========================
+// Abre el overlay del carrito y repinta su contenido
 function openCart() { 
     const overlay = document.getElementById('cartOverlay');
     if (overlay) overlay.classList.add('active'); 
     renderCart();
 }
+// Cierra el overlay del carrito
 function closeCart() { 
     const overlay = document.getElementById('cartOverlay');
     if (overlay) overlay.classList.remove('active'); 
 }
+// Redirige a la página de compra; si no hay sesión, primero al login
 function proceedToCheckout() {
   if (!currentUser) {
     showToast({ title: "Inicia sesión", message: "Debes iniciar sesión para finalizar tu compra", type: "warning" });
@@ -939,6 +1011,7 @@ function proceedToCheckout() {
   }
 }
 
+// Abre el overlay de productos favoritos y pinta la lista
 function openFavorites() {
   const overlay = document.getElementById('favoritesOverlay');
   if (overlay) {
@@ -946,12 +1019,14 @@ function openFavorites() {
     renderFavorites();
   }
 }
+// Cierra el overlay de productos favoritos
 function closeFavorites() { 
     const overlay = document.getElementById('favoritesOverlay');
     if (overlay) overlay.classList.remove('active'); 
 }
 
 // ======================== DETALLE DEL PRODUCTO ========================
+// Abre el panel de detalle de un producto con imágenes, tallas y acciones
 function openProductDetail(id) {
   let p = products.find(p => p.id === id);
   if (!p) return;
@@ -984,11 +1059,13 @@ function openProductDetail(id) {
   document.getElementById('productDetail').classList.add('active');
   document.body.style.overflow = 'hidden';
 }
+// Cierra el panel de detalle del producto
 function closeProductDetail() { 
     document.getElementById('productDetail').classList.remove('active'); 
     document.body.style.overflow = 'auto'; 
 }
 
+// Añade el producto al carrito y redirige directo a la compra
 async function buyNowProduct(id) {
   await addToCartFromDetail(id);
   closeProductDetail();
@@ -1000,6 +1077,7 @@ async function buyNowProduct(id) {
   }
 }
 
+// Añade el producto al carrito desde el panel de detalle, validando talla y stock
 async function addToCartFromDetail(id) {
   let p = products.find(p => p.id === id);
   if (!p) {
@@ -1048,10 +1126,12 @@ let canvas, ctx, isDrawing = false;
 let scratchPixels = 0;
 const requiredPixels = 0.6;
 
+// Devuelve los productos con subcategoría "Edición Especial"
 function getNewProducts() {
   return products.filter(p => p.subcategory === "Edición Especial");
 }
 
+// Pinta la cuadrícula de productos nuevos (ediciones especiales) tras el raspado
 function renderNewProductsGrid() {
   const container = document.getElementById("dynamicOffersGrid") || document.getElementById("newProductsRevealed");
   if (!container) return;
@@ -1075,6 +1155,8 @@ function renderNewProductsGrid() {
   if (scratchMsg) scratchMsg.style.display = "none";
 }
 
+// Inicializa la tarjeta rasca-gana del canvas: dibuja la capa de
+// raspado y registra los eventos de ratón/tacto para revelar el contenido
 function initScratchCard() {
   canvas = document.getElementById("scratchCanvas") || document.getElementById("scratchSurface");
   if (!canvas) return;
@@ -1209,6 +1291,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (yearElem) yearElem.textContent = new Date().getFullYear();
 });
 
+// Comprueba si quedó un producto pendiente de marcar como favorito
+// (por ejemplo tras login desde otra página) y lo añade al servidor
 function checkPendingFavorite() {
   const pendingFavorite = localStorage.getItem("angelow_pending_favorite");
   if (pendingFavorite && currentUser) {

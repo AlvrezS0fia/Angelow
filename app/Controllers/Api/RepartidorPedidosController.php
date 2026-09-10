@@ -1,11 +1,33 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: RepartidorPedidosController.php — MÓDULO: API de pedidos del repartidor
+ * ============================================================
+ * QUÉ HACE: CRUD de pedidos para el repartidor: listar propios o disponibles
+ *   para tomar, ver detalle, crear pedidos manuales, cambiar estado
+ *   (con flujo: asignado → aceptado → recogido → en_camino → entregado)
+ *   y eliminar. Registra historial de entregas al marcar como entregado.
+ * MODELO(S) QUE USA: Ninguno — usa Database::query() directamente.
+ * ENDPOINTS/RUTAS: GET /api/repartidor/pedidos, GET /api/repartidor/pedidos/{id},
+ *   POST /api/repartidor/pedidos, PUT /api/repartidor/pedidos/{id}/status,
+ *   DELETE /api/repartidor/pedidos/{id}
+ * QUIÉN LO CONSUME: app repartidor (sección de pedidos y creación de pedidos)
+ */
 namespace App\Controllers\Api;
 
 use App\Core\Database;
 use App\Core\JWTHelper;
 
+/**
+ * Controlador de pedidos para repartidores.
+ * Soporta ver pedidos propios, pedidos disponibles (sin asignar),
+ * creación manual y transiciones de estado controladas.
+ */
 class RepartidorPedidosController
 {
+    /**
+     * Extrae el ID del repartidor desde JWT o sesión PHP.
+     */
     private function getRepartidorId()
     {
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
@@ -23,6 +45,9 @@ class RepartidorPedidosController
         return null;
     }
 
+    /**
+     * Retorna JSON con cabeceras HTTP y sale del script.
+     */
     private function json($data, $code = 200)
     {
         if (ob_get_length()) ob_clean();
@@ -32,6 +57,11 @@ class RepartidorPedidosController
         exit;
     }
 
+    /**
+     * GET /api/repartidor/pedidos — Lista pedidos.
+     * Si ?available está presente, retorna pedidos sin asignar (disponibles).
+     * Si no, retorna solo los asignados al repartidor. Filtra por status/date/search.
+     */
     public function index()
     {
         $repartidorId = $this->getRepartidorId();
@@ -114,6 +144,10 @@ class RepartidorPedidosController
         $this->json($result);
     }
 
+    /**
+     * GET /api/repartidor/pedidos/{id} — Detalle de un pedido.
+     * Verifica que esté asignado al repartidor autenticado (anti-IDOR).
+     */
     public function show($id)
     {
         $repartidorId = $this->getRepartidorId();
@@ -164,6 +198,11 @@ class RepartidorPedidosController
         ]);
     }
 
+    /**
+     * POST /api/repartidor/pedidos — Crea un pedido manualmente.
+     * Resuelve datos del cliente por ID o usa datos del JSON.
+     * Calcula total si no se provee.
+     */
     public function create()
     {
         $repartidorId = $this->getRepartidorId();
@@ -224,6 +263,10 @@ class RepartidorPedidosController
         ], 201);
     }
 
+    /**
+     * Verifica/ajusta el ENUM de estados en la tabla pedidos si es necesario.
+     * Mecanismo de auto-reparación para esquemas antiguos.
+     */
     private function ensureAsignadoStatus()
     {
         try {
@@ -235,6 +278,12 @@ class RepartidorPedidosController
         }
     }
 
+    /**
+     * PUT /api/repartidor/pedidos/{id}/status — Cambia el estado del pedido.
+     * Estados válidos: pendiente, confirmada, cambio, devolucion, rechazada.
+     * Al marcar 'entregado', registra en historial_entregas con ganancia y tiempo.
+     * Al marcar 'asignado' o 'en_camino' sin repartidor, lo asigna automáticamente.
+     */
     public function updateStatus($id)
     {
         $repartidorId = $this->getRepartidorId();
@@ -297,6 +346,10 @@ class RepartidorPedidosController
         ]);
     }
 
+    /**
+     * DELETE /api/repartidor/pedidos/{id} — Elimina un pedido y sus detalles.
+     * No verifica propiedad (riesgo de seguridad en producción).
+     */
     public function destroy($id)
     {
         $repartidorId = $this->getRepartidorId();

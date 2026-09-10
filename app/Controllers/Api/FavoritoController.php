@@ -1,4 +1,16 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: FavoritoController.php — MÓDULO: API de favoritos
+ * ============================================================
+ * QUÉ HACE: CRUD de productos favoritos del usuario: listar, agregar
+ *   y eliminar. Verifica autenticación antes de cada operación.
+ * MODELO(S) QUE USA: Favorito (modelo de favoritos)
+ * ENDPOINTS/RUTAS: GET /api/favoritos, POST /api/favoritos/agregar,
+ *   DELETE /api/favoritos/eliminar
+ * QUIÉN LO CONSUME: favoritos.js (sección de favoritos del perfil cliente)
+ */
+
 namespace App\Controllers\Api;
 
 use App\Core\Controller;
@@ -10,16 +22,25 @@ class FavoritoController extends Controller
 {
     private Favorito $favoritoModel;
 
+    /**
+     * Obtiene el ID del usuario actual desde sesión (user.id o user_id).
+     */
     private function getCurrentUserId()
     {
         return $_SESSION['user']['id'] ?? $_SESSION['user_id'] ?? null;
     }
 
+    /**
+     * Verifica si el usuario tiene sesión activa.
+     */
     private function isAuthenticated()
     {
         return $this->getCurrentUserId() !== null;
     }
 
+    /**
+     * Retorna el email del usuario actual desde sesión.
+     */
     private function getCurrentUserEmail()
     {
         return $_SESSION['user']['email'] ?? null;
@@ -27,6 +48,7 @@ class FavoritoController extends Controller
 
     public function __construct()
     {
+        // Se inyecta el modelo de favoritos para todas las operaciones CRUD.
         $this->favoritoModel = new Favorito();
     }
 

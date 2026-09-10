@@ -1,4 +1,21 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: repartidor/dashboard.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Panel del repartidor con estadísticas (pedidos, ganancias,
+ | calificación), filtros, pedidos disponibles/activos, historial de
+ | entregas, modal de rastreo con mapa (Leaflet) y notificaciones. Si la
+ | cuenta está pendiente, rechazada, suspendida o inactiva muestra la
+ | tarjeta de estado correspondiente en lugar del panel.
+ |
+ | ARCHIVOS EXTERNOS: Font Awesome, layouts/leaflet-css.php y leaflet-js.php,
+ | tokens.css, repartidor.css y repartidor-dashboard.css.
+ |
+ | JS QUE LA CONTROLA: <script> inline al final del cuerpo con la lógica
+ | de pedidos, rastreo, mapa, filtros e historial.
+ |========================================================================
+*/
 if (!isset($_SESSION['user']) || ($_SESSION['user']['rol'] ?? '') !== 'repartidor') {
     header('Location: ' . APP_URL . '/repartidor/login');
     exit();
@@ -705,6 +722,7 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
 <body>
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- SECCIÓN: Modal de rastreo de pedidos con buscador, lista, detalle, mapa y línea de progreso -->
     <!-- MÓDULO RASTREAR PEDIDO -->
     <div class="rastreo-overlay" id="rastreoOverlay">
         <div class="rastreo-modal">
@@ -741,6 +759,7 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
         </div>
     </div>
 
+    <!-- SECCIÓN: Encabezado con logo, datos del conductor y acciones (Tienda, Rastrear, Cerrar sesión) -->
     <header class="header-repartidor">
         <div class="header-contenido">
             <div class="logo-area">
@@ -775,6 +794,7 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
         </div>
     </header>
 
+    <!-- SECCIÓN: Tarjetas de estado según la solicitud (pendiente, rechazada, suspendida o inactiva) -->
     <?php if ($isPending || $isRejected || $isSuspended || $isInactiveNoRejection): ?>
     <style>
         @keyframes fadeSlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
@@ -1020,6 +1040,7 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
     </div>
 
     <?php else: ?>
+    <!-- SECCIÓN: Panel principal del repartidor con estadísticas, filtros, pedidos e historial -->
     <div class="contenedor-principal">
         <div class="grid-estadisticas">
             <div class="tarjeta-estadistica">
@@ -1176,6 +1197,7 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
 
     <?php endif; ?>
 
+    <!-- SECCIÓN: Campana de notificaciones flotante -->
     <div class="panel-notificaciones">
         <div class="campana" onclick="verNotificaciones()">
             <i class="fas fa-bell"></i>
@@ -1184,6 +1206,7 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
     </div>
 
     <script>
+        // Lógica del panel: estado global, pedidos, rastreo/mapa Leaflet, filtros, historial y notificaciones
         const APP_URL = '<?= APP_URL ?>';
         const userData = <?= json_encode($user, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         const userEstado = userData.estado || 'activo';
@@ -1970,5 +1993,6 @@ $isInactiveNoRejection = ($estado === 'inactivo' && (!$solicitudData || ($solici
             }, 30000);
         });
     </script>
+    <!-- Fin de la lógica del panel de repartidor -->
 </body>
 </html>

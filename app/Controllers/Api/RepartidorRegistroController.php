@@ -1,4 +1,16 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: RepartidorRegistroController.php — MÓDULO: API de registro de repartidores
+ * ============================================================
+ * QUÉ HACE: Registro completo de repartidor en un solo POST multipart:
+ *   datos personales, vehículo y documentos (SOAT, licencia, tarjeta,
+ *   tecnomecánica). Crea usuario + solicitud + vehículos + historial.
+ *   También permite consultar estado de solicitud por email.
+ * MODELO(S) QUE USA: UsuarioModel (crear/consultar usuario)
+ * ENDPOINTS/RUTAS: POST /api/repartidor/registro, GET /api/repartidor/estado
+ * QUIÉN LO CONSUME: app repartidor (vista registro_repartidor.php)
+ */
 namespace App\Controllers\Api;
 
 use App\Core\Database;
@@ -57,8 +69,12 @@ class RepartidorRegistroController
         exit;
     }
 
-    // POST /api/repartidor/registro
-    // Recibe multipart/form-data con los campos del formulario y los 4 archivos.
+    /**
+     * POST /api/repartidor/registro — Crea solicitud completa de repartidor.
+     * Recibe multipart/form-data con campos + 4 archivos.
+     * Flujo: validación → crear usuario/solicitud → subir documentos → notificar admins.
+     * Establece sesión con estado 'pendiente' para redirect a dashboard.
+     */
     public function registro()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -188,9 +204,10 @@ class RepartidorRegistroController
         ]);
     }
 
-    // GET /api/repartidor/estado?correo=...
-    // Consulta el estado de la solicitud de repartidor. Devuelve solo datos
-    // públicos de la solicitud (no datos del usuario ni del documento).
+    /**
+     * GET /api/repartidor/estado?correo=... — Consulta estado de solicitud.
+     * Retorna solo datos públicos (estado, motivo, fechas) — no datos personales.
+     */
     public function estado()
     {
         $email = strtolower(trim($_GET['correo'] ?? ''));
@@ -227,7 +244,11 @@ class RepartidorRegistroController
         ]);
     }
 
-    // --- VALIDACIONES (mismas reglas que el registro web) ---
+    /**
+     * Valida todos los campos del formulario de registro.
+     * Mismas reglas que el frontend: teléfono colombiano, documento 5-12 dígitos,
+     * mayor de 18 años, contraseña fuerte, placa formato ABC-123, etc.
+     */
     private function validate(
         string $nombre, string $apellido, string $email, string $celular,
         string $tipodoc, string $numdoc, string $fechaNacimiento,
@@ -300,8 +321,11 @@ class RepartidorRegistroController
         return $errors;
     }
 
-    // --- CREAR/REUTILIZAR CUENTA + SOLICITUD + VEHÍCULO + HISTORIAL ---
-    /** @return array{0:int,1:int|null} [userId, solicitudId] */
+    /**
+     * Crea o reutiliza cuenta de usuario y genera solicitud + vehículo + historial.
+     * Soporta re-registro: si el email fue rechazado previamente, reactiva la cuenta.
+     * @return array{0:int, 1:int|null} [userId, solicitudId]
+     */
     private function crearSolicitud(
         string $nombre, string $apellido, string $email, string $password,
         string $celular, string $tipodoc, string $numdoc, string $fechaNacimiento,
@@ -413,8 +437,11 @@ class RepartidorRegistroController
         return [$userId, $solicitudId];
     }
 
-    // --- GUARDAR UN DOCUMENTO EN public/uploads/documentos/ ---
-    /** @return int|null id del documento insertado */
+    /**
+     * Guarda un archivo de documento en public/uploads/documentos/.
+     * Nombre aleatorio: {userId}_{tipo}_{random}.{ext} — previene colisiones y path traversal.
+     * @return int|null ID del documento insertado o null si falla.
+     */
     private function guardarDocumento(int $userId, ?int $solicitudId, string $tipo, string $ext,
                                        array $archivo, ?string $fechaVencimiento,
                                        ?string $numeroDocumento = null): ?int
@@ -450,6 +477,10 @@ class RepartidorRegistroController
         return Database::query("SELECT LAST_INSERT_ID() as id")->fetch()['id'] ?? null;
     }
 
+    /**
+     * Envía notificación a todos los administradores activos sobre
+     * la nueva solicitud de repartidor.
+     */
     private function notificarAdministradores(string $nombreCompleto, ?int $solicitudId, int $userId): void
     {
         $admins = Database::query("SELECT id FROM usuarios WHERE rol = 'administrador' AND estado = 'activo'")->fetchAll();

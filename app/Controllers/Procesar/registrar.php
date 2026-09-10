@@ -1,12 +1,26 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: registrar.php — MÓDULO: Registro de cliente (legacy)
+ * ============================================================
+ * QUÉ HACE: Procesa el registro de un cliente nuevo recibido como JSON. Valida
+ *   email, nombre y política de contraseñas, verifica que el correo no exista,
+ *   inserta el usuario con rol 'cliente', inicia sesión automáticamente y registra
+ *   la actividad. Responde siempre JSON.
+ * MODELO(S) QUE USA: ninguno (usa conexión PDO de db.php)
+ * ENDPOINTS/RUTAS: POST procesar/registrar.php
+ * QUIÉN LO CONSUME: Formulario legacy de registro (fetch() desde JS).
+ */
 // procesar/registrar.php
 session_start();
 header('Content-Type: application/json');
 require_once 'db.php';
 
+// Estructura base de respuesta en JSON.
 $response = ['success' => false, 'message' => ''];
 
 try {
+    // Lee y decodifica el JSON enviado por el formulario de registro.
     $data = json_decode(file_get_contents('php://input'), true);
     
     $email = trim($data['email'] ?? '');
@@ -75,6 +89,7 @@ try {
     }
     
     // Insertar usuario
+    // Genera el hash bcrypt de la contraseña antes de guardar.
     $password_hash = hashPassword($password);
     
     $sql = "INSERT INTO usuarios (
@@ -85,6 +100,7 @@ try {
         0, :avatar_url, NOW(), 'activo'
     )";
     
+    // Inserta el cliente con email_verificado=0 y avatar generado con iniciales.
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         ':email' => $email,

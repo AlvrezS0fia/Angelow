@@ -3,13 +3,30 @@ namespace App\Models;
 
 use App\Core\Database;
 
+/**
+ * ============================================================
+ * ARCHIVO: TarjetaModel.php — MÓDULO: Modelo de tarjetas de crédito
+ * ============================================================
+ * QUÉ HACE: CRUD de tarjetas de crédito. Almacena solo los últimos 4 dígitos
+ *           (numero_enmascarado). Eliminación lógica (activa=0). Detecta
+ *           tipo de tarjeta por prefijo. Garantiza una predeterminada por usuario.
+ * TABLA(S): tarjetas_credito
+ * QUIÉN LO USA: Cliente\TarjetaController
+ */
 class TarjetaModel {
+    /** @var \PDO Conexión PDO obtenida del Singleton Database */
     private $db;
 
     public function __construct() {
         $this->db = Database::getInstance()->getConnection();
     }
 
+    /**
+     * Tarjetas activas de un usuario. Nunca expone el número completo:
+     * solo numero_enmascarado (últimos 4 dígitos).
+     * @param int|string $usuarioId
+     * @return array<int, array<string, mixed>>
+     */
     public function getByUsuario($usuarioId) {
         $stmt = $this->db->prepare(
             "SELECT id, alias, numero_enmascarado, titular, mes_expiracion, anio_expiracion, tipo_tarjeta, es_predeterminada, activa
@@ -19,6 +36,7 @@ class TarjetaModel {
         return $stmt->fetchAll();
     }
 
+    /** Busca una tarjeta por ID verificando propiedad del usuario. */
     public function getById($id, $usuarioId) {
         $stmt = $this->db->prepare(
             "SELECT * FROM tarjetas_credito WHERE id = :id AND usuario_id = :uid"
@@ -27,14 +45,25 @@ class TarjetaModel {
         return $stmt->fetch();
     }
 
+    /**
+     * Crea una tarjeta. Nunca guarda el número completo: se limpian espacios
+     * y se conserva solo numero_enmascarado con los últimos 4. El tipo se
+     * deduce del prefijo (detectarTipo).
+     * @param int|string $usuarioId
+     * @param array<string, mixed> $data
+     * @return int|false ID insertado o false
+     */
     public function crear($usuarioId, $data) {
+        // Solo una tarjeta predeterminada por usuario
         if (!empty($data['es_predeterminada'])) {
             $this->clearPredeterminada($usuarioId);
         }
 
+        // Se quitan espacios del número y se extraen los últimos 4 dígitos
         $numeroLimpio = preg_replace('/\s/', '', $data['numero_tarjeta'] ?? '');
         $ultimos4 = substr($numeroLimpio, -4);
 
+        // Detección del tipo (visa/mastercard/amex/discover) por prefijo
         $tipoTarjeta = $this->detectarTipo($numeroLimpio);
 
         $mes = (int)($data['mes_expiracion'] ?? 0);
@@ -65,6 +94,11 @@ class TarjetaModel {
         return $result ? (int)$this->db->lastInsertId() : false;
     }
 
+    /**
+     * Actualización parcial: permite cambiar alias, titular, expiración o
+     * predeterminada. NO permite cambiar el número de tarjeta (seguridad:
+     * solo se guardaría la máscara, nunca el número real).
+     */
     public function actualizar($id, $usuarioId, $data) {
         $existing = $this->getById($id, $usuarioId);
         if (!$existing) return false;
@@ -88,6 +122,10 @@ class TarjetaModel {
         return $stmt->execute($params);
     }
 
+    /**
+     * Borrado lógico: activa=0 para ocultar la tarjeta sin perder el historial.
+     * Luego asegura que exista una predeterminada para el usuario.
+     */
     public function eliminar($id, $usuarioId) {
         $stmt = $this->db->prepare("UPDATE tarjetas_credito SET activa = 0 WHERE id = :id AND usuario_id = :uid");
         $result = $stmt->execute(['id' => (int)$id, 'uid' => (int)$usuarioId]);
@@ -98,17 +136,23 @@ class TarjetaModel {
         return false;
     }
 
+    /** Marca una tarjeta como predeterminada (borra el flag en las demás). */
     public function setPredeterminada($id, $usuarioId) {
         $this->clearPredeterminada($usuarioId);
         $stmt = $this->db->prepare("UPDATE tarjetas_credito SET es_predeterminada = 1 WHERE id = :id AND usuario_id = :uid");
         return $stmt->execute(['id' => (int)$id, 'uid' => (int)$usuarioId]);
     }
 
+    /** Quita el flag predeterminada a todas las tarjetas activas del usuario. */
     private function clearPredeterminada($usuarioId) {
         $stmt = $this->db->prepare("UPDATE tarjetas_credito SET es_predeterminada = 0 WHERE usuario_id = :uid AND activa = 1");
         $stmt->execute(['uid' => (int)$usuarioId]);
     }
 
+    /**
+     * Si el usuario se queda sin predeterminada, promueve su tarjeta activa
+     * más antigua.
+     */
     private function ensureOnePredeterminada($usuarioId) {
         $has = $this->db->prepare("SELECT COUNT(*) FROM tarjetas_credito WHERE usuario_id = :uid AND es_predeterminada = 1 AND activa = 1");
         $has->execute(['uid' => (int)$usuarioId]);
@@ -123,6 +167,10 @@ class TarjetaModel {
         }
     }
 
+    /**
+     * Detecta el tipo de tarjeta según los primeros dígitos (regex de prefijo):
+     * 4→visa, 51-55→mastercard, 34/37→amex, 6011/65→discover.
+     */
     private function detectarTipo($numero) {
         if (preg_match('/^4/', $numero)) return 'visa';
         if (preg_match('/^5[1-5]/', $numero)) return 'mastercard';

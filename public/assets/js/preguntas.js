@@ -1,3 +1,17 @@
+/**
+ * ============================================================
+ * ARCHIVO: preguntas.js
+ * QUÉ HACE: Muestra el año actual en el footer, implementa el
+ *            acordeón de preguntas frecuentes (FAQ), permite
+ *            scroll suave y resalta el enlace activo según la
+ *            sección visible al hacer scroll.
+ * TIPO: ESTÁTICO (no consume API)
+ * ENDPOINTS QUE CONSUME: Ninguno
+ * CLÁVES localStorage QUE USA: Ninguna
+ * LIBRERÍAS EXTERNAS: Ninguna
+ * ============================================================
+ */
+
 document.getElementById('currentYear').textContent = new Date().getFullYear();
 
     // Funcionalidad de acordeón para preguntas frecuentes

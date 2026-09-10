@@ -1,10 +1,25 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: ClientesController.php — MÓDULO: Administración de clientes
+ * ============================================================
+ * QUÉ HACE: CRUD de usuarios/clientes desde el panel admin: listar,
+ *   buscar por nombre, cambiar rol, crear y eliminar usuarios.
+ * MODELO(S) QUE USA: UsuarioModel
+ * ENDPOINTS/RUTAS: GET /api/clientes, POST /api/clientes/buscar,
+ *   POST /api/clientes/rol, POST /api/clientes, DELETE /api/clientes/{id}
+ * QUIÉN LO CONSUME: panel.js (gestión de usuarios del administrador)
+ */
 namespace App\Controllers\Admin;
 
 use App\Core\Controller;
 use App\Models\UsuarioModel;
 
 // HERENCIA: extiende la base Controller y usa su json() heredado para la API.
+/**
+ * Controlador admin para la gestión de clientes/usuarios.
+ * Todas las acciones requieren sesión de administrador.
+ */
 class ClientesController extends Controller
 {
     private UsuarioModel $usuarioModel;

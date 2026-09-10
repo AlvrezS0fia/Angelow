@@ -1,3 +1,19 @@
+/**
+ * ============================================================
+ * ARCHIVO: pedidos_envios.js
+ * QUÉ HACE: Establece el año actual en el footer, habilita el
+ *            scroll suave hacia cada sección desde la barra de
+ *            navegación y resalta el enlace activo según el scroll.
+ * TIPO: ESTÁTICO (no consume API)
+ * ENDPOINTS QUE CONSUME: Ninguno
+ * CLÁVES localStorage QUE USA: Ninguna
+ * LIBRERÍAS EXTERNAS: Ninguna
+ * ============================================================
+ */
+
+// ============================================================
+// 1. AÑO ACTUAL EN EL FOOTER
+// ============================================================
 (function() {
     'use strict';
 
@@ -6,6 +22,9 @@
         yearElement.textContent = new Date().getFullYear();
     }
 
+    // ============================================================
+    // 2. NAVEGACIÓN SUAVE Y RESALTADO DE ENLACES
+    // ============================================================
     const navLinks = document.querySelectorAll('.nav-link');
 
     navLinks.forEach(function(link) {
@@ -29,6 +48,9 @@
         });
     });
 
+    // ============================================================
+    // 3. RESALTADO AUTOMÁTICO DE LA SECCIÓN VISIBLE AL HACER SCROLL
+    // ============================================================
     const sections = document.querySelectorAll('.term-section');
 
     window.addEventListener('scroll', function() {
@@ -36,6 +58,7 @@
         const scrollPosition = window.scrollY;
 
         sections.forEach(function(section) {
+            // Recorrer las secciones para detectar cuál está visible
             const sectionTop = section.offsetTop;
             if (scrollPosition >= sectionTop - 200) {
                 currentSectionId = section.getAttribute('id');

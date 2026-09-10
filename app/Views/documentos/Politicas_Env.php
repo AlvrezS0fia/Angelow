@@ -1,4 +1,18 @@
 <?php
+/*
+ |========================================================================
+ | VISTA: documentos/Politicas_Env.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Políticas de envío de ANGELOW: cobertura nacional, costos,
+ | tiempos de entrega, proceso, seguimiento, condiciones y problemas.
+ |
+ | ARCHIVOS EXTERNOS: politicas_env.css (estilos), back-button.css y
+ | assets/js/politicas_env.js (script externo de la vista).
+ |
+ | JS QUE LA CONTROLA: assets/js/politicas_env.js; en el <head> solo se
+ | define la constante APP_URL para usarla en el JS.
+ |========================================================================
+*/
 // La variable APP_URL está disponible globalmente
 ?>
 <!DOCTYPE html>
@@ -17,6 +31,7 @@
 <body>
 
 <header>
+    <!-- SECCIÓN: Cabecera con el logo y el botón para volver al inicio -->
     <a href="<?= APP_URL ?>/" class="logo">
         <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="logo-img">
         <div class="logo-text">
@@ -35,6 +50,7 @@
 
 <div class="terms-container">
 
+    <!-- SECCIÓN: Banner de bienvenida y encabezado del documento -->
     <div class="welcome-banner">
         <h2>POLÍTICAS DE ENVÍO</h2>
         <p>Información detallada sobre costos, tiempos y procedimientos de envío a todo Colombia</p>
@@ -45,6 +61,7 @@
         <p>Conoce nuestros métodos de envío, tiempos de entrega y condiciones de despacho</p>
     </div>
 
+    <!-- SECCIÓN: Navegación interna con anclas a las secciones de la política -->
     <div class="terms-nav">
         <a href="#cobertura" class="nav-link active">Cobertura</a>
         <a href="#costos" class="nav-link">Costos</a>
@@ -62,6 +79,7 @@
             <p>Disfruta de envío gratuito a cualquier destino en Colombia cuando tu compra supere los ciento cincuenta mil pesos. Esta promoción aplica automáticamente al finalizar tu compra.</p>
         </div>
 
+        <!-- SECCIÓN: Apartado 1 de cobertura nacional con zonas, restricciones y transportadores -->
         <div class="term-section" id="cobertura">
             <h2>1. COBERTURA NACIONAL</h2>
             <p>ANGELOW realiza envíos a todo el territorio nacional colombiano, garantizando que nuestros productos lleguen a cada rincón del país.</p>
@@ -105,6 +123,7 @@
             </div>
         </div>
 
+        <!-- (los siguientes apartados: costos, tiempos, proceso, seguimiento, condiciones, problemas e información adicional siguen el mismo patrón) -->
         <div class="term-section" id="costos">
             <h2>2. COSTOS DE ENVÍO</h2>
             <p>Los costos de envío varían según el destino de entrega y el valor total de la compra. A continuación, detallamos nuestra estructura de precios:</p>
@@ -199,7 +218,8 @@
                 <li>WhatsApp: +57 (xxx) xxx-xxxx</li>
                 <li>Teléfono: +57 (xxx) xxx-xxxx</li>
             </ul>
-            <div class="success-box">
+<!-- SECCIÓN: Caja destacada con la promoción de envío gratis -->
+        <div class="success-box">
                 <h4>Garantía de Satisfacción</h4>
                 <p>Trabajaremos contigo para resolver cualquier inconveniente.</p>
             </div>
@@ -218,6 +238,7 @@
 </div>
 
 <footer>
+    <!-- SECCIÓN: Pie de página con derechos de autor y enlaces a los demás documentos -->
     <p>&copy; <span id="currentYear"></span> ANGELOW - Tienda Online de Ropa Infantil</p>
     <p>Todos los derechos reservados</p>
     <div class="footer-links">
@@ -229,5 +250,6 @@
 </footer>
 
 <script src="<?= APP_URL ?>/assets/js/politicas_env.js"></script>
+<!-- La interacción de la vista se controla desde el JS externo assets/js/politicas_env.js -->
 </body>
 </html>

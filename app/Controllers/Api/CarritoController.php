@@ -1,10 +1,33 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: CarritoController.php — MÓDULO: API de carrito de compras
+ * ============================================================
+ * QUÉ HACE: CRUD del carrito de compras: listar, agregar, actualizar
+ *   cantidad, eliminar ítems, sincronizar carrito anónimo al login
+ *   y vaciar. No usa CarritoModel, usa Database::query directo.
+ * MODELO(S) QUE USA: Ninguno — usa Database::query() directamente.
+ * ENDPOINTS/RUTAS: GET /api/carrito, POST /api/carrito/agregar,
+ *   PUT /api/carrito/actualizar, DELETE /api/carrito/eliminar,
+ *   POST /api/carrito/sincronizar, DELETE /api/carrito/vaciar
+ * QUIÉN LO CONSUME: compra.js (flujo de compra del cliente)
+ */
 namespace App\Controllers\Api;
 
 use App\Core\Database;
 
+/**
+ * Controlador del carrito de compras. Soporta usuarios logueados
+ * (por usuario_id) y anónimos (por cookie cart_session).
+ * No extiende Controller base; gestiona JSON manualmente.
+ */
 class CarritoController {
 
+    /**
+     * GET /api/carrito — Retorna los ítems del carrito.
+     * Usa usuario_id si está logueado, o cart_session cookie si es anónimo.
+     * JOIN con productos para obtener nombre, precio, imágenes, stock y categorías.
+     */
     public function index() {
         if (ob_get_length()) ob_clean();
         header('Content-Type: application/json');
@@ -60,6 +83,11 @@ class CarritoController {
         }
     }
 
+    /**
+     * POST /api/carrito/agregar — Agrega un producto al carrito.
+     * Si ya existe (misma talla), incrementa cantidad respetaando stock.
+     * Si no existe, crea un nuevo registro con precio_unitario actual.
+     */
     public function agregar() {
         if (ob_get_length()) ob_clean();
         header('Content-Type: application/json');
@@ -137,6 +165,10 @@ class CarritoController {
         }
     }
 
+    /**
+     * PUT /api/carrito/actualizar — Cambia la cantidad de un ítem.
+     * Si cantidad ≤ 0, elimina el ítem del carrito.
+     */
     public function actualizar() {
         if (ob_get_length()) ob_clean();
         header('Content-Type: application/json');
@@ -188,6 +220,9 @@ class CarritoController {
         }
     }
 
+    /**
+     * DELETE /api/carrito/eliminar — Elimina un ítem específico del carrito.
+     */
     public function eliminar() {
         if (ob_get_length()) ob_clean();
         header('Content-Type: application/json');
@@ -218,6 +253,11 @@ class CarritoController {
         }
     }
 
+    /**
+     * POST /api/carrito/sincronizar — Fusiona el carrito anónimo (session_id)
+     *   con el del usuario logueado. Si hay duplicados, suma cantidades.
+     *   Limpia los registros anónimos y la cookie cart_session.
+     */
     public function sincronizar() {
         if (ob_get_length()) ob_clean();
         header('Content-Type: application/json');
@@ -260,6 +300,10 @@ class CarritoController {
         }
     }
 
+    /**
+     * DELETE /api/carrito/vaciar — Elimina todos los ítems del carrito
+     *   del usuario logueado o de la sesión anónima.
+     */
     public function vaciar() {
         if (ob_get_length()) ob_clean();
         header('Content-Type: application/json');

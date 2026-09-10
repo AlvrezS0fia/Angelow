@@ -1,6 +1,16 @@
 <?php
 namespace App\Core;
 
+/**
+ * ============================================================
+ * ARCHIVO: Router.php — MÓDULO: Enrutador de peticiones HTTP
+ * ============================================================
+ * QUÉ HACE: Registra rutas (método + path + controlador + acción) y las
+ *           despacha haciendo match de método HTTP + regex compilada.
+ *           Soporta parámetros de URL nombrados ({id}, {pedidoId}).
+ *           NO filtra roles; eso lo hace cada controlador.
+ * QUIÉN LO USA: public/index.php (bootstrap de la aplicación)
+ */
 class Router {
     // ENCAPSULAMIENTO: el estado interno (rutas registradas) es privado y
     // solo se manipula desde add()/dispatch(), nunca desde fuera de la clase.

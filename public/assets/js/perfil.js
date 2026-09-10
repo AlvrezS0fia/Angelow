@@ -1,3 +1,19 @@
+/**
+ * ============================================================
+ * ARCHIVO: perfil.js
+ * QUÉ HACE: Página de perfil del cliente: datos personales,
+ *            direcciones, pedidos/facturas e historial de compras.
+ * TIPO: HÍBRIDO (pedidos y facturas desde API; el resto local)
+ * ENDPOINTS QUE CONSUME: GET {APP_URL}/api/mis-pedidos,
+ *            GET {APP_URL}/api/mis-pedidos/{id}
+ * CLÁVES localStorage QUE USA: angelow_cart, angelow_addresses,
+ *            angelow_orders, angelow_cards, angelow_profile,
+ *            angelow_favorites, angelow_user, angelow_pedidos,
+ *            angelow_pagos
+ * LIBRERÍAS EXTERNAS: jsPDF + autoTable, html2canvas
+ * ============================================================
+ */
+
 // ======================== VARIABLES GLOBALES ========================
 let isEditing = false;
 let cart = JSON.parse(localStorage.getItem("angelow_cart")) || [];
@@ -23,6 +39,8 @@ const STOCK_LIMITS = {
     8: 8    // Set Falda
 };
 
+// Devuelve la clave de localStorage para favoritos según el usuario
+// actual (usa el email o el id; si no hay sesión usa una clave genérica)
 function getFavoritesStorageKey() {
     if (currentUser?.email) return `angelow_favorites_${currentUser.email}`;
     if (currentUser?.id) return `angelow_favorites_${currentUser.id}`;
@@ -41,6 +59,7 @@ const products = [
 ];
 
 // ======================== TOAST ========================
+// Muestra una notificación tipo toast con icono según el tipo y cierre automático
 function showToast({title, message, type = "info", duration = 4000}) {
     let container = document.getElementById("toastContainer");
     if (!container) {
@@ -64,7 +83,19 @@ function showToast({title, message, type = "info", duration = 4000}) {
     setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 400); }, duration);
 }
 
-// ======================== VALIDACIONES ========================
+// ================== VALIDACIONES DEL FORMULARIO DE PERFIL ==================
+// Los inputs del formulario "Datos personales" (#datosPersonales en
+// app/Views/paginas/perfil.php) se validan en este bloque antes de guardar.
+// TODAS las funciones devuelven un objeto con el MISMO contrato:
+//   { valido: boolean, mensaje: 'texto de error', valor: 'valor normalizado' }
+// Si valido=false, saveProfile() pinta el campo en rojo (mostrarErrorEnCampo).
+
+/**
+ * Valida la cédula del cliente.
+ * Reglas: obligatoria → solo números → entre 6 y 15 dígitos.
+ * @param {string} cedula Valor crudo del input #cedula.
+ * @returns {{valido: boolean, mensaje: string, valor?: string}} Resultado.
+ */
 function validarCedula(cedula) {
     if (!cedula || cedula.trim() === '') return { valido: false, mensaje: "La cédula es requerida" };
     const cedulaLimpia = cedula.trim().replace(/\s/g, '');
@@ -74,6 +105,13 @@ function validarCedula(cedula) {
     return { valido: true, mensaje: "Cédula válida", valor: cedulaLimpia };
 }
 
+/**
+ * Valida el teléfono del cliente.
+ * Reglas: obligatorio → solo números → entre 7 y 15 dígitos.
+ * Se eliminan espacios, guiones y paréntesis antes de contar los dígitos.
+ * @param {string} telefono Valor crudo del input #telefono.
+ * @returns {{valido: boolean, mensaje: string, valor?: string}} Resultado.
+ */
 function validarTelefono(telefono) {
     if (!telefono || telefono.trim() === '') return { valido: false, mensaje: "El teléfono es requerido" };
     const telefonoLimpio = telefono.trim().replace(/[\s\-\(\)]/g, '');
@@ -83,6 +121,14 @@ function validarTelefono(telefono) {
     return { valido: true, mensaje: "Teléfono válido", valor: telefonoLimpio };
 }
 
+/**
+ * Valida un nombre (compartida: nombre, apellido, destinatario, titular).
+ * Reglas: obligatorio → entre 2 y 50 caracteres → solo letras (incluye
+ * acentos y ñ) y espacios.
+ * @param {string} nombre Valor a validar.
+ * @param {string} [campo] Etiqueta que aparece en el mensaje (p. ej. "Nombre").
+ * @returns {{valido: boolean, mensaje: string, valor?: string}} Resultado.
+ */
 function validarNombre(nombre, campo = "Nombre") {
     if (!nombre || nombre.trim() === '') return { valido: false, mensaje: `${campo} es requerido` };
     const nombreLimpio = nombre.trim();
@@ -92,6 +138,13 @@ function validarNombre(nombre, campo = "Nombre") {
     return { valido: true, mensaje: `${campo} válido`, valor: nombreLimpio };
 }
 
+/**
+ * Valida la fecha de nacimiento del cliente.
+ * Reglas: obligatoria → fecha real → no futura → edad entre 1 y 120 años.
+ * El cálculo de edad ajusta por mes/día (aún no cumplió años este año).
+ * @param {string} fecha Valor crudo del input type="date" #fechaNacimiento.
+ * @returns {{valido: boolean, mensaje: string, valor?: string, edad?: number}} Resultado.
+ */
 function validarFechaNacimiento(fecha) {
     if (!fecha) return { valido: false, mensaje: "La fecha de nacimiento es requerida" };
     const fechaNac = new Date(fecha);
@@ -107,11 +160,24 @@ function validarFechaNacimiento(fecha) {
     return { valido: true, mensaje: "Fecha válida", valor: fecha, edad: edadReal };
 }
 
+/**
+ * Valida que un campo no esté vacío y devuelve el valor recortado.
+ * Se usa sobre todo para el select #genero (debe elegir una opción).
+ * @param {string} valor Valor del campo.
+ * @param {string} [nombre] Etiqueta para el mensaje (p. ej. "Género").
+ * @returns {{valido: boolean, mensaje: string, valor?: string}} Resultado.
+ */
 function validarCampoRequerido(valor, nombre = "Campo") {
     if (!valor || valor.trim() === '') return { valido: false, mensaje: `${nombre} es requerido` };
     return { valido: true, mensaje: `${nombre} válido`, valor: valor.trim() };
 }
 
+/**
+ * Valida el número de tarjeta (formulario de métodos de pago).
+ * Reglas: obligatorio → solo números → entre 13 y 19 dígitos.
+ * @param {string} numero Valor con espacios/guiones del input de tarjeta.
+ * @returns {{valido: boolean, mensaje: string, valor?: string}} Resultado.
+ */
 function validarNumeroTarjeta(numero) {
     if (!numero || numero.trim() === '') return { valido: false, mensaje: "El número de tarjeta es requerido" };
     const numeroLimpio = numero.replace(/\s/g, '');
@@ -120,6 +186,12 @@ function validarNumeroTarjeta(numero) {
     return { valido: true, mensaje: "Número de tarjeta válido", valor: numeroLimpio };
 }
 
+/**
+ * Valida el CVV/CVC de la tarjeta.
+ * Reglas: obligatorio → solo números → 3 o 4 dígitos.
+ * @param {string} cvv Valor crudo del input del CVV.
+ * @returns {{valido: boolean, mensaje: string, valor?: string}} Resultado.
+ */
 function validarCVV(cvv) {
     if (!cvv || cvv.trim() === '') return { valido: false, mensaje: "El CVV es requerido" };
     const cvvLimpio = cvv.trim();
@@ -128,6 +200,13 @@ function validarCVV(cvv) {
     return { valido: true, mensaje: "CVV válido", valor: cvvLimpio };
 }
 
+/**
+ * Valida la fecha de expiración de la tarjeta en formato MM/AA.
+ * Reglas: obligatoria → 4 dígitos → mes 1-12 → no debe estar vencida
+ * (compara mes/año contra la fecha actual).
+ * @param {string} fecha Valor crudo (p. ej. "09/28").
+ * @returns {{valido: boolean, mensaje: string, valor?: string}} Resultado.
+ */
 function validarFechaExpiracion(fecha) {
     if (!fecha || fecha.trim() === '') return { valido: false, mensaje: "La fecha de expiración es requerida" };
     const fechaLimpia = fecha.replace(/\//g, '');
@@ -144,6 +223,12 @@ function validarFechaExpiracion(fecha) {
     return { valido: true, mensaje: "Fecha válida", valor: fecha };
 }
 
+/**
+ * Valida el código postal de facturación de la tarjeta.
+ * Reglas: obligatorio → solo números → exactamente 5 dígitos.
+ * @param {string} codigo Valor crudo del input de código postal.
+ * @returns {{valido: boolean, mensaje: string, valor?: string}} Resultado.
+ */
 function validarCodigoPostal(codigo) {
     if (!codigo || codigo.trim() === '') return { valido: false, mensaje: "El código postal es requerido" };
     const codigoLimpio = codigo.trim();
@@ -152,6 +237,13 @@ function validarCodigoPostal(codigo) {
     return { valido: true, mensaje: "Código postal válido", valor: codigoLimpio };
 }
 
+/**
+ * Valida el nombre del titular de la tarjeta.
+ * Reglas: obligatorio → entre 3 y 50 caracteres → solo letras (con acentos
+ * y ñ) y espacios.
+ * @param {string} nombre Valor del input del titular.
+ * @returns {{valido: boolean, mensaje: string, valor?: string}} Resultado.
+ */
 function validarNombreTitular(nombre) {
     if (!nombre || nombre.trim() === '') return { valido: false, mensaje: "El nombre del titular es requerido" };
     const nombreLimpio = nombre.trim();
@@ -162,21 +254,25 @@ function validarNombreTitular(nombre) {
 }
 
 // ======================== FUNCIÓN DE STOCK ========================
+// Devuelve el stock máximo permitido para un producto
 function getStockLimit(productId) {
     return STOCK_LIMITS[productId] || 99;
 }
 
+// Devuelve la cantidad actual de un producto en el carrito (0 si no está)
 function getCurrentQuantityInCart(productId) {
     const item = cart.find(item => item.id === productId);
     return item ? (item.quantity || 1) : 0;
 }
 
+// Indica si aún se puede añadir más cantidad de un producto al carrito
 function canAddToCart(productId) {
     const stockLimit = getStockLimit(productId);
     const currentQty = getCurrentQuantityInCart(productId);
     return currentQty < stockLimit;
 }
 
+// Devuelve las unidades que quedan disponibles de un producto en el carrito
 function getRemainingStock(productId) {
     const stockLimit = getStockLimit(productId);
     const currentQty = getCurrentQuantityInCart(productId);
@@ -184,6 +280,7 @@ function getRemainingStock(productId) {
 }
 
 // ======================== ERRORES ========================
+// Marca un campo con estilo de error y le asocia un mensaje visible
 function marcarCampoError(elemento, mensaje) {
     if (!elemento) return;
     elemento.classList.add('input-error');
@@ -202,6 +299,7 @@ function marcarCampoError(elemento, mensaje) {
     errorSpan.style.display = 'block';
 }
 
+// Limpia los estilos de error y los mensajes de todos los campos
 function limpiarErroresCampos() {
     document.querySelectorAll('.input-error').forEach(el => {
         el.classList.remove('input-error');
@@ -215,6 +313,7 @@ function limpiarErroresCampos() {
     });
 }
 
+// Marca un campo con error por su id, le pone el foco y lo centra en pantalla
 function mostrarErrorEnCampo(id, mensaje) {
     const campo = document.getElementById(id);
     if (campo) {
@@ -225,6 +324,7 @@ function mostrarErrorEnCampo(id, mensaje) {
 }
 
 // ======================== CERRAR SESIÓN ========================
+// Muestra la alerta de confirmación para cerrar sesión
 function showLogoutConfirm() {
     const alertOverlay = document.getElementById('alertOverlay');
     const alertTitle = document.getElementById('alertTitle');
@@ -237,6 +337,7 @@ function showLogoutConfirm() {
     pendingDeleteType = 'logout';
 }
 
+// Confirma el cierre de sesión: guarda favoritos y redirige al logout
 function confirmLogout() {
     showToast({ title: "Cerrando sesión", message: "Por favor espera...", type: "info" });
     closeAlert();
@@ -248,6 +349,8 @@ function confirmLogout() {
 }
 
 // ======================== CARRITO EN PERFIL ========================
+// Renderiza el carrito del usuario dentro de la sección del perfil,
+// con controles de cantidad y stock disponible por producto
 function renderCartProfile() {
     const container = document.getElementById('cartItemsProfile');
     if (!container) return;
@@ -318,6 +421,7 @@ function renderCartProfile() {
     `;
 }
 
+// Ajusta la cantidad de un item del carrito respetando el stock máximo
 function updateQtyProfile(index, delta) {
     const item = cart[index];
     if (!item) return;
@@ -340,6 +444,7 @@ function updateQtyProfile(index, delta) {
     renderCartProfile();
 }
 
+// Elimina un producto del carrito local del perfil
 function removeFromCartProfile(index) {
     cart.splice(index, 1);
     localStorage.setItem("angelow_cart", JSON.stringify(cart));
@@ -348,6 +453,7 @@ function removeFromCartProfile(index) {
 }
 
 // ======================== PERFIL ========================
+// Alterna entre modo edición y modo guardar de los datos personales
 function toggleEdit() {
     if (isEditing) {
         const guardadoExitoso = saveProfile();
@@ -370,6 +476,14 @@ function toggleEdit() {
     }
 }
 
+/**
+ * Guarda la sección "Datos personales" del formulario de perfil.
+ * Flujo: (1) lee los 6 campos del formulario, (2) los valida uno a uno con
+ * los validadores de este bloque, (3) si hay errores muestra un toast y NO
+ * guarda (retorna false), (4) si todo valida, persiste en localStorage bajo
+ * la clave 'angelow_profile' y retorna true.
+ * @returns {boolean} true solo si se validó y guardó correctamente.
+ */
 function saveProfile() {
     const nombre = document.getElementById('nombre').value;
     const apellido = document.getElementById('apellido').value;
@@ -378,9 +492,12 @@ function saveProfile() {
     const fechaNacimiento = document.getElementById('fechaNacimiento').value;
     const genero = document.getElementById('genero').value;
 
+    // Limpia los errores visuales de una edición anterior.
     limpiarErroresCampos();
     let tieneErrores = false;
 
+    // Bloque de validación campo por campo: si un validador falla, el campo
+    // se pinta en rojo (mostrarErrorEnCampo) y se acumula el error.
     const nombreValid = validarNombre(nombre, "Nombre");
     if (!nombreValid.valido) { mostrarErrorEnCampo('nombre', nombreValid.mensaje); tieneErrores = true; }
 
@@ -418,6 +535,7 @@ function saveProfile() {
     return true;
 }
 
+// Carga los datos personales guardados y los muestra en el formulario
 function loadProfile() {
     const profileData = JSON.parse(localStorage.getItem("angelow_profile")) || {};
     if (profileData.nombre) document.getElementById('nombre').value = profileData.nombre;
@@ -429,8 +547,10 @@ function loadProfile() {
 }
 
 // ======================== DIRECCIONES ========================
+// Carga y renderiza las direcciones guardadas del usuario
 function loadAddresses() { renderAddresses(); }
 
+// Pinta la lista de direcciones o el estado vacío según corresponda
 function renderAddresses() {
     const addressList = document.getElementById('addressList');
     const emptyState = document.getElementById('emptyAddressState');
@@ -481,6 +601,7 @@ function renderAddresses() {
     `).join('');
 }
 
+// Muestra el formulario para agregar/editar una dirección
 function showAddressForm() { 
     document.getElementById('addressFormContainer').style.display = 'block'; 
     document.getElementById('addressList').style.display = 'none'; 
@@ -488,6 +609,7 @@ function showAddressForm() {
     limpiarErroresCampos();
 }
 
+// Oculta el formulario de dirección y vuelve a la lista/estado vacío
 function cancelAddressForm() { 
     document.getElementById('addressFormContainer').style.display = 'none'; 
     editingAddressId = null;
@@ -500,6 +622,7 @@ function cancelAddressForm() {
     }
 }
 
+// Valida y guarda la dirección (nueva o editada) en localStorage
 function saveAddress() {
     limpiarErroresCampos();
     
@@ -568,6 +691,7 @@ function saveAddress() {
     showToast({title: "¡Dirección agregada!", message: "Tu dirección ha sido guardada correctamente", type: "success"});
 }
 
+// Carga los datos de una dirección en el formulario para editarla
 function editAddress(id) { 
     const address = addresses.find(a => a.id === id); 
     if (!address) return; 
@@ -585,6 +709,7 @@ function editAddress(id) {
     showAddressForm(); 
 }
 
+// Establece una dirección como predeterminada
 function setDefaultAddress(id) { 
     addresses.forEach(a => a.isDefault = a.id === id); 
     localStorage.setItem("angelow_addresses", JSON.stringify(addresses)); 
@@ -592,12 +717,14 @@ function setDefaultAddress(id) {
     showToast({title: "Dirección predeterminada", message: "La dirección ha sido establecida como predeterminada", type: "success"}); 
 }
 
+// Muestra la alerta de confirmación para eliminar una dirección
 function showDeleteAddressAlert(id) { 
     pendingDeleteId = id; 
     pendingDeleteType = 'address'; 
     showAlert("¿Eliminar dirección?", "¿Estás seguro de que deseas eliminar esta dirección?"); 
 }
 
+// Elimina la dirección confirmada y deja otra como predeterminada si es preciso
 function deleteAddressConfirmed(id) { 
     addresses = addresses.filter(a => a.id !== id); 
     if (addresses.length > 0 && !addresses.some(a => a.isDefault)) {
@@ -609,6 +736,7 @@ function deleteAddressConfirmed(id) {
 }
 
 // ======================== PEDIDOS ========================
+// Carga los pedidos: desde la API si hay sesión, o desde localStorage
 function loadOrders() { 
     if (currentUser) {
         fetchOrdersFromAPI();
@@ -617,6 +745,7 @@ function loadOrders() {
     }
 }
 
+// Solicita al servidor la lista de pedidos del usuario y los renderiza
 async function fetchOrdersFromAPI() {
     try {
         const res = await fetch(`${APP_URL}/api/mis-pedidos`, {
@@ -635,6 +764,7 @@ async function fetchOrdersFromAPI() {
     }
 }
 
+// Traduce el estado del pedido servidor a su etiqueta de interfaz
 function getStatusLabel(estado) {
     const map = {
         'pendiente': 'Pendiente',
@@ -656,6 +786,7 @@ function getStatusLabel(estado) {
     return map[estado] || estado || 'Pendiente';
 }
 
+// Devuelve la clase CSS que representa el estado del pedido
 function getStatusClass(estado) {
     const map = {
         'pendiente': 'status-pending',
@@ -677,6 +808,7 @@ function getStatusClass(estado) {
     return map[estado] || 'status-pending';
 }
 
+// Devuelve el color asociado al estado del pedido
 function getStatusColor(estado) {
     const map = {
         'pendiente': '#f59e0b',
@@ -698,6 +830,7 @@ function getStatusColor(estado) {
     return map[estado] || '#6b7280';
 }
 
+// Renderiza la lista de pedidos del usuario con su estado y detalles
 function renderOrders() { 
     const ordersList = document.getElementById('ordersList'); 
     const emptyState = document.getElementById('emptyOrdersState'); 
@@ -750,6 +883,7 @@ function renderOrders() {
     }).join(''); 
 }
 
+// Consulta la factura de un pedido y abre el modal con su contenido
 async function viewInvoice(pedidoId) {
     try {
         const idNum = parseInt(pedidoId, 10);
@@ -785,6 +919,7 @@ async function viewInvoice(pedidoId) {
     }
 }
 
+// Construye y muestra el modal de la factura con los datos del pedido
 function showInvoiceModal(pedido, items) {
     const modal = document.getElementById('orderModal');
     const container = document.getElementById('orderModalContent');
@@ -919,6 +1054,7 @@ function showInvoiceModal(pedido, items) {
     document.body.style.overflow = 'hidden';
 }
 
+// Cierra el modal de la factura y restaura el scroll de la página
 function closeOrderModal() {
     const modal = document.getElementById('orderModal');
     if (modal) {
@@ -928,6 +1064,7 @@ function closeOrderModal() {
     }
 }
 
+// Genera y descarga la factura en PDF usando html2canvas y jsPDF
 function descargarFacturaPDF(numeroPedido, btn) {
     const invoiceContent = document.getElementById('orderModalContent');
     if (!invoiceContent) {
@@ -1016,8 +1153,10 @@ function descargarFacturaPDF(numeroPedido, btn) {
 }
 
 // ======================== TARJETAS ========================
+// Carga y renderiza las tarjetas de pago guardadas
 function loadCards() { renderCards(); }
 
+// Pinta la lista de tarjetas o el estado vacío según corresponda
 function renderCards() { 
     const cardList = document.getElementById('cardList'); 
     const emptyState = document.getElementById('emptyCardState'); 
@@ -1075,6 +1214,7 @@ function renderCards() {
     `).join(''); 
 }
 
+// Muestra el formulario para registrar una nueva tarjeta
 function showCardForm() { 
     document.getElementById('emptyCardState').style.display = 'none'; 
     document.getElementById('cardList').style.display = 'none'; 
@@ -1087,6 +1227,7 @@ function showCardForm() {
     initCardPreview(); 
 }
 
+// Cancela el registro de tarjeta y restaura la vista de la lista
 function cancelCardForm() { 
     document.getElementById('cardFormContainer').style.display = 'none'; 
     limpiarErroresCampos();
@@ -1101,6 +1242,7 @@ function cancelCardForm() {
     document.getElementById('displayCardExpiry').textContent = '••/••'; 
 }
 
+// Valida los datos y guarda la nueva tarjeta en localStorage
 function saveCard() { 
     limpiarErroresCampos();
     
@@ -1150,6 +1292,7 @@ function saveCard() {
     showToast({title: "¡Tarjeta guardada!", message: "Tu método de pago ha sido registrado correctamente", type: "success"}); 
 }
 
+// Previsualiza en vivo la tarjeta mientras se escriben sus datos
 function initCardPreview() { 
     const cardNumber = document.getElementById('cardNumber'); 
     const cardExpiry = document.getElementById('cardExpiry'); 
@@ -1180,12 +1323,14 @@ function initCardPreview() {
     }
 }
 
+// Muestra la alerta de confirmación para eliminar una tarjeta
 function showDeleteCardAlert(id) { 
     pendingDeleteId = id; 
     pendingDeleteType = 'card'; 
     showAlert("¿Eliminar tarjeta?", "¿Estás seguro de que deseas eliminar esta tarjeta?"); 
 }
 
+// Elimina la tarjeta confirmada y deja otra como predeterminada si es preciso
 function deleteCardConfirmed(id) { 
     cards = cards.filter(c => c.id !== id); 
     if (cards.length > 0 && !cards.some(c => c.isDefault)) {
@@ -1196,6 +1341,7 @@ function deleteCardConfirmed(id) {
     showToast({title: "Tarjeta eliminada", message: "La tarjeta ha sido eliminada correctamente", type: "success"}); 
 }
 
+// Establece una tarjeta como método de pago predeterminado
 function setDefaultCard(id) { 
     cards.forEach(c => c.isDefault = c.id === id); 
     localStorage.setItem("angelow_cards", JSON.stringify(cards)); 
@@ -1204,12 +1350,14 @@ function setDefaultCard(id) {
 }
 
 // ======================== FAVORITOS ========================
+// Carga los favoritos guardados del usuario y los pinta en el perfil
 function loadFavorites() { 
     const savedIds = JSON.parse(localStorage.getItem(getFavoritesStorageKey()) || localStorage.getItem("angelow_favorites") || "[]"); 
     favorites = products.filter(p => savedIds.includes(p.id)); 
     renderFavorites(); 
 }
 
+// Renderiza los productos favoritos del usuario en su cuadrícula
 function renderFavorites() { 
     const grid = document.getElementById('favoritesGrid'); 
     const emptyState = document.getElementById('emptyFavoritesState'); 
@@ -1236,12 +1384,14 @@ function renderFavorites() {
     `).join(''); 
 }
 
+// Muestra la alerta de confirmación para quitar un favorito
 function showDeleteFavoriteAlert(id) { 
     pendingDeleteId = id; 
     pendingDeleteType = 'favorite'; 
     showAlert("¿Eliminar de favoritos?", "¿Estás seguro de que deseas eliminar este producto de tus favoritos?"); 
 }
 
+// Elimina el favorito confirmado y guarda el cambio en localStorage
 function deleteFavoriteConfirmed(id) { 
     const favIds = favorites.filter(f => f.id !== id).map(f => f.id); 
     localStorage.setItem(getFavoritesStorageKey(), JSON.stringify(favIds)); 
@@ -1249,6 +1399,7 @@ function deleteFavoriteConfirmed(id) {
     showToast({title: "Eliminado de favoritos", message: "El producto ha sido eliminado de tus favoritos", type: "success"}); 
 }
 
+// Añade un producto favorito al carrito respetando el stock máximo
 function addToCartFromFavorites(id) { 
     const fav = favorites.find(f => f.id === id); 
     if (!fav) return; 
@@ -1292,18 +1443,22 @@ function addToCartFromFavorites(id) {
 }
 
 // ======================== ALERTA ========================
+// Muestra la alerta modal genérica con título y mensaje
 function showAlert(title, message) { 
     document.getElementById('alertTitle').textContent = title; 
     document.getElementById('alertMessage').textContent = message; 
     document.getElementById('alertOverlay').classList.add('active'); 
 }
 
+// Cierra la alerta modal y limpia el id pendiente de eliminación
 function closeAlert() { 
     document.getElementById('alertOverlay').classList.remove('active'); 
     pendingDeleteId = null; 
     // No resetear pendingDeleteType aquí para permitir logout
 }
 
+// Ejecuta la eliminación según el tipo pendiente (logout, dirección,
+// tarjeta o favorito) al confirmar la alerta
 function confirmDelete() { 
     if (pendingDeleteType === 'logout') {
         confirmLogout();
@@ -1321,23 +1476,28 @@ function confirmDelete() {
 }
 
 // ======================== AUTENTICACIÓN ========================
+// Funcionalidad de definir contraseña (en desarrollo)
 function definePassword() { 
     showToast({title: "Definir contraseña", message: "Funcionalidad en desarrollo", type: "info"}); 
 }
 
+// Funcionalidad de recuperar contraseña (en desarrollo)
 function recoverPassword() { 
     showToast({title: "Recuperar contraseña", message: "Funcionalidad en desarrollo", type: "info"}); 
 }
 
+// Muestra el número de sesiones activas actuales
 function viewSessions() { 
     showToast({title: "Sesiones activas", message: "Actualmente tienes 1 sesión activa", type: "info"}); 
 }
 
+// Funcionalidad de verificación en dos pasos (en desarrollo)
 function enableTwoFactor() { 
     showToast({title: "Verificación en dos pasos", message: "Funcionalidad en desarrollo", type: "info"}); 
 }
 
 // ======================== MENÚ LATERAL ========================
+// Enlaza los ítems del menú lateral con sus secciones del perfil
 function initSidebar() { 
     document.querySelectorAll('.menu-item[data-section]').forEach(item => { 
         item.addEventListener('click', function() { 
@@ -1361,6 +1521,7 @@ function initSidebar() {
 }
 
 // ======================== INICIALIZACIÓN ========================
+// Carga todos los módulos del perfil al cargar el DOM
 document.addEventListener('DOMContentLoaded', function() { 
     loadProfile();
     loadAddresses(); 

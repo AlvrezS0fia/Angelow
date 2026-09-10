@@ -1,3 +1,18 @@
+<!--
+ |========================================================================
+ | VISTA: documentos/Guia_Tallas.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Guía de tallas de la tienda ANGELOW con tablas de medidas
+ | para bebés, niñas y niños, cómo tomar medidas, consejos y equivalencias
+ | internacionales.
+ |
+ | ARCHIVOS EXTERNOS: guia_tallas.css (estilos), back-button.css y
+ | assets/js/guia_tallas.js (script externo de la vista).
+ |
+ | JS QUE LA CONTROLA: assets/js/guia_tallas.js (maneja el año actual y la
+ | interacción de la guía). No hay bloques <script> inline.
+ |========================================================================
+-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -13,6 +28,7 @@
 <body>
 
 <header>
+    <!-- SECCIÓN: Cabecera con el logo y el botón para volver al inicio -->
     <a href="<?= APP_URL ?>/" class="logo">
         <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="logo-img">
         <div class="logo-text">
@@ -33,6 +49,7 @@
 
 <div class="terms-container">
 
+    <!-- SECCIÓN: Banner de bienvenida con el título de la guía -->
     <div class="welcome-banner">
         <h2><i class="fas fa-ruler"></i> GUÍA DE TALLAS</h2>
         <p>Encuentra la talla perfecta para tu hijo o hija con nuestras tablas detalladas y consejos prácticos</p>
@@ -43,6 +60,7 @@
         <p>Consulta nuestras tablas de medidas y aprende a tomar las medidas correctamente</p>
     </div>
 
+    <!-- SECCIÓN: Navegación interna con anclas a las distintas secciones de la guía -->
     <div class="terms-nav">
         <a href="#bebes" class="nav-link active"><i class="fas fa-baby"></i> Bebés</a>
         <a href="#ninas" class="nav-link"><i class="fas fa-female"></i> Niñas</a>
@@ -54,12 +72,14 @@
 
     <div class="terms-content">
 
+        <!-- SECCIÓN: Aviso importante sobre cómo interpretar las tallas -->
         <div class="highlight-box">
             <h3><i class="fas fa-info-circle"></i> Información Importante</h3>
             <p>Todas nuestras medidas están expresadas en centímetros. Las tallas están basadas en la edad promedio, pero cada niño es diferente. Te recomendamos siempre consultar las medidas específicas de altura, pecho, cintura y cadera para asegurar el mejor ajuste.</p>
             <p style="margin-top: 10px;"><strong>Nota:</strong> Si tu hijo o hija está entre dos tallas, te recomendamos elegir la talla mayor para mayor comodidad y durabilidad.</p>
         </div>
 
+        <!-- SECCIÓN: Tabla de tallas para bebés de 0 a 24 meses -->
         <div class="term-section" id="bebes">
             <h2><i class="fas fa-baby"></i> TALLAS PARA BEBÉS (0-24 MESES)</h2>
             <p>Nuestras prendas para bebés están diseñadas pensando en su comodidad y facilidad de uso. Las tallas se basan en la edad y altura del bebé.</p>
@@ -71,6 +91,7 @@
                     </thead>
                     <tbody>
                         <tr><td class="size-label">0-3M</td><td>0-3 meses</td><td>50-62</td><td>3-6</td><td>40-43</td></tr>
+                        <!-- (las filas siguientes siguen el mismo patrón: talla, edad, altura, peso y pecho) -->
                         <tr><td class="size-label">3-6M</td><td>3-6 meses</td><td>62-68</td><td>6-8</td><td>43-46</td></tr>
                         <tr><td class="size-label">6-9M</td><td>6-9 meses</td><td>68-74</td><td>8-9</td><td>46-48</td></tr>
                         <tr><td class="size-label">9-12M</td><td>9-12 meses</td><td>74-80</td><td>9-11</td><td>48-50</td></tr>
@@ -86,6 +107,7 @@
             </div>
         </div>
 
+        <!-- SECCIÓN: Tabla de tallas para niñas (2-12 años) -->
         <div class="term-section" id="ninas">
             <h2><i class="fas fa-female"></i> TALLAS PARA NIÑAS (2-12 AÑOS)</h2>
             <div class="size-table-container">
@@ -108,6 +130,7 @@
             </div>
         </div>
 
+        <!-- SECCIÓN: Tabla de tallas para niños (2-12 años) -->
         <div class="term-section" id="ninos">
             <h2><i class="fas fa-male"></i> TALLAS PARA NIÑOS (2-12 AÑOS)</h2>
             <div class="size-table-container">
@@ -130,6 +153,7 @@
             </div>
         </div>
 
+        <!-- SECCIÓN: Guía paso a paso para tomar las medidas correctamente -->
         <div class="term-section" id="medidas">
             <h2><i class="fas fa-arrows-alt-h"></i> CÓMO TOMAR LAS MEDIDAS CORRECTAMENTE</h2>
             <div class="measurement-guide">
@@ -153,6 +177,7 @@
             </div>
         </div>
 
+        <!-- SECCIÓN: Consejos para elegir la talla correcta -->
         <div class="term-section" id="consejos">
             <h2><i class="fas fa-lightbulb"></i> CONSEJOS PARA ELEGIR LA TALLA CORRECTA</h2>
             <div class="highlight-box">
@@ -166,6 +191,7 @@
             </div>
         </div>
 
+        <!-- SECCIÓN: Tabla de equivalencias internacionales de tallas -->
         <div class="term-section" id="equivalencias">
             <h2><i class="fas fa-exchange-alt"></i> TABLA DE EQUIVALENCIAS INTERNACIONALES</h2>
             <div class="size-table-container">
@@ -188,6 +214,7 @@
 </div>
 
 <footer>
+    <!-- SECCIÓN: Pie de página con derechos de autor y enlaces a los demás documentos -->
     <p>&copy; <span id="currentYear"></span> ANGELOW - Tienda Online de Ropa Infantil</p>
     <div class="footer-links">
         <a href="<?= APP_URL ?>/documentos/Politicas_Priv"><i class="fas fa-lock"></i> Política de Privacidad</a>
@@ -200,5 +227,6 @@
 
 <!-- JavaScript de la Guía de Tallas -->
 <script src="<?= APP_URL ?>/assets/js/guia_tallas.js"></script>
+<!-- La interacción de la vista se controla desde el JS externo assets/js/guia_tallas.js -->
 </body>
 </html>

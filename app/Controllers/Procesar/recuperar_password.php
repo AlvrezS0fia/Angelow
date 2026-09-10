@@ -1,11 +1,24 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: recuperar_password.php — MÓDULO: Recuperación de contraseña (legacy)
+ * ============================================================
+ * QUÉ HACE: Procesa la solicitud de recuperación de contraseña recibida como JSON.
+ *   Valida el email, genera un token con expiración de 1 hora, lo guarda en la BD
+ *   y registra la solicitud. Por seguridad, NO revela si el email existe.
+ * MODELO(S) QUE USA: ninguno (usa conexión PDO de db.php)
+ * ENDPOINTS/RUTAS: POST procesar/recuperar_password.php
+ * QUIÉN LO CONSUME: Vista legacy de "olvidé mi contraseña" (fetch() desde JS).
+ */
 // procesar/recuperar_password.php
 header('Content-Type: application/json');
 require_once 'db.php';
 
+// Estructura base de respuesta en JSON.
 $response = ['success' => false, 'message' => ''];
 
 try {
+    // Lee el email enviado como JSON.
     $data = json_decode(file_get_contents('php://input'), true);
     $email = trim($data['email'] ?? '');
     
@@ -38,6 +51,7 @@ try {
     $token = generateToken(60);
     $expiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
     
+    // Guarda el token y su expiración en la BD para validarlo en el reset.
     $stmt = $pdo->prepare("UPDATE usuarios SET reset_token = ?, reset_expiry = ? WHERE id = ?");
     $stmt->execute([$token, $expiry, $usuario['id']]);
     

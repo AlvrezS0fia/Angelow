@@ -1,3 +1,18 @@
+<!--
+  ==========================================================================
+  VISTA: repartidor/login.php
+  --------------------------------------------------------------------------
+  QUÉ MUESTRA: Página de acceso del repartidor con formulario de correo y
+  contraseña. La solicitud se envía por fetch a /repartidor/login y, según
+  la respuesta, redirige al panel o avisa si hay solicitud pendiente/aprobada.
+
+  ARCHIVOS EXTERNOS: back-button.css y fuentes Google; estilos propios en
+  un <style> del <head>.
+
+  JS QUE LA CONTROLA: <script> inline al final (validateLogin, doLogin y
+  toasts); convierte avisos por query string (?pending, ?approved).
+  ==========================================================================
+-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -87,6 +102,7 @@ input::placeholder{color:var(--text-secondary);font-weight:400;}
 </head>
 <body>
 <div class="toast-container" id="toastContainer"></div>
+<!-- SECCIÓN: Barra superior con logo ANGELOW y botón Volver -->
 <header class="topbar">
   <div class="topbar-logo" title="ANGELOW">
     <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="#5E9DE6" stroke-width="2"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="#5E9DE6" stroke-width="2" stroke-linecap="round"/></svg>
@@ -103,6 +119,7 @@ input::placeholder{color:var(--text-secondary);font-weight:400;}
   </a>
 </header>
 
+<!-- SECCIÓN: Wrapper con panel lateral (pasos de acceso) y formulario de login -->
 <div class="page-body">
   <div class="wrapper">
     <aside class="sidebar">
@@ -156,9 +173,11 @@ input::placeholder{color:var(--text-secondary);font-weight:400;}
   </div>
 </div>
 
+<!-- SECCIÓN: Pie de página -->
 <footer class="footer">&copy; 2026 ANGELOW. Todos los derechos reservados.</footer>
 
 <script>
+// Lógica del login de repartidor: toasts, validación del formulario y envío por fetch (doLogin)
 function showToast({title, message, type = "info", duration = 4000}) {
   const container = document.getElementById("toastContainer");
   if (!container) return;
@@ -247,5 +266,6 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 </script>
+<!-- Fin de la lógica de login del repartidor -->
 </body>
 </html>

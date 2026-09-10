@@ -1,3 +1,18 @@
+<!--
+ |========================================================================
+ | VISTA: documentos/Pedidos_envios.php
+ |------------------------------------------------------------------------
+ | QUÉ MUESTRA: Políticas de pedidos y envíos de la tienda: cómo realizar
+ | un pedido, confirmación, procesamiento, tiempos de envío, entrega e
+ | incidencias.
+ |
+ | ARCHIVOS EXTERNOS: pedidos_envios.css (estilos), back-button.css y
+ | assets/js/pedidos_envios.js (script externo de la vista).
+ |
+ | JS QUE LA CONTROLA: assets/js/pedidos_envios.js; en el <head> solo se
+ | define la constante APP_URL para usarla en el JS.
+ |========================================================================
+-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -14,6 +29,7 @@
 <body>
 
 <header>
+    <!-- SECCIÓN: Cabecera con el logo y el botón para volver al inicio -->
     <a href="<?= APP_URL ?>/" class="logo">
         <img src="<?= APP_URL ?>/assets/imagenes/general/logos.png" alt="ANGELOW" class="logo-img">
         <div class="logo-text">
@@ -34,6 +50,7 @@
 
 <div class="terms-container">
 
+    <!-- SECCIÓN: Banner de bienvenida y encabezado del documento -->
     <div class="welcome-banner">
         <h2><i class="fas fa-shipping-fast"></i> POLÍTICAS DE PEDIDOS Y ENVÍOS</h2>
         <p>Información clara y detallada sobre el proceso de compra, despacho y entrega de productos.</p>
@@ -44,6 +61,7 @@
         <p>Aplicable a todas las compras realizadas a través de www.angelow.com</p>
     </div>
 
+    <!-- SECCIÓN: Navegación interna con anclas a las secciones de la política -->
     <div class="terms-nav">
         <a href="#pedido" class="nav-link active"><i class="fas fa-shopping-cart"></i> Realización del Pedido</a>
         <a href="#confirmacion" class="nav-link"><i class="fas fa-check-circle"></i> Confirmación</a>
@@ -55,12 +73,14 @@
 
     <div class="terms-content">
 
+        <!-- SECCIÓN: Content del documento con los apartados numerados de la política -->
         <div class="term-section" id="pedido">
             <h2><i class="fas fa-shopping-cart"></i> 1. REALIZACIÓN DEL PEDIDO</h2>
             <p>Para efectuar un pedido, el cliente debe seleccionar los productos deseados, verificar tallas, cantidades y características, y agregarlos al carrito de compra.</p>
             <p>Antes de confirmar el pedido, se debe revisar cuidadosamente la información de envío, datos personales y método de pago seleccionado. La confirmación implica la aceptación total de las condiciones comerciales vigentes.</p>
         </div>
 
+        <!-- (los siguientes apartados: confirmación, procesamiento, envíos, entrega e incidencias siguen el mismo patrón) -->
         <div class="term-section" id="confirmacion">
             <h2><i class="fas fa-check-circle"></i> 2. CONFIRMACIÓN DEL PEDIDO</h2>
             <p>Una vez realizado el pago, el sistema enviará un correo electrónico de confirmación con el número de pedido y el resumen de la compra.</p>
@@ -100,6 +120,7 @@
 </div>
 
 <footer>
+    <!-- SECCIÓN: Pie de página con derechos de autor y enlaces a los demás documentos -->
     <p>&copy; <span id="currentYear"></span> ANGELOW. Todos los derechos reservados.</p>
     <div class="footer-links">
         <a href="<?= APP_URL ?>/documentos/Pedidos_envios"><i class="fas fa-shipping-fast"></i> Pedidos y Envíos</a>
@@ -111,6 +132,7 @@
 </footer>
 
 <script src="<?= APP_URL ?>/assets/js/pedidos_envios.js"></script>
+<!-- La interacción de la vista se controla desde el JS externo assets/js/pedidos_envios.js -->
 
 </body>
 </html>

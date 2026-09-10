@@ -1,4 +1,17 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: categories.php — MÓDULO: API legacy de categorías
+ * ============================================================
+ * QUÉ HACE: CRUD de categorías y subcategorías vía script procedural
+ *   (sin namespace, sin clase). Script legacy que probablemente coexiste
+ *   con CategoriesController.php.
+ * MODELO(S) QUE USA: Ninguno — usa $pdo/$conn de config.php (mysqli).
+ * ENDPOINTS/RUTAS: GET/POST/PUT/DELETE /api/categories.php
+ * QUIÉN LO CONSUME: posiblemente panel admin antiguo o pruebas directas.
+ * NOTA: las variables del código se llaman $pdo pero config.php crea $conn
+ *   (mysqli). Script legacy sin namespace ni patrón MVC.
+ */
 require_once 'config.php';
 
 $method = $_SERVER['REQUEST_METHOD'];

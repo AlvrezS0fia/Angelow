@@ -41,6 +41,7 @@ class JWTHelper
     /** @param string|false $data */
     private static function base64urlEncode($data): string
     {
+        // Base64 estándar adaptado a URL: +/→-_ y sin padding
         return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 
@@ -62,6 +63,7 @@ class JWTHelper
             error_log('[JWT] No hay JWT_SECRET configurado; se rechaza la emisión de tokens.');
             return null;
         }
+        // Cabecera fija: HS256 (HMAC-SHA256) es el algoritmo de firma
         $header = ['typ' => 'JWT', 'alg' => 'HS256'];
         $segments = [];
         $segments[] = self::base64urlEncode(json_encode($header));
@@ -82,6 +84,7 @@ class JWTHelper
         $parts = explode('.', $token);
         if (count($parts) !== 3) return null;
 
+        // Estructura JWT: header.payload.signature (base64url)
         [$headerB64, $payloadB64, $signatureB64] = $parts;
 
         $signingInput = "$headerB64.$payloadB64";
@@ -94,6 +97,7 @@ class JWTHelper
         $payload = json_decode(self::base64urlDecode($payloadB64), true);
         if (!$payload) return null;
 
+        // Rechaza tokens expirados (exp en el pasado)
         if (isset($payload['exp']) && $payload['exp'] < time()) return null;
 
         return $payload;

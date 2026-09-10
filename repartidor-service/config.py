@@ -115,8 +115,9 @@ class ConfigManager:
         self.LOG_MAX_BYTES = 5 * 1024 * 1024
         self.LOG_BACKUP_COUNT = 3
 
-        # Seguridad: límites de request body (25 MB)
-        self.REQUEST_BODY_MAX_SIZE = 25 * 1024 * 1024
+        # Seguridad: límites de request body.
+        # 3 documentos de hasta 10 MB (MAX_FILE_SIZE) + campos del formulario ≈ 40 MB.
+        self.REQUEST_BODY_MAX_SIZE = 40 * 1024 * 1024
 
         # Seguridad: rate limit para endpoints del dashboard
         self.DASHBOARD_RATE_LIMIT_MAX = 60

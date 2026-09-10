@@ -1,18 +1,33 @@
 <?php
+/**
+ * ============================================================
+ * ARCHIVO: login.php — MÓDULO: Login (legacy)
+ * ============================================================
+ * QUÉ HACE: Procesa el login por email/password recibido como JSON. Verifica
+ *   existencia, estado y contraseña del usuario, actualiza última sesión, guarda
+ *   la sesión, opcionalmente crea una cookie de "recordarme" (30 días) y registra
+ *   la actividad. Responde siempre JSON.
+ * MODELO(S) QUE USA: ninguno (usa conexión PDO de db.php)
+ * ENDPOINTS/RUTAS: POST procesar/login.php
+ * QUIÉN LO CONSUME: Formulario legacy de login (fetch() desde JS).
+ */
 // procesar/login.php
 session_start();
 header('Content-Type: application/json');
 require_once 'db.php';
 
+// Estructura base de respuesta en JSON.
 $response = ['success' => false, 'message' => ''];
 
 try {
+    // Lee y decodifica el JSON enviado por el formulario.
     $data = json_decode(file_get_contents('php://input'), true);
     
     $email = trim($data['email'] ?? '');
     $password = $data['password'] ?? '';
     $remember = isset($data['remember']) ? (bool)$data['remember'] : false;
     
+    // Validación: email y contraseña obligatorios.
     if (empty($email) || empty($password)) {
         $response['message'] = 'Correo y contraseña son obligatorios';
         echo json_encode($response);
@@ -63,9 +78,11 @@ try {
      if ($remember) {
          $token = generateToken(60);
          
+         // Se persiste el token en la BD para poder verificar la cookie luego.
          $stmt = $pdo->prepare("UPDATE usuarios SET remember_token = ? WHERE id = ?");
          $stmt->execute([$token, $usuario['id']]);
          
+         // Cookie segura (httpOnly, y Secure sobre HTTPS), válida por 30 días.
          $secure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
          setcookie('remember_token', $token, time() + (86400 * 30), '/', '', $secure, true);
      }
