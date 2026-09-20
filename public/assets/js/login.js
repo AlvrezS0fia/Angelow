@@ -154,9 +154,7 @@ function hideMessage() {
     if (messageBox) messageBox.style.display = 'none';
 }
 
-// =============================================
-// ALERTA DE BIENVENIDA PROFESIONAL
-// =============================================
+// ALERTA DE BIENVENIDA
 // Construye y muestra una alerta de bienvenida ajustada al rol del
 // usuario (cliente, repartidor, administrador o solicitud pendiente)
 function mostrarAlertaBienvenida(opts) {

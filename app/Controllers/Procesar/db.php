@@ -1,7 +1,7 @@
 <?php
 /**
  * ============================================================
- * ARCHIVO: db.php — MÓDULO: Conexión a la base de datos (legacy)
+ * ARCHIVO: db.php — MÓDULO: Conexión a la base de datos 
  * ============================================================
  * QUÉ HACE: Crea la conexión PDO a MySQL usando variables de entorno con
  *   valores por defecto (localhost / angelow_db / root) y define funciones

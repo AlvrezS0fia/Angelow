@@ -7,9 +7,7 @@
  *   leídas de entorno $_ENV con fallbacks por defecto. Define $conn.
  *   Los scripts legacy categories.php y products.php lo referencian
  *   como $pdo, aunque aquí se crea $conn (posible desajuste).
- * MODELO(S) QUE USA: Ninguno — conexión directa mysqli.
- * QUIÉN LO CONSUME: categories.php, products.php (scripts legacy).
- */
+**/
 header('Content-Type: application/json');
 $host = $_ENV['DB_HOST'] ?? 'localhost';
 $user = $_ENV['DB_USER'] ?? 'root';

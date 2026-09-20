@@ -17,6 +17,7 @@ return [
     ['method' => 'GET', 'path' => '/admin/pedidos', 'controller' => 'Admin\\PedidosController', 'action' => 'index'],
     ['method' => 'GET', 'path' => '/admin/usuarios', 'controller' => 'Admin\\UsuariosController', 'action' => 'index'],
     ['method' => 'GET', 'path' => '/admin/inventario', 'controller' => 'Admin\\InventarioController', 'action' => 'index'],
+    ['method' => 'GET', 'path' => '/admin/inventario2', 'controller' => 'Admin\\Inventario2Controller', 'action' => 'index'],
     
     // Documentos legales y de soporte
     ['method' => 'GET', 'path' => '/documentos/Pedidos_envios', 'controller' => 'DocumentoController', 'action' => 'pedidosEnvios'],

@@ -1,8 +1,6 @@
 <?php
 /**
- * ============================================================
  * ARCHIVO: Env.php — MÓDULO: Carga de variables de entorno
- * ============================================================
  * QUÉ HACE: Lee el archivo .env (KEY=VALUE) y lo vuelca en $_ENV y
  *           $GLOBALS['env'] para que Database.php y otros módulos las usen.
  *           Se ejecuta una sola vez (guardia ENV_LOADED).

@@ -173,8 +173,8 @@ $user = $_SESSION['user'];
               <input type="text" id="barrio" placeholder="Tu barrio" required>
             </div>
             <div class="form-group">
-              <label>Opcional</label>
-              <input type="text" id="opcional" placeholder="Referencia">
+              <label>Dirección Alternativa</label>
+              <input type="text" id="Otra Direccion" placeholder="Referencia">
             </div>
           </div>
 

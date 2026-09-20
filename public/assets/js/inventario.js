@@ -330,7 +330,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Make functions globally available for inline onclick handlers
 window.openStockEditModal = openStockEditModal;
 window.closeStockEditModal = closeStockEditModal;
 window.updateStock = updateStock;

@@ -1,29 +1,34 @@
 <?php
 /**
  * ============================================================
- * ARCHIVO: StockController.php — MÓDULO: API de gestión de stock (admin)
+ * ARCHIVO: StockController.php — MÓDULO: API de inventario (admin)
  * ============================================================
- * QUÉ HACE: CRUD de inventario: listar stock de todos los productos,
- *   actualizar stock directamente, ajustar (add/subtract/set) y eliminar
- *   producto. Solo accesible para administradores.
- * MODELO(S) QUE USA: Ninguno — usa Database::getInstance() directamente.
- * ENDPOINTS/RUTAS: GET /api/stock, PUT /api/stock/{id},
- *   POST /api/stock/{id}/ajustar, DELETE /api/stock
- * QUIÉN LO CONSUME: panel.js (sección de inventario del administrador)
+ * QUÉ HACE: CRUD de inventario para el panel administrativo.
+ *   Ahora TODOS los datos salen del MICROSERVICIO de inventario
+ *   (Spring Boot + JPA, puerto 8082, tabla angelow_db.inventario)
+ *   usando el cliente App\Libraries\ProductoMicroservice. El PHP
+ *   ya NO consulta MySQL directamente para el inventario.
+ * MODELO(S) QUE USA: App\Libraries\ProductoMicroservice.
+ * ENDPOINTS/RUTAS: GET /api/inventario, PUT /api/inventario/{id},
+ *   POST /api/inventario/{id}/ajustar, DELETE /api/inventario
+ * QUIÉN LO CONSUME: admin/inventario.php (vista principal)
+ * ============================================================
  */
 namespace App\Controllers\Api;
 
 use App\Core\Controller;
+use App\Libraries\ProductoMicroservice;
 
 /**
  * Controlador de gestión de stock para el panel administrativo.
- * Valida que cada acción requiera sesión de administrador.
+ * Valida que cada acción requiera sesión de administrador y delega
+ * en el microservicio de inventario.
  */
 class StockController extends Controller
 {
     /**
-     * GET /api/stock — Lista todos los productos con su stock actual,
-     *   stock mínimo, categoría, imagen y total vendidos.
+     * GET /api/inventario — Lista todos los registros de inventario
+     * obtenidos desde el microservicio (angelow_db.inventario).
      */
     public function index()
     {
@@ -33,32 +38,32 @@ class StockController extends Controller
             return;
         }
 
-        $db = \App\Core\Database::getInstance()->getConnection();
-        
-        $sql = "SELECT p.id, p.nombre, p.precio, p.stock_total, p.stock_minimo, 
-                       p.imagenes, c.nombre as categoria_nombre, sc.nombre as subcategoria_nombre,
-                       p.total_vendidos
-                FROM productos p
-                LEFT JOIN categorias c ON p.categoria_id = c.id
-                LEFT JOIN categorias sc ON p.subcategoria_id = sc.id
-                ORDER BY p.fecha_creacion DESC";
-        
-        $stmt = $db->query($sql);
-        $productos = $stmt->fetchAll();
+        $cliente = new ProductoMicroservice();
+        $respuesta = $cliente->obtenerProductos();
+
+        // Si el microservicio no responde, se devuelve un arreglo vacio
+        if (isset($respuesta['error'])) {
+            http_response_code(502);
+            echo json_encode(['error' => $respuesta['error']]);
+            return;
+        }
 
         $resultado = [];
-        foreach ($productos as $p) {
-            $imagenes = json_decode($p['imagenes'] ?? '[]', true) ?: [];
+        foreach ($respuesta as $inv) {
+            // Ignora la clave meta '_http_status' y cualquier entrada no-producto
+            if (!is_array($inv) || !isset($inv['id'])) {
+                continue;
+            }
             $resultado[] = [
-                'id' => (int) $p['id'],
-                'nombre' => $p['nombre'],
-                'categoria' => $p['categoria_nombre'] ?? 'Sin categoría',
-                'subcategoria' => $p['subcategoria_nombre'] ?? '',
-                'precio' => (float) $p['precio'],
-                'stock' => (int) $p['stock_total'],
-                'stock_minimo' => (int) $p['stock_minimo'],
-                'imagen' => !empty($imagenes) ? $imagenes[0] : '',
-                'vendidos' => (int) $p['total_vendidos']
+                'id'          => (int) ($inv['id'] ?? 0),
+                'nombre'      => $inv['nombre'] ?? '',
+                'categoria'   => $inv['categoria'] ?? '',
+                'precio'      => (float) ($inv['precio'] ?? 0),
+                'stock_total' => (int) ($inv['stockTotal'] ?? $inv['stock_total'] ?? 0),
+                'stock_minimo' => (int) ($inv['stockMinimo'] ?? $inv['stock_minimo'] ?? 0),
+                'estado'      => $inv['estado'] ?? 'DISPONIBLE',
+                'imagen'      => '',
+                'vendidos'    => 0,
             ];
         }
 
@@ -66,8 +71,8 @@ class StockController extends Controller
     }
 
     /**
-     * PUT /api/stock/{id} — Actualiza el stock_total de un producto.
-     * No permite stock negativo.
+     * PUT /api/inventario/{id} — Actualiza el stock de un registro
+     * de inventario en el microservicio.
      */
     public function update($id)
     {
@@ -78,7 +83,7 @@ class StockController extends Controller
         }
 
         $data = json_decode(file_get_contents('php://input'), true);
-        
+
         if (!isset($data['stock'])) {
             http_response_code(400);
             echo json_encode(['error' => 'Stock no proporcionado']);
@@ -92,22 +97,36 @@ class StockController extends Controller
             return;
         }
 
-        $db = \App\Core\Database::getInstance()->getConnection();
-        
-        $stmt = $db->prepare("UPDATE productos SET stock_total = :stock WHERE id = :id");
-        $result = $stmt->execute(['stock' => $nuevoStock, 'id' => $id]);
+        $cliente = new ProductoMicroservice();
+        $actual = $cliente->obtenerProducto((int) $id);
 
-        if ($result) {
-            echo json_encode(['success' => true, 'nuevo_stock' => $nuevoStock]);
-        } else {
-            http_response_code(500);
-            echo json_encode(['error' => 'Error al actualizar stock']);
+        if (isset($actual['error'])) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Registro de inventario no encontrado']);
+            return;
         }
+
+        $resultado = $cliente->actualizarProducto((int) $id, [
+            'productoId'  => (int) ($actual['productoId'] ?? 0),
+            'nombre'      => $actual['nombre'] ?? '',
+            'categoria'   => $actual['categoria'] ?? '',
+            'stockTotal'  => $nuevoStock,
+            'stockMinimo' => (int) ($actual['stockMinimo'] ?? 0),
+            'precio'      => (float) ($actual['precio'] ?? 0),
+        ]);
+
+        if (isset($resultado['error'])) {
+            http_response_code(502);
+            echo json_encode(['error' => $resultado['error']]);
+            return;
+        }
+
+        echo json_encode(['success' => true, 'nuevo_stock' => $nuevoStock]);
     }
 
     /**
-     * POST /api/stock/{id}/ajustar — Ajusta stock con operación aritmética.
-     * Tipos: 'add' (sumar), 'subtract' (restar, mínimo 0), 'set' (establecer).
+     * POST /api/inventario/{id}/ajustar — Ajusta stock con operación
+     * aritmética (add/subtract/set) delegando en el microservicio.
      */
     public function ajustar($id)
     {
@@ -118,7 +137,7 @@ class StockController extends Controller
         }
 
         $data = json_decode(file_get_contents('php://input'), true);
-        
+
         if (!isset($data['cantidad']) || !isset($data['tipo'])) {
             http_response_code(400);
             echo json_encode(['error' => 'Datos incompletos']);
@@ -128,19 +147,16 @@ class StockController extends Controller
         $cantidad = (int) $data['cantidad'];
         $tipo = $data['tipo']; // 'add', 'subtract', 'set'
 
-        $db = \App\Core\Database::getInstance()->getConnection();
-        
-        $stmt = $db->prepare("SELECT stock_total FROM productos WHERE id = :id");
-        $stmt->execute(['id' => $id]);
-        $producto = $stmt->fetch();
+        $cliente = new ProductoMicroservice();
+        $actual = $cliente->obtenerProducto((int) $id);
 
-        if (!$producto) {
+        if (isset($actual['error'])) {
             http_response_code(404);
-            echo json_encode(['error' => 'Producto no encontrado']);
+            echo json_encode(['error' => 'Registro de inventario no encontrado']);
             return;
         }
 
-        $stockActual = (int) $producto['stock_total'];
+        $stockActual = (int) ($actual['stockTotal'] ?? 0);
         $nuevoStock = $stockActual;
 
         if ($tipo === 'add') {
@@ -151,20 +167,27 @@ class StockController extends Controller
             $nuevoStock = $cantidad;
         }
 
-        $stmt = $db->prepare("UPDATE productos SET stock_total = :stock WHERE id = :id");
-        $result = $stmt->execute(['stock' => $nuevoStock, 'id' => $id]);
+        $resultado = $cliente->actualizarProducto((int) $id, [
+            'productoId'  => (int) ($actual['productoId'] ?? 0),
+            'nombre'      => $actual['nombre'] ?? '',
+            'categoria'   => $actual['categoria'] ?? '',
+            'stockTotal'  => $nuevoStock,
+            'stockMinimo' => (int) ($actual['stockMinimo'] ?? 0),
+            'precio'      => (float) ($actual['precio'] ?? 0),
+        ]);
 
-        if ($result) {
-            echo json_encode(['success' => true, 'nuevo_stock' => $nuevoStock, 'stock_anterior' => $stockActual]);
-        } else {
-            http_response_code(500);
-            echo json_encode(['error' => 'Error al actualizar stock']);
+        if (isset($resultado['error'])) {
+            http_response_code(502);
+            echo json_encode(['error' => $resultado['error']]);
+            return;
         }
+
+        echo json_encode(['success' => true, 'nuevo_stock' => $nuevoStock, 'stock_anterior' => $stockActual]);
     }
 
     /**
-     * DELETE /api/stock — Elimina un producto por ID (recibido en body JSON).
-     * No elimina variantes ni imágenes (a diferencia de products.php legacy).
+     * DELETE /api/inventario — Elimina un registro de inventario en
+     * el microservicio (el id se recibe en el body JSON).
      */
     public function destroy()
     {
@@ -179,30 +202,19 @@ class StockController extends Controller
 
         if (!$id) {
             http_response_code(400);
-            echo json_encode(['error' => 'ID del producto requerido']);
+            echo json_encode(['error' => 'ID del registro requerido']);
             return;
         }
 
-        $db = \App\Core\Database::getInstance()->getConnection();
+        $cliente = new ProductoMicroservice();
+        $resultado = $cliente->eliminarProducto((int) $id);
 
-        $stmt = $db->prepare("SELECT id, nombre FROM productos WHERE id = :id");
-        $stmt->execute(['id' => $id]);
-        $producto = $stmt->fetch();
-
-        if (!$producto) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Producto no encontrado']);
+        if (isset($resultado['error'])) {
+            http_response_code(502);
+            echo json_encode(['error' => $resultado['error']]);
             return;
         }
 
-        $stmt = $db->prepare("DELETE FROM productos WHERE id = :id");
-        $result = $stmt->execute(['id' => $id]);
-
-        if ($result) {
-            echo json_encode(['success' => true, 'message' => 'Producto "' . $producto['nombre'] . '" eliminado correctamente']);
-        } else {
-            http_response_code(500);
-            echo json_encode(['error' => 'Error al eliminar el producto']);
-        }
+        echo json_encode(['success' => true, 'message' => 'Registro de inventario eliminado correctamente']);
     }
 }
